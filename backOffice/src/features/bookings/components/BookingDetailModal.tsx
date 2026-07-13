@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/modals/Modal";
 import { Badge } from "@/shared/components/ui/Badge";
 import { RouteMap } from "@/shared/components/maps/RouteMap";
-import { Calendar, Clock, MapPin, Bus, User, CreditCard, Ticket, Shield, DollarSign } from "lucide-react";
+import { Calendar, Clock, MapPin, Bus, User, CreditCard, Ticket, Shield, Wallet } from "lucide-react";
 import type { BookingData } from "@/api/bookingApi";
 
 interface Props {
@@ -88,7 +88,7 @@ export const BookingDetailModal: React.FC<Props> = ({ booking, isOpen, onClose }
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("payments.title")}</h3>
             <DetailRow
-              icon={DollarSign}
+              icon={Wallet}
               label={t("bookings.amount")}
               value={<span className="text-lg font-bold">CFA {(totalAmount || 0).toFixed(2)}</span>}
             />

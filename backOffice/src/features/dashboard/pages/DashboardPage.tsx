@@ -11,7 +11,7 @@ import { QuickActions } from "../components/QuickActions";
 import { RevenueMiniChart, BookingsMiniChart } from "../components/MiniCharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
-import { RefreshCw, DollarSign, Calendar, Bus, Users, Ticket, CreditCard, TrendingUp, Activity } from "lucide-react";
+import { RefreshCw, Wallet, Calendar, Bus, Users, Ticket, CreditCard, TrendingUp, Activity } from "lucide-react";
 
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ const DashboardPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <StatsCard title={t("dashboard.kpi.bookingsToday")} value={todayStats?.todayBookings ?? stats.totalBookings} icon={Calendar} />
-          <StatsCard title={t("dashboard.kpi.revenueToday")} value={`CFA ${(todayStats?.todayRevenue ?? stats.totalRevenue).toLocaleString()}`} icon={DollarSign} />
+          <StatsCard title={t("dashboard.kpi.revenueToday")} value={`CFA ${(todayStats?.todayRevenue ?? stats.totalRevenue).toLocaleString()}`} icon={Wallet} />
           <StatsCard title={t("dashboard.kpi.activeTrips")} value={todayStats?.activeTrips ?? stats.totalTrips} icon={Bus} />
           <StatsCard title={t("dashboard.kpi.occupancy")} value={`${(stats.occupancyRate || 0).toFixed(1)}%`} icon={TrendingUp} />
           <StatsCard title={t("dashboard.kpi.passengers")} value={todayStats?.todayPassengers ?? 0} icon={Users} />
