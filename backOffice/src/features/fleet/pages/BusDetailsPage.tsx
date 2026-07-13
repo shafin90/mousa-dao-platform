@@ -32,6 +32,7 @@ import { cn } from "@/shared/utils/cn";
 import { useAppSelector } from "@/app/store";
 import { busApi, type BusData, type MaintenanceLog } from "@/api/busApi";
 import { maintenanceFacilityApi, type MaintenanceFacilityData } from "@/api/maintenanceFacilityApi";
+import { DEFAULT_MAINTENANCE_SERVICES, MAINTENANCE_PERFORMERS } from "@/shared/constants/maintenance";
 import { tripApi, type TripData } from "@/api/tripApi";
 import { getActiveBuses, type GpsBus } from "@/features/tracking/api/trackingApi";
 
@@ -363,6 +364,15 @@ const BusDetailsPage: React.FC = () => {
   const makeModel = [bus.make, bus.model, bus.year].filter(Boolean).join(" ");
   const hasCompliance = bus.registrationExpiry || bus.insuranceExpiry || bus.fitnessExpiry || bus.insuranceProvider || bus.insuranceIssueDate || bus.lastInspectionDate;
   const hasPurchase = bus.purchaseDate || bus.purchaseCost != null || bus.homeDepot;
+
+  const maintSelectedFacility = facilities.find((f) => f._id === maintForm.facilityId);
+  const maintServiceOptions =
+    maintSelectedFacility && maintSelectedFacility.services && maintSelectedFacility.services.length > 0
+      ? maintSelectedFacility.services.map((s) => ({ value: s, label: s }))
+      : DEFAULT_MAINTENANCE_SERVICES.map((s) => ({
+          value: s.value,
+          label: t(`fleet.serviceOption.${s.key}`, { defaultValue: s.value }),
+        }));
 
   return (
     <div className="space-y-6">
@@ -763,7 +773,20 @@ const BusDetailsPage: React.FC = () => {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">{t("fleet.maintDescription")}</label>
-            <textarea required value={maintForm.description} onChange={e => setMaintForm({ ...maintForm, description: e.target.value })} className="w-full p-2 border rounded-md" rows={2} />
+            <select
+              required
+              value={maintForm.description}
+              onChange={e => setMaintForm({ ...maintForm, description: e.target.value })}
+              className="w-full p-2 border rounded-md bg-background"
+            >
+              <option value="">{t("fleet.selectService", { defaultValue: "Select a service" })}</option>
+              {maintServiceOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+              {maintForm.description && !maintServiceOptions.some(o => o.value === maintForm.description) && (
+                <option value={maintForm.description}>{maintForm.description}</option>
+              )}
+            </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -776,7 +799,21 @@ const BusDetailsPage: React.FC = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("fleet.maintBy")}</label>
-              <input type="text" value={maintForm.performedBy} onChange={e => setMaintForm({ ...maintForm, performedBy: e.target.value })} className="w-full p-2 border rounded-md" />
+              <select
+                value={maintForm.performedBy}
+                onChange={e => setMaintForm({ ...maintForm, performedBy: e.target.value })}
+                className="w-full p-2 border rounded-md bg-background"
+              >
+                <option value="">{t("fleet.selectPerformer", { defaultValue: "Not specified" })}</option>
+                {MAINTENANCE_PERFORMERS.map(p => (
+                  <option key={p.value} value={p.value}>
+                    {t(`fleet.performerOption.${p.key}`, { defaultValue: p.value })}
+                  </option>
+                ))}
+                {maintForm.performedBy && !MAINTENANCE_PERFORMERS.some(p => p.value === maintForm.performedBy) && (
+                  <option value={maintForm.performedBy}>{maintForm.performedBy}</option>
+                )}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("fleet.nextServiceDate")}</label>

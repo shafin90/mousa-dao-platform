@@ -346,11 +346,31 @@
     "maintFacility": "Atelier",
     "maintNoFacility": "Aucun atelier",
     "nextServiceDate": "Prochaine Révision",
+    "selectService": "Sélectionner un service",
+    "selectPerformer": "Non spécifié",
     "maint": {
       "routine": "Routine",
       "repair": "Réparation",
       "inspection": "Inspection",
       "other": "Autre"
+    },
+    "serviceOption": {
+      "oilChange": "Vidange d'huile",
+      "brakeService": "Service de freins",
+      "tireReplacement": "Remplacement de pneus",
+      "engineRepair": "Réparation moteur",
+      "electrical": "Électricité",
+      "acService": "Service de climatisation",
+      "generalInspection": "Inspection générale",
+      "batteryReplacement": "Remplacement de batterie",
+      "suspension": "Suspension",
+      "bodywork": "Carrosserie"
+    },
+    "performerOption": {
+      "inHouseMechanic": "Mécanicien interne",
+      "facilityTechnician": "Technicien de l'atelier",
+      "externalVendor": "Prestataire externe",
+      "manufacturerService": "Service constructeur"
     },
     "fuel": {
       "diesel": "Diesel",

@@ -347,11 +347,31 @@
     "maintFacility": "Facility",
     "maintNoFacility": "No facility",
     "nextServiceDate": "Next Service Date",
+    "selectService": "Select a service",
+    "selectPerformer": "Not specified",
     "maint": {
       "routine": "Routine",
       "repair": "Repair",
       "inspection": "Inspection",
       "other": "Other"
+    },
+    "serviceOption": {
+      "oilChange": "Oil Change",
+      "brakeService": "Brake Service",
+      "tireReplacement": "Tire Replacement",
+      "engineRepair": "Engine Repair",
+      "electrical": "Electrical",
+      "acService": "AC Service",
+      "generalInspection": "General Inspection",
+      "batteryReplacement": "Battery Replacement",
+      "suspension": "Suspension",
+      "bodywork": "Bodywork"
+    },
+    "performerOption": {
+      "inHouseMechanic": "In-house Mechanic",
+      "facilityTechnician": "Facility Technician",
+      "externalVendor": "External Vendor",
+      "manufacturerService": "Manufacturer Service"
     },
     "fuel": {
       "diesel": "Diesel",

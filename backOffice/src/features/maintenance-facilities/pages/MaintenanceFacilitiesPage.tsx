@@ -13,6 +13,7 @@ import {
   type MaintenanceFacilityData,
   type FacilityMaintenanceRecord,
 } from "@/api/maintenanceFacilityApi";
+import { DEFAULT_MAINTENANCE_SERVICES, MAINTENANCE_PERFORMERS } from "@/shared/constants/maintenance";
 
 const idOf = (value: unknown): string => {
   if (!value) return "";
@@ -286,6 +287,15 @@ const MaintenanceFacilitiesPage: React.FC = () => {
     { header: t("maintenanceFacilities.recordCost"), accessor: (r: FacilityMaintenanceRecord) => <span className="font-medium">CFA {(r.cost || 0).toFixed(2)}</span> },
   ];
 
+  const sendSelectedFacility = facilities.find((f) => f._id === sendForm.facilityId);
+  const sendServiceOptions =
+    sendSelectedFacility && sendSelectedFacility.services && sendSelectedFacility.services.length > 0
+      ? sendSelectedFacility.services.map((s) => ({ value: s, label: s }))
+      : DEFAULT_MAINTENANCE_SERVICES.map((s) => ({
+          value: s.value,
+          label: t(`fleet.serviceOption.${s.key}`, { defaultValue: s.value }),
+        }));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row">
@@ -380,7 +390,20 @@ const MaintenanceFacilitiesPage: React.FC = () => {
             </div>
             <div className="space-y-2 col-span-2">
               <label className="text-sm font-medium">{t("fleet.maintDescription")}</label>
-              <textarea required value={sendForm.description} onChange={(e) => setSendForm({ ...sendForm, description: e.target.value })} className="w-full rounded-md border p-2" rows={2} />
+              <select
+                required
+                value={sendForm.description}
+                onChange={(e) => setSendForm({ ...sendForm, description: e.target.value })}
+                className="w-full rounded-md border bg-background p-2"
+              >
+                <option value="">{t("fleet.selectService", { defaultValue: "Select a service" })}</option>
+                {sendServiceOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+                {sendForm.description && !sendServiceOptions.some((o) => o.value === sendForm.description) && (
+                  <option value={sendForm.description}>{sendForm.description}</option>
+                )}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("fleet.maintCost")}</label>
@@ -392,7 +415,21 @@ const MaintenanceFacilitiesPage: React.FC = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("fleet.maintBy")}</label>
-              <input type="text" value={sendForm.performedBy} onChange={(e) => setSendForm({ ...sendForm, performedBy: e.target.value })} className="w-full rounded-md border p-2" />
+              <select
+                value={sendForm.performedBy}
+                onChange={(e) => setSendForm({ ...sendForm, performedBy: e.target.value })}
+                className="w-full rounded-md border bg-background p-2"
+              >
+                <option value="">{t("fleet.selectPerformer", { defaultValue: "Not specified" })}</option>
+                {MAINTENANCE_PERFORMERS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {t(`fleet.performerOption.${p.key}`, { defaultValue: p.value })}
+                  </option>
+                ))}
+                {sendForm.performedBy && !MAINTENANCE_PERFORMERS.some((p) => p.value === sendForm.performedBy) && (
+                  <option value={sendForm.performedBy}>{sendForm.performedBy}</option>
+                )}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("fleet.nextServiceDate")}</label>
