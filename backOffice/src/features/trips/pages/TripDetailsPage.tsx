@@ -455,7 +455,7 @@ const TripDetailsPage: React.FC = () => {
             />
             <InfoRow
               label={t("routes.baseFare")}
-              value={route?.baseFare != null ? \`CFA \$\${route.baseFare.toFixed(2)}\` : t("common.na")}
+              value={route?.baseFare != null ? `CFA $${route.baseFare.toFixed(2)}` : t("common.na")}
             />
             {route?.baseFare != null && trip.price != null && (
               <InfoRow
