@@ -284,6 +284,7 @@
     "upcomingTrips": "À venir",
     "avgOccupancy": "Occupation Moy.",
     "revenueGenerated": "Revenus Générés",
+    "maintenanceCost": "Coût de Maintenance",
     "seatLayout": "Plan des Sièges",
     "seatCount": "{{count}} sièges",
     "tripHistory": "Historique des Trajets",

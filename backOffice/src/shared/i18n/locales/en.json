@@ -285,6 +285,7 @@
     "upcomingTrips": "Upcoming",
     "avgOccupancy": "Avg Occupancy",
     "revenueGenerated": "Revenue Generated",
+    "maintenanceCost": "Maintenance Cost",
     "seatLayout": "Seat Layout",
     "seatCount": "{{count}} seats",
     "tripHistory": "Trip History",
