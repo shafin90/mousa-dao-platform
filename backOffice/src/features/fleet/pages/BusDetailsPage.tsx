@@ -32,7 +32,8 @@ import { cn } from "@/shared/utils/cn";
 import { useAppSelector } from "@/app/store";
 import { busApi, type BusData, type MaintenanceLog } from "@/api/busApi";
 import { maintenanceFacilityApi, type MaintenanceFacilityData } from "@/api/maintenanceFacilityApi";
-import { DEFAULT_MAINTENANCE_SERVICES, MAINTENANCE_PERFORMERS } from "@/shared/constants/maintenance";
+import { maintenanceStaffApi, type MaintenanceStaffData } from "@/api/maintenanceStaffApi";
+import { DEFAULT_MAINTENANCE_SERVICES } from "@/shared/constants/maintenance";
 import { tripApi, type TripData } from "@/api/tripApi";
 import { getActiveBuses, type GpsBus } from "@/features/tracking/api/trackingApi";
 
@@ -142,6 +143,7 @@ const BusDetailsPage: React.FC = () => {
   const [maintForm, setMaintForm] = useState({ ...MAINTENANCE_EMPTY });
   const [savingMaint, setSavingMaint] = useState(false);
   const [facilities, setFacilities] = useState<MaintenanceFacilityData[]>([]);
+  const [staff, setStaff] = useState<MaintenanceStaffData[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -200,6 +202,7 @@ const BusDetailsPage: React.FC = () => {
 
   useEffect(() => {
     maintenanceFacilityApi.getAll().then(setFacilities).catch(() => setFacilities([]));
+    maintenanceStaffApi.getAll().then(setStaff).catch(() => setStaff([]));
   }, []);
 
   useEffect(() => {
@@ -364,6 +367,20 @@ const BusDetailsPage: React.FC = () => {
   const makeModel = [bus.make, bus.model, bus.year].filter(Boolean).join(" ");
   const hasCompliance = bus.registrationExpiry || bus.insuranceExpiry || bus.fitnessExpiry || bus.insuranceProvider || bus.insuranceIssueDate || bus.lastInspectionDate;
   const hasPurchase = bus.purchaseDate || bus.purchaseCost != null || bus.homeDepot;
+
+  const staffFacilityIdOf = (value: MaintenanceStaffData["facilityId"]): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "object" && "_id" in value) return String(value._id);
+    return "";
+  };
+  const activeStaff = staff.filter((s) => s.isActive !== false);
+  const maintStaffOptions = maintForm.facilityId
+    ? activeStaff.filter((s) => {
+        const fid = staffFacilityIdOf(s.facilityId);
+        return !fid || fid === maintForm.facilityId;
+      })
+    : activeStaff;
 
   const maintSelectedFacility = facilities.find((f) => f._id === maintForm.facilityId);
   const maintServiceOptions =
@@ -805,12 +822,10 @@ const BusDetailsPage: React.FC = () => {
                 className="w-full p-2 border rounded-md bg-background"
               >
                 <option value="">{t("fleet.selectPerformer", { defaultValue: "Not specified" })}</option>
-                {MAINTENANCE_PERFORMERS.map(p => (
-                  <option key={p.value} value={p.value}>
-                    {t(`fleet.performerOption.${p.key}`, { defaultValue: p.value })}
-                  </option>
+                {maintStaffOptions.map(s => (
+                  <option key={s._id} value={s.name}>{s.name}</option>
                 ))}
-                {maintForm.performedBy && !MAINTENANCE_PERFORMERS.some(p => p.value === maintForm.performedBy) && (
+                {maintForm.performedBy && !maintStaffOptions.some(s => s.name === maintForm.performedBy) && (
                   <option value={maintForm.performedBy}>{maintForm.performedBy}</option>
                 )}
               </select>

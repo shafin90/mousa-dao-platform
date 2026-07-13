@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { useAppSelector } from "@/app/store";
-import { LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, Settings, History, Ticket, Bell, ChevronLeft, ChevronRight, Bus, LogOut, MapPin, Navigation, Building2, Wrench } from "lucide-react";
+import { LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, Settings, History, Ticket, Bell, ChevronLeft, ChevronRight, Bus, LogOut, MapPin, Navigation, Building2, Wrench, HardHat, ClipboardList } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
@@ -22,6 +22,8 @@ const NavKeys: Array<{ icon: React.ComponentType<{ className?: string; size?: nu
   { icon: Building2, key: "cities", href: "/cities", roles: ["admin"] },
   { icon: Bus, key: "fleet", href: "/fleet", roles: ["admin"] },
   { icon: Wrench, key: "maintenanceFacilities", href: "/maintenance-facilities", roles: ["admin"] },
+  { icon: HardHat, key: "maintenanceStaff", href: "/maintenance-staff", roles: ["admin"] },
+  { icon: ClipboardList, key: "maintenanceRecords", href: "/maintenance-records", roles: ["admin"] },
   { icon: Users, key: "users", href: "/users", roles: ["admin"] },
   { icon: BarChart3, key: "analytics", href: "/analytics", roles: ["admin"] },
   { icon: Ticket, key: "tickets", href: "/tickets", roles: ["admin", "staff"] },

@@ -13,7 +13,8 @@ import {
   type MaintenanceFacilityData,
   type FacilityMaintenanceRecord,
 } from "@/api/maintenanceFacilityApi";
-import { DEFAULT_MAINTENANCE_SERVICES, MAINTENANCE_PERFORMERS } from "@/shared/constants/maintenance";
+import { maintenanceStaffApi, type MaintenanceStaffData } from "@/api/maintenanceStaffApi";
+import { DEFAULT_MAINTENANCE_SERVICES } from "@/shared/constants/maintenance";
 
 const idOf = (value: unknown): string => {
   if (!value) return "";
@@ -78,6 +79,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
   const [viewing, setViewing] = useState<MaintenanceFacilityData | null>(null);
 
   const [buses, setBuses] = useState<BusData[]>([]);
+  const [staff, setStaff] = useState<MaintenanceStaffData[]>([]);
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [sendSaving, setSendSaving] = useState(false);
   const [sendForm, setSendForm] = useState({ ...sendEmptyForm });
@@ -85,14 +87,16 @@ const MaintenanceFacilitiesPage: React.FC = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const [facilityData, cityData, busData] = await Promise.all([
+      const [facilityData, cityData, busData, staffData] = await Promise.all([
         maintenanceFacilityApi.getAll(),
         cityApi.getAll().catch(() => [] as CityData[]),
         busApi.getAll({ limit: 1000 }).catch(() => ({ buses: [] as BusData[], total: 0 })),
+        maintenanceStaffApi.getAll().catch(() => [] as MaintenanceStaffData[]),
       ]);
       setFacilities(facilityData);
       setCities(cityData);
       setBuses(busData.buses);
+      setStaff(staffData);
     } catch {
       toast.error(t("maintenanceFacilities.loadFailed"));
     } finally {
@@ -287,6 +291,20 @@ const MaintenanceFacilitiesPage: React.FC = () => {
     { header: t("maintenanceFacilities.recordCost"), accessor: (r: FacilityMaintenanceRecord) => <span className="font-medium">CFA {(r.cost || 0).toFixed(2)}</span> },
   ];
 
+  const staffIdOf = (value: MaintenanceStaffData["facilityId"]): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "object" && "_id" in value) return String(value._id);
+    return "";
+  };
+  const activeStaff = staff.filter((s) => s.isActive !== false);
+  const sendStaffOptions = sendForm.facilityId
+    ? activeStaff.filter((s) => {
+        const fid = staffIdOf(s.facilityId);
+        return !fid || fid === sendForm.facilityId;
+      })
+    : activeStaff;
+
   const sendSelectedFacility = facilities.find((f) => f._id === sendForm.facilityId);
   const sendServiceOptions =
     sendSelectedFacility && sendSelectedFacility.services && sendSelectedFacility.services.length > 0
@@ -421,12 +439,10 @@ const MaintenanceFacilitiesPage: React.FC = () => {
                 className="w-full rounded-md border bg-background p-2"
               >
                 <option value="">{t("fleet.selectPerformer", { defaultValue: "Not specified" })}</option>
-                {MAINTENANCE_PERFORMERS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {t(`fleet.performerOption.${p.key}`, { defaultValue: p.value })}
-                  </option>
+                {sendStaffOptions.map((s) => (
+                  <option key={s._id} value={s.name}>{s.name}</option>
                 ))}
-                {sendForm.performedBy && !MAINTENANCE_PERFORMERS.some((p) => p.value === sendForm.performedBy) && (
+                {sendForm.performedBy && !sendStaffOptions.some((s) => s.name === sendForm.performedBy) && (
                   <option value={sendForm.performedBy}>{sendForm.performedBy}</option>
                 )}
               </select>
