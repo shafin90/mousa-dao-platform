@@ -552,7 +552,18 @@
     "deleteFailed": "Failed to delete maintenance facility",
     "loadFailed": "Failed to load maintenance facilities",
     "recordsFailed": "Failed to load maintenance records",
-    "confirmDelete": "Are you sure you want to delete {{name}}? This action cannot be undone."
+    "confirmDelete": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+    "sendToMaintenance": "Send to Maintenance",
+    "sendTitle": "Send Bus to Maintenance",
+    "sendBus": "Bus *",
+    "sendBusPlaceholder": "Select a bus",
+    "sendFacility": "Facility",
+    "sendNoFacility": "No facility",
+    "sendSubmit": "Send to Maintenance",
+    "sendSuccess": "Bus sent to maintenance",
+    "sendFailed": "Failed to send bus to maintenance",
+    "sendBusRequired": "Please select a bus",
+    "sendDescRequired": "Description is required"
   },
   "cities": {
     "title": "Cities",

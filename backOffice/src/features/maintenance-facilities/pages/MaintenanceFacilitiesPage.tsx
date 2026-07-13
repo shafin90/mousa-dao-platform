@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, RefreshCw, Wrench, Pencil, Trash2, Eye } from "lucide-react";
+import { Plus, RefreshCw, Wrench, Pencil, Trash2, Eye, Send } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Modal } from "@/shared/components/modals/Modal";
 import { cityApi, type CityData } from "@/api/cityApi";
+import { busApi, type BusData } from "@/api/busApi";
 import {
   maintenanceFacilityApi,
   type MaintenanceFacilityData,
@@ -39,6 +40,25 @@ const emptyForm = {
   isActive: true,
 };
 
+const sendEmptyForm = {
+  busId: "",
+  facilityId: "",
+  date: new Date().toISOString().slice(0, 10),
+  type: "routine",
+  description: "",
+  cost: "",
+  odometer: "",
+  performedBy: "",
+  nextServiceDate: "",
+};
+
+const busLabel = (b: BusData): string => {
+  const number = b.busNumber ? b.busNumber : "";
+  const name = b.name ? b.name : "";
+  if (number && name && number !== name) return `${number} · ${name}`;
+  return number || name || b._id;
+};
+
 const MaintenanceFacilitiesPage: React.FC = () => {
   const { t } = useTranslation();
   const [facilities, setFacilities] = useState<MaintenanceFacilityData[]>([]);
@@ -56,15 +76,22 @@ const MaintenanceFacilitiesPage: React.FC = () => {
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [viewing, setViewing] = useState<MaintenanceFacilityData | null>(null);
 
+  const [buses, setBuses] = useState<BusData[]>([]);
+  const [isSendOpen, setIsSendOpen] = useState(false);
+  const [sendSaving, setSendSaving] = useState(false);
+  const [sendForm, setSendForm] = useState({ ...sendEmptyForm });
+
   const load = async () => {
     setLoading(true);
     try {
-      const [facilityData, cityData] = await Promise.all([
+      const [facilityData, cityData, busData] = await Promise.all([
         maintenanceFacilityApi.getAll(),
         cityApi.getAll().catch(() => [] as CityData[]),
+        busApi.getAll({ limit: 1000 }).catch(() => ({ buses: [] as BusData[], total: 0 })),
       ]);
       setFacilities(facilityData);
       setCities(cityData);
+      setBuses(busData.buses);
     } catch {
       toast.error(t("maintenanceFacilities.loadFailed"));
     } finally {
@@ -109,6 +136,55 @@ const MaintenanceFacilitiesPage: React.FC = () => {
       toast.error(t("maintenanceFacilities.recordsFailed"));
     } finally {
       setRecordsLoading(false);
+    }
+  };
+
+  const openSend = (facility?: MaintenanceFacilityData) => {
+    setSendForm({
+      ...sendEmptyForm,
+      facilityId: facility ? facility._id : "",
+      date: new Date().toISOString().slice(0, 10),
+    });
+    setIsSendOpen(true);
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sendForm.busId) {
+      toast.error(t("maintenanceFacilities.sendBusRequired"));
+      return;
+    }
+    if (!sendForm.description.trim()) {
+      toast.error(t("maintenanceFacilities.sendDescRequired"));
+      return;
+    }
+    setSendSaving(true);
+    try {
+      await busApi.addMaintenanceLog(sendForm.busId, {
+        date: sendForm.date,
+        type: sendForm.type,
+        description: sendForm.description.trim(),
+        cost: sendForm.cost ? Number(sendForm.cost) : 0,
+        odometer: sendForm.odometer ? Number(sendForm.odometer) : undefined,
+        performedBy: sendForm.performedBy || undefined,
+        nextServiceDate: sendForm.nextServiceDate || undefined,
+        facilityId: sendForm.facilityId || undefined,
+      });
+      toast.success(t("maintenanceFacilities.sendSuccess"));
+      setIsSendOpen(false);
+      setSendForm({ ...sendEmptyForm });
+      if (isRecordsOpen && viewing && viewing._id === sendForm.facilityId) {
+        setRecordsLoading(true);
+        try {
+          setRecords(await maintenanceFacilityApi.getMaintenance(viewing._id));
+        } finally {
+          setRecordsLoading(false);
+        }
+      }
+    } catch {
+      toast.error(t("maintenanceFacilities.sendFailed"));
+    } finally {
+      setSendSaving(false);
     }
   };
 
@@ -181,6 +257,9 @@ const MaintenanceFacilitiesPage: React.FC = () => {
       header: t("maintenanceFacilities.actions"),
       accessor: (row: MaintenanceFacilityData) => (
         <div className="flex gap-1">
+          <Button variant="ghost" size="sm" title={t("maintenanceFacilities.sendToMaintenance")} onClick={(e) => { e.stopPropagation(); openSend(row); }}>
+            <Send size={16} />
+          </Button>
           <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openRecords(row); }}>
             <Eye size={16} />
           </Button>
@@ -220,6 +299,9 @@ const MaintenanceFacilitiesPage: React.FC = () => {
           <Button variant="outline" size="sm" className="gap-2" onClick={load}>
             <RefreshCw size={16} /> {t("common.refresh")}
           </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => openSend()}>
+            <Send size={16} /> {t("maintenanceFacilities.sendToMaintenance")}
+          </Button>
           <Button size="sm" className="gap-2" onClick={openCreate}>
             <Plus size={16} /> {t("maintenanceFacilities.newFacility")}
           </Button>
@@ -247,6 +329,81 @@ const MaintenanceFacilitiesPage: React.FC = () => {
         className="max-w-3xl"
       >
         <DataTable columns={recordColumns} data={records} isLoading={recordsLoading} />
+      </Modal>
+
+      <Modal
+        isOpen={isSendOpen}
+        onClose={() => setIsSendOpen(false)}
+        title={t("maintenanceFacilities.sendTitle")}
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+      >
+        <form className="space-y-4" onSubmit={handleSend}>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">{t("maintenanceFacilities.sendBus")}</label>
+              <select
+                required
+                value={sendForm.busId}
+                onChange={(e) => setSendForm({ ...sendForm, busId: e.target.value })}
+                className="w-full rounded-md border bg-background p-2"
+              >
+                <option value="">{t("maintenanceFacilities.sendBusPlaceholder")}</option>
+                {buses.map((b) => (
+                  <option key={b._id} value={b._id}>{busLabel(b)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">{t("maintenanceFacilities.sendFacility")}</label>
+              <select
+                value={sendForm.facilityId}
+                onChange={(e) => setSendForm({ ...sendForm, facilityId: e.target.value })}
+                className="w-full rounded-md border bg-background p-2"
+              >
+                <option value="">{t("maintenanceFacilities.sendNoFacility")}</option>
+                {facilities.map((f) => (
+                  <option key={f._id} value={f._id}>{f.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("fleet.maintDate")}</label>
+              <input required type="date" value={sendForm.date} onChange={(e) => setSendForm({ ...sendForm, date: e.target.value })} className="w-full rounded-md border p-2" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("fleet.maintType")}</label>
+              <select value={sendForm.type} onChange={(e) => setSendForm({ ...sendForm, type: e.target.value })} className="w-full rounded-md border bg-background p-2">
+                {["routine", "repair", "inspection", "other"].map((ty) => (
+                  <option key={ty} value={ty}>{t(`fleet.maint.${ty}`, { defaultValue: ty })}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">{t("fleet.maintDescription")}</label>
+              <textarea required value={sendForm.description} onChange={(e) => setSendForm({ ...sendForm, description: e.target.value })} className="w-full rounded-md border p-2" rows={2} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("fleet.maintCost")}</label>
+              <input type="number" min="0" value={sendForm.cost} onChange={(e) => setSendForm({ ...sendForm, cost: e.target.value })} className="w-full rounded-md border p-2" placeholder="CFA" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("fleet.odometer")}</label>
+              <input type="number" value={sendForm.odometer} onChange={(e) => setSendForm({ ...sendForm, odometer: e.target.value })} className="w-full rounded-md border p-2" placeholder="km" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("fleet.maintBy")}</label>
+              <input type="text" value={sendForm.performedBy} onChange={(e) => setSendForm({ ...sendForm, performedBy: e.target.value })} className="w-full rounded-md border p-2" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("fleet.nextServiceDate")}</label>
+              <input type="date" value={sendForm.nextServiceDate} onChange={(e) => setSendForm({ ...sendForm, nextServiceDate: e.target.value })} className="w-full rounded-md border p-2" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setIsSendOpen(false)}>{t("common.cancel")}</Button>
+            <Button type="submit" disabled={sendSaving}>{sendSaving ? t("common.saving") : t("maintenanceFacilities.sendSubmit")}</Button>
+          </div>
+        </form>
       </Modal>
 
       <Modal

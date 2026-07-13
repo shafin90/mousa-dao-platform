@@ -551,7 +551,18 @@
     "deleteFailed": "Échec de la suppression de l'atelier",
     "loadFailed": "Échec du chargement des ateliers de maintenance",
     "recordsFailed": "Échec du chargement des enregistrements de maintenance",
-    "confirmDelete": "Êtes-vous sûr de vouloir supprimer {{name}} ? Cette action est irréversible."
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer {{name}} ? Cette action est irréversible.",
+    "sendToMaintenance": "Envoyer en Maintenance",
+    "sendTitle": "Envoyer un Bus en Maintenance",
+    "sendBus": "Bus *",
+    "sendBusPlaceholder": "Sélectionner un bus",
+    "sendFacility": "Atelier",
+    "sendNoFacility": "Aucun atelier",
+    "sendSubmit": "Envoyer en Maintenance",
+    "sendSuccess": "Bus envoyé en maintenance",
+    "sendFailed": "Échec de l'envoi du bus en maintenance",
+    "sendBusRequired": "Veuillez sélectionner un bus",
+    "sendDescRequired": "La description est requise"
   },
   "cities": {
     "title": "Villes",
