@@ -1,0 +1,41 @@
+{
+  "name": "mousa-dao-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest --runInBand",
+    "test:auth": "jest --runInBand tests/auth",
+    "test:stations": "jest --runInBand tests/stations",
+    "test:buses": "jest --runInBand tests/buses",
+    "test:routes": "jest --runInBand tests/routes",
+    "test:trips": "jest --runInBand tests/trips",
+    "test:bookings": "jest --runInBand tests/bookings",
+    "test:payments": "jest --runInBand tests/payments",
+    "test:tickets": "jest --runInBand tests/tickets",
+    "test:tracking": "jest --runInBand tests/tracking",
+    "test:tenants": "jest --runInBand tests/tenants",
+    "test:backoffice": "jest --runInBand tests/backoffice",
+    "test:mobile": "jest --runInBand tests/mobile",
+    "test:superadmin": "jest --runInBand tests/superadmin",
+    "test:sockets": "jest --runInBand --config jest.sockets.config.js tests/sockets",
+    "test:redis": "jest --runInBand tests/redis",
+    "test:rabbitmq": "jest --runInBand tests/rabbitmq",
+    "test:e2e": "jest --runInBand tests/e2e"
+  },
+  "dependencies": {
+    "axios": "^1.18.0",
+    "dotenv": "^17.4.2",
+    "jsonwebtoken": "^9.0.3",
+    "socket.io-client": "^4.8.3",
+    "bcryptjs": "^3.0.3",
+    "ioredis": "^5.11.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2",
+    "@faker-js/faker": "^10.4.0",
+    "mongodb-memory-server": "^11.1.0",
+    "amqplib": "^2.0.1"
+  }
+}

@@ -1,0 +1,7 @@
+import type { Trip } from "../../../shared/types";
+
+export const mockTrips: Trip[] = [
+  { _id: "TRP-501", routeId: { _id: "R-1", fromStation: { _id: "s1", name: "New York" }, toStation: { _id: "s2", name: "Boston" }, baseFare: 45, distanceKm: 215, estimatedTimeMinutes: 240 }, busId: { _id: "B-202", busNumber: "NY-4522", name: "NY Bus 4522", capacity: 45, type: "Standard" }, departureTime: "2026-05-22T08:00:00Z", arrivalTime: "2026-05-22T12:00:00Z", date: "2026-05-22", price: 45, seatsTotal: 45, seatsBooked: 20, status: "scheduled", createdAt: "2026-05-01T00:00:00Z" },
+  { _id: "TRP-502", routeId: { _id: "R-2", fromStation: { _id: "s3", name: "Boston" }, toStation: { _id: "s4", name: "New York" }, baseFare: 35, distanceKm: 190, estimatedTimeMinutes: 300 }, busId: { _id: "B-305", busNumber: "MA-1290", name: "MA Bus 1290", capacity: 40, type: "Sleeper" }, departureTime: "2026-05-21T10:00:00Z", arrivalTime: "2026-05-21T15:00:00Z", date: "2026-05-21", price: 35, seatsTotal: 40, seatsBooked: 35, status: "active", createdAt: "2026-05-01T00:00:00Z" },
+  { _id: "TRP-503", routeId: { _id: "R-3", fromStation: { _id: "s5", name: "Chicago" }, toStation: { _id: "s6", name: "Detroit" }, baseFare: 28, distanceKm: 283, estimatedTimeMinutes: 150 }, busId: { _id: "B-101", busNumber: "PA-8821", name: "PA Bus 8821", capacity: 45, type: "Non-AC" }, departureTime: "2026-05-22T14:00:00Z", arrivalTime: "2026-05-22T16:30:00Z", date: "2026-05-22", price: 28, seatsTotal: 45, seatsBooked: 5, status: "scheduled", createdAt: "2026-05-01T00:00:00Z" },
+];
