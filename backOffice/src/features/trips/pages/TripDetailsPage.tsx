@@ -275,7 +275,7 @@ const TripDetailsPage: React.FC = () => {
     },
     {
       header: t("trips.amount"),
-      accessor: (b: BookingData) => <span className="font-medium">CFA ${b.totalAmount?.toFixed(2) ?? "0.00"}</span>,
+      accessor: (b: BookingData) => <span className="font-medium">CFA {b.totalAmount?.toFixed(2) ?? "0.00"}</span>,
     },
     {
       header: t("common.status"),
@@ -361,7 +361,7 @@ const TripDetailsPage: React.FC = () => {
         <StatCard
           icon={<Coins size={18} />}
           label={t("trips.price")}
-          value={`CFA $${trip.price?.toFixed(2) ?? "0.00"}`}
+          value={`CFA ${trip.price?.toFixed(2) ?? "0.00"}`}
         />
         <StatCard
           icon={<Armchair size={18} />}
@@ -455,7 +455,7 @@ const TripDetailsPage: React.FC = () => {
             />
             <InfoRow
               label={t("routes.baseFare")}
-              value={route?.baseFare != null ? `CFA $${route.baseFare.toFixed(2)}` : t("common.na")}
+              value={route?.baseFare != null ? `CFA ${route.baseFare.toFixed(2)}` : t("common.na")}
             />
             {route?.baseFare != null && trip.price != null && (
               <InfoRow
@@ -463,7 +463,7 @@ const TripDetailsPage: React.FC = () => {
                 value={
                   <span className={trip.price >= route.baseFare ? "text-emerald-600" : "text-amber-600"}>
                     {trip.price >= route.baseFare ? "+" : ""}
-                    CFA ${(trip.price - route.baseFare).toFixed(2)}
+                    CFA {(trip.price - route.baseFare).toFixed(2)}
                   </span>
                 }
               />

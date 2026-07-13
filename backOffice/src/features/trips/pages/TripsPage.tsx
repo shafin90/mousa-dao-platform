@@ -172,7 +172,7 @@ const TripsPage: React.FC = () => {
     { header: t("trips.departure"), accessor: (item: TripData) => item.departureTime },
     { header: t("trips.bus"), accessor: (item: TripData) => item.busId?.busNumber || item.busId?._id || t("common.na") },
     { header: t("trips.seats"), accessor: (item: TripData) => `${item.seatsBooked || 0} / ${item.seatsTotal || 0}` },
-    { header: t("trips.price"), accessor: (item: TripData) => `CFA $${item.price || 0}` },
+    { header: t("trips.price"), accessor: (item: TripData) => `CFA ${item.price || 0}` },
     { header: t("trips.status"), accessor: (item: TripData) => {
         const variants: Record<string, "success"|"warning"|"destructive"|"secondary"> = { scheduled: "warning", active: "success", completed: "secondary", cancelled: "destructive" };
         return <Badge variant={variants[item.status] || "outline"}>{t(`trips.${item.status}`, { defaultValue: item.status?.toUpperCase() })}</Badge>;

@@ -82,7 +82,7 @@ const PaymentsPage: React.FC = () => {
       )
     },
     { header: "Booking", accessor: (item: PaymentData) => <span className="font-mono text-xs">{item.bookingId?.bookingCode}</span> },
-    { header: "Amount", accessor: (item: PaymentData) => <span className="font-medium">CFA ${(item.amount || 0).toFixed(2)}</span> },
+    { header: "Amount", accessor: (item: PaymentData) => <span className="font-medium">CFA {(item.amount || 0).toFixed(2)}</span> },
     { header: t("payments.status"), accessor: (item: PaymentData) => (
         <Badge variant={paymentStatusVariant[item.status] || "outline"}>{t(`payments.${item.status}`, { defaultValue: item.status?.toUpperCase() })}</Badge>
     )},
@@ -99,7 +99,7 @@ const PaymentsPage: React.FC = () => {
         </div>
       )
     },
-    { header: "Amount", accessor: (item: RefundRequestData) => <span className="font-medium">CFA ${(item.amount || 0).toFixed(2)}</span> },
+    { header: "Amount", accessor: (item: RefundRequestData) => <span className="font-medium">CFA {(item.amount || 0).toFixed(2)}</span> },
     { header: "Status", accessor: (item: RefundRequestData) => (
         <Badge variant={refundStatusVariant[item.status] || "outline"}>{item.status.toUpperCase()}</Badge>
     )},

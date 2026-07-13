@@ -71,7 +71,7 @@ const BookingsPage: React.FC = () => {
     },
     { header: t("bookings.route"), accessor: (item: BookingData) => item.tripId?.routeId ? `${item.tripId.routeId.fromStation?.name || ''} → ${item.tripId.routeId.toStation?.name || ''}` : t("common.na") },
     { header: t("bookings.seats"), accessor: (item: BookingData) => Array.isArray(item.seats) ? item.seats.join(', ') : t("common.na") },
-    { header: t("bookings.amount"), accessor: (item: BookingData) => <span className="font-medium">CFA ${(item.totalAmount || 0).toFixed(2)}</span> },
+    { header: t("bookings.amount"), accessor: (item: BookingData) => <span className="font-medium">CFA {(item.totalAmount || 0).toFixed(2)}</span> },
     { header: t("bookings.status"), accessor: (item: BookingData) => {
         const variants: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning"> = {
           confirmed: "success", pending: "warning", cancelled: "destructive"

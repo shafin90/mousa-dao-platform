@@ -64,6 +64,7 @@ const maintenanceLogSchema = Joi.object({
   odometer: Joi.number().allow(null).optional(),
   performedBy: Joi.string().allow('').optional(),
   nextServiceDate: Joi.date().allow(null, '').optional(),
+  facilityId: Joi.string().hex().length(24).allow(null, '').optional(),
 });
 
 module.exports = { createBusSchema, updateBusStatusSchema, assignDriverSchema, maintenanceLogSchema };

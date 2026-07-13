@@ -445,7 +445,7 @@ const FleetPage: React.FC = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("fleet.purchaseCost")}</label>
-              <input type="number" value={form.purchaseCost} onChange={e => setForm({...form, purchaseCost: e.target.value})} className="w-full p-2 border rounded-md" placeholder="$" />
+              <input type="number" value={form.purchaseCost} onChange={e => setForm({...form, purchaseCost: e.target.value})} className="w-full p-2 border rounded-md" placeholder="CFA" />
             </div>
             <div className="space-y-2 col-span-2">
               <label className="text-sm font-medium">{t("fleet.homeDepot")}</label>

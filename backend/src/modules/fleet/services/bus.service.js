@@ -87,7 +87,9 @@ const assignDriver = async (id, companyId, driverId) => {
 const addMaintenanceLog = async (id, companyId, data) => {
   const bus = await busRepository.findById(id, companyId);
   if (!bus) throw new AppError('Bus not found', 404, ErrorCodes.BUS_NOT_FOUND);
-  return await Maintenance.create({ ...data, companyId, busId: id });
+  const payload = { ...data, companyId, busId: id };
+  if (!payload.facilityId) delete payload.facilityId;
+  return await Maintenance.create(payload);
 };
 
 /**
@@ -98,7 +100,9 @@ const addMaintenanceLog = async (id, companyId, data) => {
  * @returns {Promise<Array>}
  */
 const getMaintenanceLogs = async (id, companyId) => {
-  return await Maintenance.find({ busId: id, companyId }).sort({ date: -1 });
+  return await Maintenance.find({ busId: id, companyId })
+    .populate('facilityId', 'name')
+    .sort({ date: -1 });
 };
 
 /**

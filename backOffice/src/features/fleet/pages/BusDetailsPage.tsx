@@ -31,6 +31,7 @@ import { Modal } from "@/shared/components/modals/Modal";
 import { cn } from "@/shared/utils/cn";
 import { useAppSelector } from "@/app/store";
 import { busApi, type BusData, type MaintenanceLog } from "@/api/busApi";
+import { maintenanceFacilityApi, type MaintenanceFacilityData } from "@/api/maintenanceFacilityApi";
 import { tripApi, type TripData } from "@/api/tripApi";
 import { getActiveBuses, type GpsBus } from "@/features/tracking/api/trackingApi";
 
@@ -120,7 +121,7 @@ const maintenanceTypeVariant = (type: MaintenanceLog["type"]) => {
   }
 };
 
-const MAINTENANCE_EMPTY = { date: "", type: "routine", description: "", cost: "", odometer: "", performedBy: "", nextServiceDate: "" };
+const MAINTENANCE_EMPTY = { date: "", type: "routine", description: "", cost: "", odometer: "", performedBy: "", nextServiceDate: "", facilityId: "" };
 
 const BusDetailsPage: React.FC = () => {
   const { id = "" } = useParams();
@@ -139,6 +140,7 @@ const BusDetailsPage: React.FC = () => {
   const [isMaintOpen, setIsMaintOpen] = useState(false);
   const [maintForm, setMaintForm] = useState({ ...MAINTENANCE_EMPTY });
   const [savingMaint, setSavingMaint] = useState(false);
+  const [facilities, setFacilities] = useState<MaintenanceFacilityData[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -194,6 +196,10 @@ const BusDetailsPage: React.FC = () => {
   useEffect(() => {
     loadMaintenance();
   }, [loadMaintenance]);
+
+  useEffect(() => {
+    maintenanceFacilityApi.getAll().then(setFacilities).catch(() => setFacilities([]));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -268,6 +274,7 @@ const BusDetailsPage: React.FC = () => {
         odometer: maintForm.odometer ? Number(maintForm.odometer) : undefined,
         performedBy: maintForm.performedBy || undefined,
         nextServiceDate: maintForm.nextServiceDate || undefined,
+        facilityId: maintForm.facilityId || undefined,
       });
       toast.success(t("fleet.maintenanceAdded"));
       setIsMaintOpen(false);
@@ -295,7 +302,7 @@ const BusDetailsPage: React.FC = () => {
     },
     {
       header: t("trips.price"),
-      accessor: (tr: TripData) => <span className="font-medium">CFA ${tr.price?.toFixed(2) ?? "0.00"}</span>,
+      accessor: (tr: TripData) => <span className="font-medium">CFA {tr.price?.toFixed(2) ?? "0.00"}</span>,
     },
     {
       header: t("trips.seats"),
@@ -318,8 +325,12 @@ const BusDetailsPage: React.FC = () => {
       ),
     },
     { header: t("fleet.maintDescription"), accessor: (m: MaintenanceLog) => m.description },
-    { header: t("fleet.maintCost"), accessor: (m: MaintenanceLog) => <span className="font-medium">CFA ${(m.cost || 0).toFixed(2)}</span> },
+    { header: t("fleet.maintCost"), accessor: (m: MaintenanceLog) => <span className="font-medium">CFA {(m.cost || 0).toFixed(2)}</span> },
     { header: t("fleet.odometer"), accessor: (m: MaintenanceLog) => (m.odometer != null ? `${m.odometer} km` : "—") },
+    {
+      header: t("fleet.maintFacility"),
+      accessor: (m: MaintenanceLog) => (m.facilityId && typeof m.facilityId === "object" ? m.facilityId.name : "—"),
+    },
     { header: t("fleet.maintBy"), accessor: (m: MaintenanceLog) => m.performedBy || "—" },
   ];
 
@@ -706,7 +717,7 @@ const BusDetailsPage: React.FC = () => {
             <Wrench size={18} className="text-primary" /> {t("fleet.maintenanceHistory")}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{t("fleet.totalCost")}: CFA ${maintenanceCost.toFixed(2)}</Badge>
+                <Badge variant="secondary">{t("fleet.totalCost")}: CFA {maintenanceCost.toFixed(2)}</Badge>
             <Button size="sm" className="gap-1" onClick={() => { setMaintForm({ ...MAINTENANCE_EMPTY, date: new Date().toISOString().slice(0, 10) }); setIsMaintOpen(true); }}>
               <Plus size={14} /> {t("fleet.addMaintenance")}
             </Button>
@@ -770,6 +781,15 @@ const BusDetailsPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("fleet.nextServiceDate")}</label>
               <input type="date" value={maintForm.nextServiceDate} onChange={e => setMaintForm({ ...maintForm, nextServiceDate: e.target.value })} className="w-full p-2 border rounded-md" />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">{t("fleet.maintFacility")}</label>
+              <select value={maintForm.facilityId} onChange={e => setMaintForm({ ...maintForm, facilityId: e.target.value })} className="w-full p-2 border rounded-md bg-background">
+                <option value="">{t("fleet.maintNoFacility")}</option>
+                {facilities.map(f => (
+                  <option key={f._id} value={f._id}>{f.name}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="pt-2 flex justify-end gap-2">

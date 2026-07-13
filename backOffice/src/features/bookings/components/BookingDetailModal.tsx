@@ -90,7 +90,7 @@ export const BookingDetailModal: React.FC<Props> = ({ booking, isOpen, onClose }
             <DetailRow
               icon={DollarSign}
               label={t("bookings.amount")}
-              value={<span className="text-lg font-bold">CFA ${(totalAmount || 0).toFixed(2)}</span>}
+              value={<span className="text-lg font-bold">CFA {(totalAmount || 0).toFixed(2)}</span>}
             />
             <DetailRow
               icon={Calendar}

@@ -46,6 +46,7 @@ app.use('/api/v1/payments', require('./modules/payments/payment.routes'));
 app.use('/api/v1/refund-requests', require('./modules/payments/refundRequest.routes'));
 app.use('/api/v1/tickets', require('./modules/tickets/ticket.routes'));
 app.use('/api/v1/buses', require('./modules/fleet/bus.routes'));
+app.use('/api/v1/maintenance-facilities', require('./modules/fleet/maintenanceFacility.routes'));
 app.use('/api/v1/uploads', require('./modules/uploads/upload.routes'));
 app.use('/api/v1/analytics', require('./modules/analytics/analytics.routes'));
 app.use('/api/v1/config', require('./modules/config/config.routes'));

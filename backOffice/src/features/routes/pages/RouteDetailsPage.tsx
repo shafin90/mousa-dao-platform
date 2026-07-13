@@ -216,7 +216,7 @@ const RouteDetailsPage: React.FC = () => {
     },
     {
       header: t("trips.price"),
-      accessor: (tr: TripData) => <span className="font-medium">CFA ${tr.price?.toFixed(2) ?? "0.00"}</span>,
+      accessor: (tr: TripData) => <span className="font-medium">CFA {tr.price?.toFixed(2) ?? "0.00"}</span>,
     },
     {
       header: t("trips.seats"),

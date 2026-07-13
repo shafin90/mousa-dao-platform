@@ -44,7 +44,7 @@ export const RefundRequestDetailModal: React.FC<Props> = ({ refund, isOpen, onCl
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Request Info</h3>
           <DetailRow icon={Hash} label="Request ID" value={<span className="font-mono">{requestId}</span>} />
           <DetailRow icon={BookOpen} label="Booking Code" value={<span className="font-mono">{bookingId?.bookingCode}</span>} />
-          <DetailRow icon={DollarSign} label="Amount" value={<span className="text-lg font-bold">CFA ${(amount || 0).toFixed(2)}</span>} />
+          <DetailRow icon={DollarSign} label="Amount" value={<span className="text-lg font-bold">CFA {(amount || 0).toFixed(2)}</span>} />
           <DetailRow icon={Clock} label="Requested At" value={createdAt ? new Date(createdAt).toLocaleString() : "—"} />
         </div>
 

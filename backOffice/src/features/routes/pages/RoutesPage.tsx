@@ -143,7 +143,7 @@ const RoutesPage: React.FC = () => {
     { header: t("routes.from"), accessor: (item: RouteData) => item.fromStation?.name || item.fromStation?._id || t("common.na") },
     { header: t("routes.to"), accessor: (item: RouteData) => item.toStation?.name || item.toStation?._id || t("common.na") },
     { header: t("routes.distance"), accessor: (item: RouteData) => item.distanceKm || t("common.na") },
-    { header: t("routes.baseFare"), accessor: (item: RouteData) => <span className="font-medium">CFA ${item.baseFare?.toFixed(2) || '0.00'}</span> },
+    { header: t("routes.baseFare"), accessor: (item: RouteData) => <span className="font-medium">CFA {item.baseFare?.toFixed(2) || '0.00'}</span> },
     {
       header: t("routes.actions"),
       accessor: (item: RouteData) => (

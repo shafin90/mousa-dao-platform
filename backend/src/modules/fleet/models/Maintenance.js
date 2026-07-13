@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const maintenanceSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   busId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bus', required: true, index: true },
+  facilityId: { type: mongoose.Schema.Types.ObjectId, ref: 'MaintenanceFacility', index: true },
   date: { type: Date, required: true },
   type: { type: String, enum: ['routine', 'repair', 'inspection', 'other'], default: 'routine' },
   description: { type: String, required: true },

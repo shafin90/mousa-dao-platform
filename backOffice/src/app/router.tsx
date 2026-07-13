@@ -18,6 +18,7 @@ const RoutesPage = lazy(() => import("@/features/routes/pages/RoutesPage"));
 const RouteDetailsPage = lazy(() => import("@/features/routes/pages/RouteDetailsPage"));
 const StationsPage = lazy(() => import("@/features/stations/pages/StationsPage"));
 const CitiesPage = lazy(() => import("@/features/cities/pages/CitiesPage"));
+const MaintenanceFacilitiesPage = lazy(() => import("@/features/maintenance-facilities/pages/MaintenanceFacilitiesPage"));
 const TicketsPage = lazy(() => import("@/features/tickets/pages/TicketsPage"));
 const AuditLogsPage = lazy(() => import("@/features/audit-logs/pages/AuditLogsPage"));
 const NotificationsPage = lazy(() => import("@/features/notifications/pages/NotificationsPage"));
@@ -102,6 +103,10 @@ export const router = createBrowserRouter([
       {
         path: "cities",
         element: <SuspenseWrapper><CitiesPage /></SuspenseWrapper>,
+      },
+      {
+        path: "maintenance-facilities",
+        element: <SuspenseWrapper><MaintenanceFacilitiesPage /></SuspenseWrapper>,
       },
       {
         path: "tickets",

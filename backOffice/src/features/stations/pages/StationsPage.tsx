@@ -8,8 +8,20 @@ import { Modal } from "@/shared/components/modals/Modal";
 import { Plus, RefreshCw, MapPin, Eye, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { StationData } from "@/api/stationApi";
+import { cityApi, type CityData } from "@/api/cityApi";
 import { StationMapPicker } from "./StationMapPicker";
 import { StationDetailModal } from "../components/StationDetailModal";
+
+const idOf = (value: unknown): string => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && "_id" in (value as Record<string, unknown>)) {
+    return String((value as { _id: unknown })._id);
+  }
+  return "";
+};
+
+const EMPTY_FORM = { name: "", cityId: "", address: "", lat: "", lng: "", isActive: true };
 
 const StationsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -17,9 +29,14 @@ const StationsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [stationToDelete, setStationToDelete] = useState<StationData | null>(null);
-  const [form, setForm] = useState({ name: "", address: "", lat: "", lng: "", isActive: true });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [cities, setCities] = useState<CityData[]>([]);
+
+  useEffect(() => {
+    cityApi.getAll().then(setCities).catch(() => setCities([]));
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,16 +44,21 @@ const StationsPage: React.FC = () => {
       toast.error(t("stations.validationRequired"));
       return;
     }
+    if (!form.cityId) {
+      toast.error(t("stations.validationCityRequired"));
+      return;
+    }
     try {
       await create({
         name: form.name,
+        cityId: form.cityId,
         address: form.address || undefined,
         location: { lat: Number(form.lat), lng: Number(form.lng) },
         isActive: form.isActive,
-      } as Partial<StationData>);
+      } as unknown as Partial<StationData>);
       toast.success(t("stations.created"));
       setIsModalOpen(false);
-      setForm({ name: "", address: "", lat: "", lng: "", isActive: true });
+      setForm({ ...EMPTY_FORM });
     } catch {
       toast.error(t("stations.createFailed"));
     }
@@ -83,6 +105,7 @@ const StationsPage: React.FC = () => {
 
   const columns = [
     { header: t("stations.name"), accessor: (item: StationData) => item.name },
+    { header: t("stations.city"), accessor: (item: StationData) => (item.cityId && typeof item.cityId === "object" ? item.cityId.name : "—") },
     { header: t("stations.address"), accessor: (item: StationData) => item.address || "—" },
     { header: t("stations.coordinates"), accessor: (item: StationData) => t("stations.coordsFormat", { lat: item.location.lat.toFixed(4), lng: item.location.lng.toFixed(4) }) },
     {
@@ -102,7 +125,7 @@ const StationsPage: React.FC = () => {
           </Button>
           <Button variant="outline" size="sm" onClick={(e) => {
             e.stopPropagation();
-            setForm({ name: item.name, address: item.address || "", lat: String(item.location.lat), lng: String(item.location.lng), isActive: item.isActive !== false });
+            setForm({ name: item.name, cityId: idOf(item.cityId), address: item.address || "", lat: String(item.location.lat), lng: String(item.location.lng), isActive: item.isActive !== false });
             setIsModalOpen(true);
           }}>
             <MapPin size={14} className="mr-1" /> {t("common.edit")}
@@ -128,7 +151,7 @@ const StationsPage: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2" onClick={refresh}><RefreshCw size={16} /> {t("common.refresh")}</Button>
-          <Button size="sm" className="gap-2" onClick={() => { setForm({ name: "", address: "", lat: "", lng: "", isActive: true }); setIsModalOpen(true); }}><Plus size={16} /> {t("stations.newStation")}</Button>
+          <Button size="sm" className="gap-2" onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }}><Plus size={16} /> {t("stations.newStation")}</Button>
         </div>
       </div>
       <DataTable columns={columns} data={stations} isLoading={loading} />
@@ -152,6 +175,18 @@ const StationsPage: React.FC = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("stations.createStation")} className="max-w-xl">
         <form className="space-y-4" onSubmit={handleCreate}>
           <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">{t("stations.cityRequired")}</label>
+              <select required value={form.cityId} onChange={(e) => setForm({ ...form, cityId: e.target.value })} className="w-full p-2 border rounded-md bg-background">
+                <option value="">{t("stations.selectCity")}</option>
+                {cities.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+              {cities.length === 0 && (
+                <p className="text-xs text-amber-600">{t("stations.noCities")}</p>
+              )}
+            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("stations.stationNameRequired")}</label>
               <input required type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" placeholder={t("stations.namePlaceholder")} />

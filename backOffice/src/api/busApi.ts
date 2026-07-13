@@ -55,6 +55,7 @@ export interface BusData {
 export interface MaintenanceLog {
   _id: string;
   busId: string;
+  facilityId?: { _id: string; name: string } | string | null;
   date: string;
   type: "routine" | "repair" | "inspection" | "other";
   description: string;
@@ -73,6 +74,7 @@ export interface MaintenancePayload {
   odometer?: number;
   performedBy?: string;
   nextServiceDate?: string;
+  facilityId?: string;
 }
 
 export const busApi = {

@@ -55,7 +55,7 @@ export const RecentBookings: React.FC<Props> = ({ data, loading }) => {
               <td className="py-2.5 pr-4">{b.customer}</td>
               <td className="py-2.5 pr-4 text-muted-foreground text-xs">{b.route}</td>
               <td className="py-2.5 pr-4">{b.seats}</td>
-              <td className="py-2.5 pr-4 font-medium">CFA ${(b.totalAmount || 0).toLocaleString()}</td>
+              <td className="py-2.5 pr-4 font-medium">CFA {(b.totalAmount || 0).toLocaleString()}</td>
               <td className="py-2.5 pr-4">
                 <Badge variant={PAYMENT_VARIANT[b.paymentStatus] || "outline"} className="capitalize text-xs">
                   {b.paymentStatus}
