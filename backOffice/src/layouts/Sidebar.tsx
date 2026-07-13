@@ -1,8 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAppSelector } from "@/app/store";
-import { LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, Settings, History, Ticket, Bell, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Navigation, Building2, Wrench, HardHat, ClipboardList, CalendarClock } from "lucide-react";
+import { LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, Settings, History, Ticket, Bell, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Navigation, Building2 } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
@@ -37,19 +37,20 @@ const NavKeys: NavItem[] = [
   { icon: MapPin, key: "stations", href: "/stations", roles: ["admin"] },
   { icon: Building2, key: "cities", href: "/cities", roles: ["admin"] },
   { icon: Bus, key: "fleet", href: "/fleet", roles: ["admin"] },
-  {
-    icon: Wrench,
-    key: "maintenance",
-    roles: ["admin"],
-    children: [
-      { key: "maintenanceDashboard", href: "/maintenance/dashboard", icon: LayoutDashboard },
-      { key: "maintenanceSchedule", href: "/maintenance/schedule", icon: CalendarClock },
-      { key: "maintenanceWorkOrders", href: "/maintenance/work-orders", icon: ClipboardList },
-      { key: "maintenanceHistory", href: "/maintenance/history", icon: History },
-      { key: "maintenanceFacilities", href: "/maintenance/facilities", icon: Wrench },
-      { key: "maintenanceStaff", href: "/maintenance/staff", icon: HardHat },
-    ],
-  },
+  // --- MAINTENANCE MENU DISABLED ---
+  // {
+  //   icon: Wrench,
+  //   key: "maintenance",
+  //   roles: ["admin"],
+  //   children: [
+  //     { key: "maintenanceDashboard", href: "/maintenance/dashboard", icon: LayoutDashboard },
+  //     { key: "maintenanceSchedule", href: "/maintenance/schedule", icon: CalendarClock },
+  //     { key: "maintenanceWorkOrders", href: "/maintenance/work-orders", icon: ClipboardList },
+  //     { key: "maintenanceHistory", href: "/maintenance/history", icon: History },
+  //     { key: "maintenanceFacilities", href: "/maintenance/facilities", icon: Wrench },
+  //     { key: "maintenanceStaff", href: "/maintenance/staff", icon: HardHat },
+  //   ],
+  // },
   { icon: Users, key: "users", href: "/users", roles: ["admin"] },
   { icon: BarChart3, key: "analytics", href: "/analytics", roles: ["admin"] },
   { icon: Ticket, key: "tickets", href: "/tickets", roles: ["admin", "staff"] },
@@ -62,14 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
   const { t } = useTranslation();
   const { user } = useAppSelector((state) => state.auth);
   const { logout } = useAuth();
-  const location = useLocation();
-
-  const maintenanceActive = location.pathname.startsWith("/maintenance");
-  const [maintenanceOpen, setMaintenanceOpen] = React.useState(maintenanceActive);
-
-  React.useEffect(() => {
-    if (maintenanceActive) setMaintenanceOpen(true);
-  }, [maintenanceActive]);
+  const [submenuOpen, setSubmenuOpen] = React.useState<Record<string, boolean>>({});
 
   const initials = user
     ? `${user.profile.firstName?.charAt(0) || ""}${user.profile.lastName?.charAt(0) || ""}`.toUpperCase() || user.email.charAt(0).toUpperCase()
@@ -115,22 +109,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {filteredNavItems.map((item) => {
           if (item.children) {
+            const open = submenuOpen[item.key] ?? false;
             return (
               <div key={item.key}>
                 <button
                   onClick={() => {
                     if (collapsed) {
                       setCollapsed(false);
-                      setMaintenanceOpen(true);
-                    } else {
-                      setMaintenanceOpen((prev) => !prev);
                     }
+                    setSubmenuOpen((prev) => ({ ...prev, [item.key]: !open }));
                   }}
                   className={cn(
                     "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                    maintenanceActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   )}
                 >
                   <item.icon className={cn("shrink-0", collapsed ? "mx-auto" : "mr-3")} size={20} />
@@ -139,12 +130,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
                       <span className="flex-1 text-left text-sm font-medium">{t(`nav.${item.key}`)}</span>
                       <ChevronDown
                         size={16}
-                        className={cn("transition-transform", maintenanceOpen ? "rotate-180" : "rotate-0")}
+                        className={cn("transition-transform", open ? "rotate-180" : "rotate-0")}
                       />
                     </>
                   )}
                 </button>
-                {!collapsed && maintenanceOpen && (
+                {!collapsed && open && (
                   <div className="mt-1 ml-4 space-y-1 border-l pl-3">
                     {item.children.map((child) => (
                       <NavLink
