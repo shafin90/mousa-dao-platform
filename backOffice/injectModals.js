@@ -606,10 +606,12 @@ const ConfigPage: React.FC = () => {
               <input type="checkbox" id="booking" defaultChecked={config.bookingEnabled} className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary" />
               <label htmlFor="booking" className="text-sm font-medium">Enable New Bookings</label>
             </div>
+            {/* MAINTENANCE MODE DISABLED
             <div className="flex items-center gap-3">
               <input type="checkbox" id="maintenance" defaultChecked={config.maintenanceMode} className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary" />
               <label htmlFor="maintenance" className="text-sm font-medium text-destructive">Maintenance Mode</label>
             </div>
+            */}
           </div>
         </div>
       </div>

@@ -25,7 +25,7 @@ const ConfigPage: React.FC = () => {
         platformCommissionPercentage: config.platformCommissionPercentage,
         driverCommissionPercentage: config.driverCommissionPercentage,
         taxPercentage: config.taxPercentage,
-        maintenanceMode: config.maintenanceMode,
+        maintenanceMode: false,
         enableBooking: config.featureFlags?.enableBooking ?? true,
         enablePayments: config.featureFlags?.enablePayments ?? true,
         enableTicketing: config.featureFlags?.enableTicketing ?? true,
@@ -123,6 +123,7 @@ const ConfigPage: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* MAINTENANCE MODE DISABLED
         <Card>
           <CardHeader><CardTitle className="text-lg">{t("config.maintenance")}</CardTitle></CardHeader>
           <CardContent>
@@ -133,6 +134,7 @@ const ConfigPage: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-2">{t("config.maintenanceHelper")}</p>
           </CardContent>
         </Card>
+        */}
       </div>
     </div>
   );
