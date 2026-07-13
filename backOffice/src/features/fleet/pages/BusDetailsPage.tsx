@@ -18,8 +18,6 @@ import {
   CalendarClock,
   ShieldCheck,
   ShoppingCart,
-  Wrench,
-  Plus,
   Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,13 +25,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { DataTable } from "@/shared/components/tables/DataTable";
-import { Modal } from "@/shared/components/modals/Modal";
 import { cn } from "@/shared/utils/cn";
 import { useAppSelector } from "@/app/store";
-import { busApi, type BusData, type MaintenanceLog } from "@/api/busApi";
-import { maintenanceFacilityApi, type MaintenanceFacilityData } from "@/api/maintenanceFacilityApi";
-import { maintenanceStaffApi, type MaintenanceStaffData } from "@/api/maintenanceStaffApi";
-import { DEFAULT_MAINTENANCE_SERVICES } from "@/shared/constants/maintenance";
+import { busApi, type BusData } from "@/api/busApi";
 import { tripApi, type TripData } from "@/api/tripApi";
 import { getActiveBuses, type GpsBus } from "@/features/tracking/api/trackingApi";
 
@@ -110,21 +104,6 @@ const tripStatusVariant = (status: TripData["status"]) => {
   }
 };
 
-const maintenanceTypeVariant = (type: MaintenanceLog["type"]) => {
-  switch (type) {
-    case "repair":
-      return "destructive" as const;
-    case "inspection":
-      return "warning" as const;
-    case "routine":
-      return "success" as const;
-    default:
-      return "secondary" as const;
-  }
-};
-
-const MAINTENANCE_EMPTY = { date: "", type: "routine", description: "", cost: "", odometer: "", performedBy: "", nextServiceDate: "", facilityId: "" };
-
 const BusDetailsPage: React.FC = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -134,16 +113,9 @@ const BusDetailsPage: React.FC = () => {
   const [bus, setBus] = useState<BusData | null>(busFromStore ?? null);
   const [trips, setTrips] = useState<TripData[]>([]);
   const [liveLocation, setLiveLocation] = useState<GpsBus | null>(null);
-  const [maintenance, setMaintenance] = useState<MaintenanceLog[]>([]);
   const [loading, setLoading] = useState(!busFromStore);
   const [tripsLoading, setTripsLoading] = useState(true);
-  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [isMaintOpen, setIsMaintOpen] = useState(false);
-  const [maintForm, setMaintForm] = useState({ ...MAINTENANCE_EMPTY });
-  const [savingMaint, setSavingMaint] = useState(false);
-  const [facilities, setFacilities] = useState<MaintenanceFacilityData[]>([]);
-  const [staff, setStaff] = useState<MaintenanceStaffData[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -184,27 +156,6 @@ const BusDetailsPage: React.FC = () => {
     };
   }, [id]);
 
-  const loadMaintenance = React.useCallback(async () => {
-    setMaintenanceLoading(true);
-    try {
-      const data = await busApi.getMaintenance(id);
-      setMaintenance(data);
-    } catch {
-      setMaintenance([]);
-    } finally {
-      setMaintenanceLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    loadMaintenance();
-  }, [loadMaintenance]);
-
-  useEffect(() => {
-    maintenanceFacilityApi.getAll().then(setFacilities).catch(() => setFacilities([]));
-    maintenanceStaffApi.getAll().then(setStaff).catch(() => setStaff([]));
-  }, []);
-
   useEffect(() => {
     let active = true;
     (async () => {
@@ -231,8 +182,6 @@ const BusDetailsPage: React.FC = () => {
     const revenue = trips.reduce((acc, tr) => acc + (tr.seatsBooked || 0) * (tr.price || 0), 0);
     return { upcoming, occupancy, revenue };
   }, [trips]);
-
-  const maintenanceCost = useMemo(() => maintenance.reduce((acc, m) => acc + (m.cost || 0), 0), [maintenance]);
 
   const amenities = useMemo(
     () =>
@@ -266,31 +215,6 @@ const BusDetailsPage: React.FC = () => {
     );
   };
 
-  const handleAddMaintenance = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingMaint(true);
-    try {
-      await busApi.addMaintenanceLog(id, {
-        date: maintForm.date,
-        type: maintForm.type,
-        description: maintForm.description,
-        cost: maintForm.cost ? Number(maintForm.cost) : 0,
-        odometer: maintForm.odometer ? Number(maintForm.odometer) : undefined,
-        performedBy: maintForm.performedBy || undefined,
-        nextServiceDate: maintForm.nextServiceDate || undefined,
-        facilityId: maintForm.facilityId || undefined,
-      });
-      toast.success(t("fleet.maintenanceAdded"));
-      setIsMaintOpen(false);
-      setMaintForm({ ...MAINTENANCE_EMPTY });
-      loadMaintenance();
-    } catch {
-      toast.error(t("fleet.maintenanceFailed"));
-    } finally {
-      setSavingMaint(false);
-    }
-  };
-
   const tripColumns = [
     { header: t("trips.date"), accessor: (tr: TripData) => new Date(tr.date).toLocaleDateString() },
     {
@@ -318,24 +242,6 @@ const BusDetailsPage: React.FC = () => {
         <Badge variant={tripStatusVariant(tr.status)}>{t(`trips.${tr.status}`)}</Badge>
       ),
     },
-  ];
-
-  const maintenanceColumns = [
-    { header: t("fleet.maintDate"), accessor: (m: MaintenanceLog) => new Date(m.date).toLocaleDateString() },
-    {
-      header: t("fleet.maintType"),
-      accessor: (m: MaintenanceLog) => (
-        <Badge variant={maintenanceTypeVariant(m.type)}>{t(`fleet.maint.${m.type}`, { defaultValue: m.type })}</Badge>
-      ),
-    },
-    { header: t("fleet.maintDescription"), accessor: (m: MaintenanceLog) => m.description },
-    { header: t("fleet.maintCost"), accessor: (m: MaintenanceLog) => <span className="font-medium">CFA {(m.cost || 0).toFixed(2)}</span> },
-    { header: t("fleet.odometer"), accessor: (m: MaintenanceLog) => (m.odometer != null ? `${m.odometer} km` : "—") },
-    {
-      header: t("fleet.maintFacility"),
-      accessor: (m: MaintenanceLog) => (m.facilityId && typeof m.facilityId === "object" ? m.facilityId.name : "—"),
-    },
-    { header: t("fleet.maintBy"), accessor: (m: MaintenanceLog) => m.performedBy || "—" },
   ];
 
   if (loading) {
@@ -368,29 +274,6 @@ const BusDetailsPage: React.FC = () => {
   const hasCompliance = bus.registrationExpiry || bus.insuranceExpiry || bus.fitnessExpiry || bus.insuranceProvider || bus.insuranceIssueDate || bus.lastInspectionDate;
   const hasPurchase = bus.purchaseDate || bus.purchaseCost != null || bus.homeDepot;
 
-  const staffFacilityIdOf = (value: MaintenanceStaffData["facilityId"]): string => {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    if (typeof value === "object" && "_id" in value) return String(value._id);
-    return "";
-  };
-  const activeStaff = staff.filter((s) => s.isActive !== false);
-  const maintStaffOptions = maintForm.facilityId
-    ? activeStaff.filter((s) => {
-        const fid = staffFacilityIdOf(s.facilityId);
-        return !fid || fid === maintForm.facilityId;
-      })
-    : activeStaff;
-
-  const maintSelectedFacility = facilities.find((f) => f._id === maintForm.facilityId);
-  const maintServiceOptions =
-    maintSelectedFacility && maintSelectedFacility.services && maintSelectedFacility.services.length > 0
-      ? maintSelectedFacility.services.map((s) => ({ value: s, label: s }))
-      : DEFAULT_MAINTENANCE_SERVICES.map((s) => ({
-          value: s.value,
-          label: t(`fleet.serviceOption.${s.key}`, { defaultValue: s.value }),
-        }));
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -422,7 +305,7 @@ const BusDetailsPage: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard icon={<RouteIcon size={18} />} label={t("fleet.totalTrips")} value={`${trips.length}`} hint={`${metrics.upcoming} ${t("fleet.upcomingTrips")}`} />
         <StatCard
           icon={<Users size={18} />}
@@ -433,12 +316,6 @@ const BusDetailsPage: React.FC = () => {
           icon={<Wallet size={18} />}
           label={t("fleet.revenueGenerated")}
           value={`CFA ${metrics.revenue.toFixed(2)}`}
-        />
-        <StatCard
-          icon={<Wrench size={18} />}
-          label={t("fleet.maintenanceCost")}
-          value={`CFA ${maintenanceCost.toFixed(2)}`}
-          hint={t("fleet.logsCount", { count: maintenance.length })}
         />
       </div>
 
@@ -739,23 +616,6 @@ const BusDetailsPage: React.FC = () => {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wrench size={18} className="text-primary" /> {t("fleet.maintenanceHistory")}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-                <Badge variant="secondary">{t("fleet.totalCost")}: CFA {maintenanceCost.toFixed(2)}</Badge>
-            <Button size="sm" className="gap-1" onClick={() => { setMaintForm({ ...MAINTENANCE_EMPTY, date: new Date().toISOString().slice(0, 10) }); setIsMaintOpen(true); }}>
-              <Plus size={14} /> {t("fleet.addMaintenance")}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <DataTable columns={maintenanceColumns} data={maintenance} isLoading={maintenanceLoading} />
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardContent className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
           <div className="flex items-center gap-2 text-sm">
             <CalendarClock size={16} className="text-muted-foreground" />
@@ -771,85 +631,6 @@ const BusDetailsPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
-
-      <Modal isOpen={isMaintOpen} onClose={() => setIsMaintOpen(false)} title={t("fleet.addMaintenance")} className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <form className="space-y-4" onSubmit={handleAddMaintenance}>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("fleet.maintDate")}</label>
-              <input required type="date" value={maintForm.date} onChange={e => setMaintForm({ ...maintForm, date: e.target.value })} className="w-full p-2 border rounded-md" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("fleet.maintType")}</label>
-              <select value={maintForm.type} onChange={e => setMaintForm({ ...maintForm, type: e.target.value })} className="w-full p-2 border rounded-md bg-background">
-                {["routine", "repair", "inspection", "other"].map(ty => (
-                  <option key={ty} value={ty}>{t(`fleet.maint.${ty}`, { defaultValue: ty })}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("fleet.maintDescription")}</label>
-            <select
-              required
-              value={maintForm.description}
-              onChange={e => setMaintForm({ ...maintForm, description: e.target.value })}
-              className="w-full p-2 border rounded-md bg-background"
-            >
-              <option value="">{t("fleet.selectService", { defaultValue: "Select a service" })}</option>
-              {maintServiceOptions.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-              {maintForm.description && !maintServiceOptions.some(o => o.value === maintForm.description) && (
-                <option value={maintForm.description}>{maintForm.description}</option>
-              )}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("fleet.maintCost")}</label>
-              <input type="number" min="0" value={maintForm.cost} onChange={e => setMaintForm({ ...maintForm, cost: e.target.value })} className="w-full p-2 border rounded-md" placeholder="CFA" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("fleet.odometer")}</label>
-              <input type="number" value={maintForm.odometer} onChange={e => setMaintForm({ ...maintForm, odometer: e.target.value })} className="w-full p-2 border rounded-md" placeholder="km" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("fleet.maintBy")}</label>
-              <select
-                value={maintForm.performedBy}
-                onChange={e => setMaintForm({ ...maintForm, performedBy: e.target.value })}
-                className="w-full p-2 border rounded-md bg-background"
-              >
-                <option value="">{t("fleet.selectPerformer", { defaultValue: "Not specified" })}</option>
-                {maintStaffOptions.map(s => (
-                  <option key={s._id} value={s.name}>{s.name}</option>
-                ))}
-                {maintForm.performedBy && !maintStaffOptions.some(s => s.name === maintForm.performedBy) && (
-                  <option value={maintForm.performedBy}>{maintForm.performedBy}</option>
-                )}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("fleet.nextServiceDate")}</label>
-              <input type="date" value={maintForm.nextServiceDate} onChange={e => setMaintForm({ ...maintForm, nextServiceDate: e.target.value })} className="w-full p-2 border rounded-md" />
-            </div>
-            <div className="space-y-2 col-span-2">
-              <label className="text-sm font-medium">{t("fleet.maintFacility")}</label>
-              <select value={maintForm.facilityId} onChange={e => setMaintForm({ ...maintForm, facilityId: e.target.value })} className="w-full p-2 border rounded-md bg-background">
-                <option value="">{t("fleet.maintNoFacility")}</option>
-                {facilities.map(f => (
-                  <option key={f._id} value={f._id}>{f.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="pt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsMaintOpen(false)}>{t("common.cancel")}</Button>
-            <Button type="submit" disabled={savingMaint}>{savingMaint ? t("common.loading") : t("fleet.addMaintenance")}</Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 };

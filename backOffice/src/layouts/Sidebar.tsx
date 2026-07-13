@@ -1,8 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAppSelector } from "@/app/store";
-import { LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, Settings, History, Ticket, Bell, ChevronLeft, ChevronRight, Bus, LogOut, MapPin, Navigation, Building2, Wrench, HardHat, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, Settings, History, Ticket, Bell, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Navigation, Building2, Wrench, HardHat, ClipboardList, CalendarClock } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
@@ -11,7 +11,23 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
-const NavKeys: Array<{ icon: React.ComponentType<{ className?: string; size?: number }>; key: string; href: string; roles: string[] }> = [
+type IconType = React.ComponentType<{ className?: string; size?: number }>;
+
+interface NavChild {
+  key: string;
+  href: string;
+  icon: IconType;
+}
+
+interface NavItem {
+  icon: IconType;
+  key: string;
+  href?: string;
+  roles: string[];
+  children?: NavChild[];
+}
+
+const NavKeys: NavItem[] = [
   { icon: LayoutDashboard, key: "dashboard", href: "/dashboard", roles: ["admin", "staff"] },
   { icon: Calendar, key: "bookings", href: "/bookings", roles: ["admin", "staff"] },
   { icon: CreditCard, key: "payments", href: "/payments", roles: ["admin"] },
@@ -21,9 +37,19 @@ const NavKeys: Array<{ icon: React.ComponentType<{ className?: string; size?: nu
   { icon: MapPin, key: "stations", href: "/stations", roles: ["admin"] },
   { icon: Building2, key: "cities", href: "/cities", roles: ["admin"] },
   { icon: Bus, key: "fleet", href: "/fleet", roles: ["admin"] },
-  { icon: Wrench, key: "maintenanceFacilities", href: "/maintenance-facilities", roles: ["admin"] },
-  { icon: HardHat, key: "maintenanceStaff", href: "/maintenance-staff", roles: ["admin"] },
-  { icon: ClipboardList, key: "maintenanceRecords", href: "/maintenance-records", roles: ["admin"] },
+  {
+    icon: Wrench,
+    key: "maintenance",
+    roles: ["admin"],
+    children: [
+      { key: "maintenanceDashboard", href: "/maintenance/dashboard", icon: LayoutDashboard },
+      { key: "maintenanceSchedule", href: "/maintenance/schedule", icon: CalendarClock },
+      { key: "maintenanceWorkOrders", href: "/maintenance/work-orders", icon: ClipboardList },
+      { key: "maintenanceHistory", href: "/maintenance/history", icon: History },
+      { key: "maintenanceFacilities", href: "/maintenance/facilities", icon: Wrench },
+      { key: "maintenanceStaff", href: "/maintenance/staff", icon: HardHat },
+    ],
+  },
   { icon: Users, key: "users", href: "/users", roles: ["admin"] },
   { icon: BarChart3, key: "analytics", href: "/analytics", roles: ["admin"] },
   { icon: Ticket, key: "tickets", href: "/tickets", roles: ["admin", "staff"] },
@@ -36,6 +62,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
   const { t } = useTranslation();
   const { user } = useAppSelector((state) => state.auth);
   const { logout } = useAuth();
+  const location = useLocation();
+
+  const maintenanceActive = location.pathname.startsWith("/maintenance");
+  const [maintenanceOpen, setMaintenanceOpen] = React.useState(maintenanceActive);
+
+  React.useEffect(() => {
+    if (maintenanceActive) setMaintenanceOpen(true);
+  }, [maintenanceActive]);
 
   const initials = user
     ? `${user.profile.firstName?.charAt(0) || ""}${user.profile.lastName?.charAt(0) || ""}`.toUpperCase() || user.email.charAt(0).toUpperCase()
@@ -49,8 +83,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     (item) => !user || item.roles.includes(user.role)
   );
 
+  const linkClasses = (isActive: boolean) =>
+    cn(
+      "flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group",
+      isActive
+        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+    );
+
   return (
-    <aside 
+    <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen transition-all duration-300 border-r bg-card flex flex-col",
         collapsed ? "w-20" : "w-64"
@@ -62,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
             {t("app.name")}
           </span>
         )}
-        <button 
+        <button
           onClick={() => setCollapsed(!collapsed)}
           className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
         >
@@ -71,21 +113,66 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {filteredNavItems.map((item) => (
-          <NavLink
-            key={item.href}
-            to={item.href}
-            className={({ isActive }) => cn(
-              "flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group",
-              isActive 
-                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            <item.icon className={cn("shrink-0", collapsed ? "mx-auto" : "mr-3")} size={20} />
-            {!collapsed && <span className="text-sm font-medium">{t(`nav.${item.key}`)}</span>}
-          </NavLink>
-        ))}
+        {filteredNavItems.map((item) => {
+          if (item.children) {
+            return (
+              <div key={item.key}>
+                <button
+                  onClick={() => {
+                    if (collapsed) {
+                      setCollapsed(false);
+                      setMaintenanceOpen(true);
+                    } else {
+                      setMaintenanceOpen((prev) => !prev);
+                    }
+                  }}
+                  className={cn(
+                    "w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                    maintenanceActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  )}
+                >
+                  <item.icon className={cn("shrink-0", collapsed ? "mx-auto" : "mr-3")} size={20} />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 text-left text-sm font-medium">{t(`nav.${item.key}`)}</span>
+                      <ChevronDown
+                        size={16}
+                        className={cn("transition-transform", maintenanceOpen ? "rotate-180" : "rotate-0")}
+                      />
+                    </>
+                  )}
+                </button>
+                {!collapsed && maintenanceOpen && (
+                  <div className="mt-1 ml-4 space-y-1 border-l pl-3">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.href}
+                        to={child.href}
+                        className={({ isActive }) => linkClasses(isActive)}
+                      >
+                        <child.icon className="mr-3 shrink-0" size={18} />
+                        <span className="text-sm font-medium">{t(`nav.${child.key}`)}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <NavLink
+              key={item.href}
+              to={item.href as string}
+              className={({ isActive }) => linkClasses(isActive)}
+            >
+              <item.icon className={cn("shrink-0", collapsed ? "mx-auto" : "mr-3")} size={20} />
+              {!collapsed && <span className="text-sm font-medium">{t(`nav.${item.key}`)}</span>}
+            </NavLink>
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t shrink-0">

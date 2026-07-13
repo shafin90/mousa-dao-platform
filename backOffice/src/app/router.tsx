@@ -21,6 +21,11 @@ const CitiesPage = lazy(() => import("@/features/cities/pages/CitiesPage"));
 const MaintenanceFacilitiesPage = lazy(() => import("@/features/maintenance-facilities/pages/MaintenanceFacilitiesPage"));
 const MaintenanceStaffPage = lazy(() => import("@/features/maintenance-staff/pages/MaintenanceStaffPage"));
 const MaintenanceRecordsPage = lazy(() => import("@/features/maintenance-records/pages/MaintenanceRecordsPage"));
+const MaintenanceLayout = lazy(() => import("@/features/maintenance/layouts/MaintenanceLayout"));
+const MaintenanceDashboardPage = lazy(() => import("@/features/maintenance/pages/MaintenanceDashboardPage"));
+const MaintenanceSchedulePage = lazy(() => import("@/features/maintenance/pages/MaintenanceSchedulePage"));
+const WorkOrdersPage = lazy(() => import("@/features/maintenance/pages/WorkOrdersPage"));
+const ComingSoon = lazy(() => import("@/features/maintenance/components/ComingSoon"));
 const TicketsPage = lazy(() => import("@/features/tickets/pages/TicketsPage"));
 const AuditLogsPage = lazy(() => import("@/features/audit-logs/pages/AuditLogsPage"));
 const NotificationsPage = lazy(() => import("@/features/notifications/pages/NotificationsPage"));
@@ -107,16 +112,34 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><CitiesPage /></SuspenseWrapper>,
       },
       {
+        path: "maintenance",
+        element: <SuspenseWrapper><MaintenanceLayout /></SuspenseWrapper>,
+        children: [
+          { index: true, element: <Navigate to="/maintenance/dashboard" replace /> },
+          { path: "dashboard", element: <SuspenseWrapper><MaintenanceDashboardPage /></SuspenseWrapper> },
+          { path: "schedule", element: <SuspenseWrapper><MaintenanceSchedulePage /></SuspenseWrapper> },
+          { path: "work-orders", element: <SuspenseWrapper><WorkOrdersPage /></SuspenseWrapper> },
+          { path: "history", element: <SuspenseWrapper><MaintenanceRecordsPage /></SuspenseWrapper> },
+          { path: "facilities", element: <SuspenseWrapper><MaintenanceFacilitiesPage /></SuspenseWrapper> },
+          { path: "staff", element: <SuspenseWrapper><MaintenanceStaffPage /></SuspenseWrapper> },
+          { path: "breakdowns", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.breakdowns" /></SuspenseWrapper> },
+          { path: "spare-parts", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.spareParts" /></SuspenseWrapper> },
+          { path: "cost", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.cost" /></SuspenseWrapper> },
+          { path: "documents", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.documents" /></SuspenseWrapper> },
+          { path: "reminders", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.reminders" /></SuspenseWrapper> },
+        ],
+      },
+      {
         path: "maintenance-facilities",
-        element: <SuspenseWrapper><MaintenanceFacilitiesPage /></SuspenseWrapper>,
+        element: <Navigate to="/maintenance/facilities" replace />,
       },
       {
         path: "maintenance-staff",
-        element: <SuspenseWrapper><MaintenanceStaffPage /></SuspenseWrapper>,
+        element: <Navigate to="/maintenance/staff" replace />,
       },
       {
         path: "maintenance-records",
-        element: <SuspenseWrapper><MaintenanceRecordsPage /></SuspenseWrapper>,
+        element: <Navigate to="/maintenance/history" replace />,
       },
       {
         path: "tickets",
