@@ -43,3 +43,5 @@ Thumbs.db
 # Temp files
 tok.txt
 login.json
+*opencodetok.txt
+*opencodetoken.json

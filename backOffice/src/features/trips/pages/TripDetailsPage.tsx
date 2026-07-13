@@ -361,7 +361,7 @@ const TripDetailsPage: React.FC = () => {
         <StatCard
           icon={<Coins size={18} />}
           label={t("trips.price")}
-          value={\`CFA \$\${trip.price?.toFixed(2) ?? "0.00"}\`}
+          value={`CFA $${trip.price?.toFixed(2) ?? "0.00"}`}
         />
         <StatCard
           icon={<Armchair size={18} />}
