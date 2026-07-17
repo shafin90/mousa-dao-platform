@@ -68,7 +68,6 @@ const CitiesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editing, setEditing] = useState<CityData | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [toDelete, setToDelete] = useState<CityData | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -116,12 +115,6 @@ const CitiesPage: React.FC = () => {
   const openCreate = () => {
     setEditing(null);
     setForm({ ...emptyForm });
-    setIsModalOpen(true);
-  };
-
-  const openEdit = (row: CityData) => {
-    setEditing(row);
-    setForm({ country: row.country, cityName: row.name });
     setIsModalOpen(true);
   };
 

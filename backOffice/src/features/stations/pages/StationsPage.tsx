@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import type { StationData } from "@/api/stationApi";
 import { cityApi, type CityData } from "@/api/cityApi";
 import { StationMapPicker } from "./StationMapPicker";
-import { StationDetailModal } from "../components/StationDetailModal";
 
 const idOf = (value: unknown): string => {
   if (!value) return "";
@@ -35,8 +34,6 @@ const StationsPage: React.FC = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [stationToDelete, setStationToDelete] = useState<StationData | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
   const [cities, setCities] = useState<CityData[]>([]);
   const [cityBounds, setCityBounds] = useState<Bounds | null>(null);
   const [cityName, setCityName] = useState("");
@@ -228,9 +225,9 @@ const StationsPage: React.FC = () => {
         </div>
       </div>
 
-      <DataTable columns={columns} data={stations} loading={loading} keyExtractor={(item) => item._id} />
+      <DataTable columns={columns} data={stations} isLoading={loading} keyExtractor={(item: StationData) => item._id} />
 
-      <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setStationToDelete(null); }}>
+      <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setStationToDelete(null); }} title={t("stations.deleteStation")}>
         {stationToDelete && (
           <div className="space-y-4">
             <p>{t("stations.confirmDelete", { name: stationToDelete.name })}</p>
