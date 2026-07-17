@@ -108,12 +108,11 @@ const CitiesPage: React.FC = () => {
   const availableCities = useMemo(() => {
     if (!form.country) return [];
     return (CITIES_BY_COUNTRY[form.country] || []).filter(
-      (city) => editing?.name === city || !cities.some((c) => c.name === city && c.country === form.country)
+      (city) => !cities.some((c) => c.name === city && c.country === form.country)
     );
-  }, [form.country, cities, editing?.name]);
+  }, [form.country, cities]);
 
   const openCreate = () => {
-    setEditing(null);
     setForm({ ...emptyForm });
     setIsModalOpen(true);
   };
@@ -126,13 +125,8 @@ const CitiesPage: React.FC = () => {
     }
     setSaving(true);
     try {
-      if (editing) {
-        await cityApi.update(editing._id, { name: form.cityName, country: form.country });
-        toast.success(t("cities.updated"));
-      } else {
-        await cityApi.create({ name: form.cityName, country: form.country });
-        toast.success(t("cities.created"));
-      }
+      await cityApi.create({ name: form.cityName, country: form.country });
+      toast.success(t("cities.created"));
       setIsModalOpen(false);
       setForm({ ...emptyForm });
       await refresh();
@@ -236,7 +230,7 @@ const CitiesPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editing ? t("cities.editCity") : t("cities.createCity")}
+        title={t("cities.createCity")}
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
