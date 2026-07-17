@@ -14,7 +14,10 @@ const server = http.createServer(app);
 
 const start = async () => {
   try {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+    });
     console.log('✓ Connected to MongoDB');
 
     await loadConsumers();
