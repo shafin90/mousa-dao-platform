@@ -4,7 +4,7 @@ import { fetchNotifications, markAsRead as markReadAction, markAllAsRead as mark
 
 export const useNotifications = () => {
   const dispatch = useAppDispatch();
-  const { items, loading, error } = useAppSelector((state) => state.notifications);
+  const { items = [], loading, error } = useAppSelector((state) => state.notifications) || {};
   useEffect(() => { if (items.length === 0) dispatch(fetchNotifications()); }, [dispatch, items.length]);
   const markRead = useCallback((id: string) => dispatch(markReadAction(id)), [dispatch]);
   const markAllRead = useCallback(() => dispatch(markAllReadAction()), [dispatch]);

@@ -12,6 +12,8 @@ const routePopulate = [{ path: 'fromStation' }, { path: 'toStation' }];
  * @returns {Promise<Object>}
  */
 const createRoute = async (companyId, data) => {
+  const existing = await routeRepository.findWhere({ companyId, fromStation: data.fromStation, toStation: data.toStation });
+  if (existing.length > 0) throw new AppError('A route between these stations already exists', 409, ErrorCodes.ROUTE_ALREADY_EXISTS);
   const route = await routeRepository.create({ ...data, companyId });
   return await routeRepository.findById(route._id, companyId);
 };

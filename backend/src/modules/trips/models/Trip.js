@@ -13,4 +13,6 @@ const tripSchema = new mongoose.Schema({
   status: { type: String, enum: ['scheduled', 'active', 'completed', 'cancelled'], default: 'scheduled' }
 }, { timestamps: true });
 
+tripSchema.index({ companyId: 1, routeId: 1, busId: 1, date: 1, departureTime: 1 }, { unique: true });
+
 module.exports = mongoose.model('Trip', tripSchema);

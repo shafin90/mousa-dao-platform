@@ -6,12 +6,12 @@ import { DataTable } from "@/shared/components/tables/DataTable";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 import { Select } from "@/shared/components/ui/Select";
-import { Plus, RefreshCw, Eye, Pencil, Trash2, Search, X } from "lucide-react";
+import { Plus, RefreshCw, Eye, Pencil, Trash2, Search, X, AlertTriangle } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
 import { routeApi, type RouteData } from "@/api/routeApi";
 import { busApi, type BusData } from "@/api/busApi";
-import type { TripData, TripFilters } from "@/api/tripApi";
+import { tripApi, type TripData, type TripFilters } from "@/api/tripApi";
 
 const statusOptions = ["scheduled", "active", "completed", "cancelled"];
 
@@ -44,6 +44,7 @@ const TripsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<TripData | null>(null);
+  const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [buses, setBuses] = useState<BusData[]>([]);
@@ -207,6 +208,11 @@ const TripsPage: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2" onClick={refresh}><RefreshCw size={16} /> {t("common.refresh")}</Button>
+          {trips.length > 0 && (
+            <Button variant="destructive" size="sm" className="gap-2" onClick={() => setIsDeleteAllOpen(true)}>
+              <Trash2 size={16} /> {t("trips.deleteAll")}
+            </Button>
+          )}
           <Button size="sm" className="gap-2" onClick={() => { setEditingTripId(null); setForm({ routeId: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" }); setIsModalOpen(true); }}><Plus size={16} /> {t("trips.scheduleTrip")}</Button>
         </div>
       </div>
@@ -299,6 +305,28 @@ placeholder="Min CFA"
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal isOpen={isDeleteAllOpen} onClose={() => setIsDeleteAllOpen(false)} title={t("trips.deleteAllTitle")}>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-destructive" />
+            <p className="text-sm text-muted-foreground">{t("trips.confirmDeleteAll", { count: trips.length })}</p>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setIsDeleteAllOpen(false)}>{t("common.cancel")}</Button>
+            <Button variant="destructive" onClick={async () => {
+              try {
+                const count = await tripApi.deleteAll();
+                toast.success(t("trips.deletedAll", { count }));
+                setIsDeleteAllOpen(false);
+                refresh();
+              } catch {
+                toast.error(t("trips.saveFailed"));
+              }
+            }}>{t("common.delete")}</Button>
+          </div>
+        </div>
       </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingTripId(null); }} title={editingTripId ? t("trips.editTrip") : t("trips.scheduleNewTrip")}>

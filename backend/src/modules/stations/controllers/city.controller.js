@@ -3,7 +3,8 @@ const { respond } = require('../../../utils/response');
 
 const getAllCities = async (req, res, next) => {
   try {
-    const cities = await cityService.getAllCities(req.user.companyId);
+    const { country, search } = req.query;
+    const cities = await cityService.getAllCities(req.user.companyId, { country, search });
     respond(res, 200, cities);
   } catch (error) { next(error); }
 };

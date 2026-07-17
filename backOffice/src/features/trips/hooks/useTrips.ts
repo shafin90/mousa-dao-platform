@@ -5,7 +5,7 @@ import type { TripData, TripFilters } from "@/api/tripApi";
 
 export const useTrips = (filters?: TripFilters) => {
   const dispatch = useAppDispatch();
-  const { items, loading, error } = useAppSelector((state) => state.trips);
+  const { items = [], loading, error } = useAppSelector((state) => state.trips) || {};
 
   useEffect(() => { dispatch(fetchTrips(filters)); }, [dispatch, JSON.stringify(filters)]);
 

@@ -11,7 +11,7 @@ const stopSchema = Joi.object({
 const createRouteSchema = Joi.object({
   fromStation: Joi.string().required(),
   toStation: Joi.string().required(),
-  baseFare: Joi.number().required(),
+
   distanceKm: Joi.number().required(),
   estimatedTimeMinutes: Joi.number().optional(),
   stops: Joi.array().items(stopSchema).optional(),

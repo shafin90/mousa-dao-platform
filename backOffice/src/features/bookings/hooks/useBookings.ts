@@ -5,7 +5,7 @@ import type { BookingFilters } from "@/api/bookingApi";
 
 export const useBookings = (filters?: BookingFilters) => {
   const dispatch = useAppDispatch();
-  const { items, loading, error } = useAppSelector((state) => state.bookings);
+  const { items = [], loading, error } = useAppSelector((state) => state.bookings) || {};
 
   useEffect(() => {
     dispatch(fetchBookings(filters));

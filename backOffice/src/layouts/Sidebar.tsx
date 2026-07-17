@@ -32,7 +32,7 @@ const NavKeys: NavItem[] = [
   { icon: Calendar, key: "bookings", href: "/bookings", roles: ["admin", "staff"] },
   { icon: CreditCard, key: "payments", href: "/payments", roles: ["admin"] },
   { icon: Map, key: "trips", href: "/trips", roles: ["admin", "staff"] },
-  { icon: Navigation, key: "tracking", href: "/tracking", roles: ["admin", "staff"] },
+  // { icon: Navigation, key: "tracking", href: "/tracking", roles: ["admin", "staff"] },
   { icon: Route, key: "routes", href: "/routes", roles: ["admin"] },
   { icon: MapPin, key: "stations", href: "/stations", roles: ["admin"] },
   { icon: Building2, key: "cities", href: "/cities", roles: ["admin"] },

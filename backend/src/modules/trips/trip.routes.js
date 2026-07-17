@@ -9,7 +9,8 @@ router.use(authenticate);
 
 router.route('/')
   .post(requireRole(['admin', 'staff']), validate(createTripSchema), tripController.createTrip)
-  .get(tripController.getAllTrips);
+  .get(tripController.getAllTrips)
+  .delete(requireRole(['admin']), tripController.deleteAllTrips);
 
 router.route('/:id')
   .get(tripController.getTripById)

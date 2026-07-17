@@ -5,7 +5,7 @@ import type { RouteData } from "@/api/routeApi";
 
 export const useRoutes = () => {
   const dispatch = useAppDispatch();
-  const { routes, loading, error } = useAppSelector((state) => state.routes);
+  const { routes = [], loading, error } = useAppSelector((state) => state.routes) || {};
   useEffect(() => { if (routes.length === 0) dispatch(fetchRoutes()); }, [dispatch, routes.length]);
   const create = useCallback((payload: Partial<RouteData>) => dispatch(createRouteAction(payload)), [dispatch]);
   const update = useCallback((id: string, payload: Partial<RouteData>) => dispatch(updateRouteAction({ id, payload })), [dispatch]);

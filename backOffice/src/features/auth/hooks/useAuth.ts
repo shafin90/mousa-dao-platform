@@ -4,7 +4,7 @@ import { login, fetchMe, logout } from "../store/authSlice";
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
-  const { user, token, loading, initialized, error } = useAppSelector((state) => state.auth);
+  const { user, token, loading, initialized, error } = useAppSelector((state) => state.auth) || {};
 
   useEffect(() => {
     if (token && !user && !loading) {

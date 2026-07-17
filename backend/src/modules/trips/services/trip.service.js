@@ -47,6 +47,14 @@ const validateBus = async (busId, companyId) => {
  */
 const createTrip = async (companyId, data) => {
   const bus = await validateBus(data.busId, companyId);
+  const existing = await tripRepository.findMany({
+    companyId,
+    routeId: data.routeId,
+    busId: data.busId,
+    date: { $gte: new Date(new Date(data.date).setHours(0, 0, 0, 0)), $lte: new Date(new Date(data.date).setHours(23, 59, 59, 999)) },
+    departureTime: data.departureTime,
+  });
+  if (existing.length > 0) throw new AppError('A trip with this route, bus, date, and departure time already exists', 409, ErrorCodes.TRIP_ALREADY_EXISTS);
   const tripData = { ...data, companyId, seatsTotal: bus.capacity, seatsBooked: 0, status: data.status || 'scheduled' };
   const trip = await tripRepository.create(tripData);
   return await tripRepository.findById(trip._id, companyId, defaultPopulate);
@@ -198,4 +206,9 @@ const deleteTrip = async (id, companyId) => {
   return await tripRepository.deleteOne(id, companyId);
 };
 
-module.exports = { createTrip, getAllTrips, getTripById, updateTrip, updateTripStatus, deleteTrip };
+const deleteAllTrips = async (companyId) => {
+  const result = await tripRepository.deleteMany(companyId);
+  return result.deletedCount;
+};
+
+module.exports = { createTrip, getAllTrips, getTripById, updateTrip, updateTripStatus, deleteTrip, deleteAllTrips };

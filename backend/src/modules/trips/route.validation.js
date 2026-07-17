@@ -5,7 +5,7 @@ const createRouteSchema = Joi.object({
   toStation: Joi.string().required(),
   distanceKm: Joi.number().required(),
   estimatedTimeMinutes: Joi.number().optional(),
-  baseFare: Joi.number().required()
+
 });
 
 module.exports = { createRouteSchema };

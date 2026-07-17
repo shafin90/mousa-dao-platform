@@ -4,7 +4,7 @@ import { fetchAllAnalytics } from "../store/analyticsSlice";
 
 export const useAnalytics = () => {
   const dispatch = useAppDispatch();
-  const { data, loading, error } = useAppSelector((state) => state.analytics);
+  const { data, loading, error } = useAppSelector((state) => state.analytics) || {};
 
   useEffect(() => {
     if (!data) {

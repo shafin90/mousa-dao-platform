@@ -8,7 +8,6 @@ import {
   Route as RouteIcon,
   Clock,
   Gauge,
-  Coins,
   Ruler,
   Building2,
   CalendarClock,
@@ -192,7 +191,7 @@ const RouteDetailsPage: React.FC = () => {
 
   const metrics = useMemo(() => {
     if (!route) return null;
-    const farePerKm = route.distanceKm > 0 ? route.baseFare / route.distanceKm : 0;
+
     const avgSpeed =
       route.estimatedTimeMinutes && route.estimatedTimeMinutes > 0
         ? route.distanceKm / (route.estimatedTimeMinutes / 60)
@@ -201,7 +200,7 @@ const RouteDetailsPage: React.FC = () => {
     const seatsTotal = trips.reduce((acc, tr) => acc + (tr.seatsTotal || 0), 0);
     const seatsBooked = trips.reduce((acc, tr) => acc + (tr.seatsBooked || 0), 0);
     const occupancy = seatsTotal > 0 ? (seatsBooked / seatsTotal) * 100 : null;
-    return { farePerKm, avgSpeed, upcoming, occupancy };
+    return { avgSpeed, upcoming, occupancy };
   }, [route, trips]);
 
   const tripColumns = [
@@ -279,18 +278,13 @@ const RouteDetailsPage: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           icon={<Ruler size={18} />}
           label={t("routes.distance")}
           value={t("routes.distanceValue", { value: route.distanceKm })}
         />
-        <StatCard
-          icon={<Coins size={18} />}
-          label={t("routes.baseFare")}
-          value={`CFA ${route.baseFare?.toFixed(2) ?? "0.00"}`}
-          hint={metrics ? `CFA ${metrics.farePerKm.toFixed(2)} ${t("routes.perKm")}` : undefined}
-        />
+
         <StatCard
           icon={<Clock size={18} />}
           label={t("routes.estTime")}

@@ -74,4 +74,8 @@ const deleteOne = async (id, companyId) => {
   return await Trip.findOneAndDelete({ _id: id, companyId });
 };
 
-module.exports = { findById, create, updateOne, incrementSeats, findMany, deleteOne };
+const deleteMany = async (companyId) => {
+  return await Trip.deleteMany({ companyId });
+};
+
+module.exports = { findById, create, updateOne, incrementSeats, findMany, deleteOne, deleteMany };

@@ -5,7 +5,7 @@ import type { StationData } from "@/api/stationApi";
 
 export const useStations = () => {
   const dispatch = useAppDispatch();
-  const { stations, loading, error } = useAppSelector((state) => state.stations);
+  const { stations = [], loading, error } = useAppSelector((state) => state.stations) || {};
   useEffect(() => { if (stations.length === 0) dispatch(fetchStations()); }, [dispatch, stations.length]);
   const create = useCallback((payload: Partial<StationData>) => dispatch(createStationAction(payload)), [dispatch]);
   const update = useCallback((id: string, payload: Partial<StationData>) => dispatch(updateStationAction({ id, payload })), [dispatch]);

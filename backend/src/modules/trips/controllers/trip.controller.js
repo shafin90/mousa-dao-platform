@@ -77,4 +77,13 @@ const updateTrip = async (req, res, next) => {
   }
 };
 
-module.exports = { createTrip, getAllTrips, getTripById, updateTrip, updateTripStatus, deleteTrip };
+const deleteAllTrips = async (req, res, next) => {
+  try {
+    const count = await tripService.deleteAllTrips(req.user.companyId);
+    respond(res, 200, { deletedCount: count }, `${count} trip(s) deleted`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createTrip, getAllTrips, getTripById, updateTrip, updateTripStatus, deleteTrip, deleteAllTrips };

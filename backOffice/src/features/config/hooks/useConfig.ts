@@ -5,7 +5,7 @@ import type { ConfigData } from "@/api/configApi";
 
 export const useConfig = () => {
   const dispatch = useAppDispatch();
-  const { config, loading, error } = useAppSelector((state) => state.config);
+  const { config, loading, error } = useAppSelector((state) => state.config) || {};
 
   useEffect(() => { if (!config) dispatch(fetchConfig()); }, [dispatch, config]);
 

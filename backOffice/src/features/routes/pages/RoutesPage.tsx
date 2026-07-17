@@ -17,13 +17,12 @@ import { RouteStopsEditor } from "../components/RouteStopsEditor";
 interface RouteForm {
   fromStation: string;
   toStation: string;
-  baseFare: string;
   distanceKm: string;
   estimatedTimeMinutes: string;
   stops: RouteStopInput[];
 }
 
-const emptyForm: RouteForm = { fromStation: "", toStation: "", baseFare: "", distanceKm: "", estimatedTimeMinutes: "", stops: [] };
+const emptyForm: RouteForm = { fromStation: "", toStation: "", distanceKm: "", estimatedTimeMinutes: "", stops: [] };
 
 const RoutesPage: React.FC = () => {
   const { t } = useTranslation();
@@ -46,7 +45,6 @@ const RoutesPage: React.FC = () => {
     setForm({
       fromStation: typeof item.fromStation === "string" ? item.fromStation : item.fromStation?._id || "",
       toStation: typeof item.toStation === "string" ? item.toStation : item.toStation?._id || "",
-      baseFare: String(item.baseFare || ""),
       distanceKm: String(item.distanceKm || ""),
       estimatedTimeMinutes: item.estimatedTimeMinutes != null ? String(item.estimatedTimeMinutes) : "",
       stops: normalizeStops(item.stops),
@@ -69,6 +67,10 @@ const RoutesPage: React.FC = () => {
       setStationsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchStations();
+  }, []);
 
   useEffect(() => {
     if (isModalOpen && stations.length === 0) fetchStations();
@@ -113,7 +115,7 @@ const RoutesPage: React.FC = () => {
       return;
     }
     try {
-      const payload = { fromStation: form.fromStation as unknown as RouteData["fromStation"], toStation: form.toStation as unknown as RouteData["toStation"], baseFare: Number(form.baseFare), distanceKm: Number(form.distanceKm) } as Partial<RouteData>;
+      const payload = { fromStation: form.fromStation as unknown as RouteData["fromStation"], toStation: form.toStation as unknown as RouteData["toStation"], distanceKm: Number(form.distanceKm) } as Partial<RouteData>;
       if (form.estimatedTimeMinutes) payload.estimatedTimeMinutes = Number(form.estimatedTimeMinutes);
       payload.stops = form.stops.filter((s) => s.cityId);
       if (editingRouteId) {
@@ -143,7 +145,6 @@ const RoutesPage: React.FC = () => {
     { header: t("routes.from"), accessor: (item: RouteData) => item.fromStation?.name || item.fromStation?._id || t("common.na") },
     { header: t("routes.to"), accessor: (item: RouteData) => item.toStation?.name || item.toStation?._id || t("common.na") },
     { header: t("routes.distance"), accessor: (item: RouteData) => item.distanceKm || t("common.na") },
-    { header: t("routes.baseFare"), accessor: (item: RouteData) => <span className="font-medium">CFA {item.baseFare?.toFixed(2) || '0.00'}</span> },
     {
       header: t("routes.actions"),
       accessor: (item: RouteData) => (
@@ -178,9 +179,14 @@ const RoutesPage: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2" onClick={refresh}><RefreshCw size={16} /> {t("common.refresh")}</Button>
-          <Button size="sm" className="gap-2" onClick={() => { setEditingRouteId(null); setForm(emptyForm); setIsModalOpen(true); }}><Plus size={16} /> {t("routes.newRoute")}</Button>
+          <Button size="sm" className="gap-2" onClick={() => { setEditingRouteId(null); setForm(emptyForm); setIsModalOpen(true); }} disabled={stations.length < 2}><Plus size={16} /> {t("routes.newRoute")}</Button>
         </div>
       </div>
+      {stations.length > 0 && stations.length < 2 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          {t("routes.needMoreStations")}
+        </div>
+      )}
       <DataTable columns={columns} data={routes} isLoading={loading} onRowClick={(item) => navigate(`/routes/${item._id}`)} />
 
       <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setRouteToDelete(null); }} title={t("routes.deleteRoute")}>
@@ -230,10 +236,6 @@ const RoutesPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("routes.distanceKm")}</label>
               <input required type="number" value={form.distanceKm} onChange={(e) => setForm({ ...form, distanceKm: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" readOnly />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("routes.baseFare")} (CFA)</label>
-              <input required type="number" value={form.baseFare} onChange={(e) => setForm({ ...form, baseFare: e.target.value })} className="w-full p-2 border rounded-md" />
             </div>
           </div>
           <div className="space-y-2">

@@ -1,13 +1,16 @@
 const cityRepository = require('../repositories/city.repository');
+const AppError = require('../../../errors/AppError');
+const ErrorCodes = require('../../../errors/errorCodes');
 
 /**
- * Lists all cities for a company.
+ * Lists all cities for a company, optionally filtered by country/search.
  *
  * @param {string} companyId
+ * @param {Object} filters
  * @returns {Promise<Array>}
  */
-const getAllCities = async (companyId) => {
-  return await cityRepository.findAll(companyId);
+const getAllCities = async (companyId, filters = {}) => {
+  return await cityRepository.findAll(companyId, filters);
 };
 
 /**
@@ -29,6 +32,8 @@ const getCityById = async (id, companyId) => {
  * @returns {Promise<Object>}
  */
 const createCity = async (companyId, data) => {
+  const dup = await cityRepository.findByNameAndCountry(companyId, data.name, data.country);
+  if (dup) throw new AppError(`City "${data.name}" already exists in ${data.country}`, 409, ErrorCodes.CONFLICT);
   return await cityRepository.create({ ...data, companyId });
 };
 

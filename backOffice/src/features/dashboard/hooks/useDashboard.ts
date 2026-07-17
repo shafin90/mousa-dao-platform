@@ -4,7 +4,7 @@ import { fetchDashboardStats, fetchDashboardCharts, fetchExtendedDashboard } fro
 
 export const useDashboard = () => {
   const dispatch = useAppDispatch();
-  const { stats, charts, liveTrips, recentBookings, paymentSummary, alerts, todayStats, loading, chartLoading, extendedLoading, error } = useAppSelector((state) => state.dashboard);
+  const { stats, charts, liveTrips = [], recentBookings = [], paymentSummary, alerts, todayStats, loading, chartLoading, extendedLoading, error } = useAppSelector((state) => state.dashboard) || {};
 
   useEffect(() => {
     if (!stats) dispatch(fetchDashboardStats());

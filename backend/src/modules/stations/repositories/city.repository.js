@@ -4,10 +4,14 @@ const City = require('../models/City');
  * Lists all cities for a company (alphabetical).
  *
  * @param {string} companyId
+ * @param {Object} [filters]
  * @returns {Promise<Array>}
  */
-const findAll = async (companyId) => {
-  return await City.find({ companyId }).sort({ name: 1 });
+const findAll = async (companyId, filters = {}) => {
+  const query = { companyId };
+  if (filters.country) query.country = filters.country;
+  if (filters.search) query.name = { $regex: filters.search, $options: 'i' };
+  return await City.find(query).sort({ country: 1, name: 1 });
 };
 
 /**
@@ -54,4 +58,8 @@ const deleteOne = async (id, companyId) => {
   return await City.findOneAndDelete({ _id: id, companyId });
 };
 
-module.exports = { findAll, findById, create, updateOne, deleteOne };
+const findByNameAndCountry = async (companyId, name, country) => {
+  return await City.findOne({ companyId, name: { $regex: `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }, country });
+};
+
+module.exports = { findAll, findById, create, updateOne, deleteOne, findByNameAndCountry };

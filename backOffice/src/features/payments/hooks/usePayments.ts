@@ -9,7 +9,7 @@ import {
 
 export const usePayments = () => {
   const dispatch = useAppDispatch();
-  const { payments, paymentsTotal, paymentsLoading, refunds, refundsLoading, error } = useAppSelector((state) => state.payments);
+  const { payments = [], paymentsTotal = 0, paymentsLoading = false, refunds = [], refundsLoading = false, error } = useAppSelector((state) => state.payments) || {};
 
   const fetchPayments = useCallback(
     (params?: { page?: number; limit?: number; status?: string }) => dispatch(fetchPaymentsAction(params)),

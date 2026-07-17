@@ -12,4 +12,6 @@ const stationSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+stationSchema.index({ companyId: 1, name: 1, cityId: 1 }, { unique: true });
+
 module.exports = mongoose.model('Station', stationSchema);

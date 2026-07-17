@@ -4,13 +4,19 @@ import type { ApiResponse } from "@/shared/types";
 export interface CityData {
   _id: string;
   name: string;
+  country: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
+export interface CityFilters {
+  country?: string;
+  search?: string;
+}
+
 export const cityApi = {
-  getAll: async (): Promise<CityData[]> => {
-    const { data } = await apiClient.get<ApiResponse<CityData[]>>("/cities");
+  getAll: async (params?: CityFilters): Promise<CityData[]> => {
+    const { data } = await apiClient.get<ApiResponse<CityData[]>>("/cities", { params });
     return data.data;
   },
   getById: async (id: string): Promise<CityData> => {

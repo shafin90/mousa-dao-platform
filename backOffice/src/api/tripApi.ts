@@ -53,4 +53,8 @@ export const tripApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/trips/${id}`);
   },
+  deleteAll: async (): Promise<number> => {
+    const { data } = await apiClient.delete<ApiResponse<{ deletedCount: number }>>("/trips");
+    return data.data.deletedCount;
+  },
 };
