@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import type { TripData, TripFilters } from "@/api/tripApi";
+import type { TripData, TripInput, TripFilters } from "@/api/tripApi";
 import { tripService } from "../services/tripService";
 
 interface TripState {
@@ -19,12 +19,12 @@ export const fetchTrips = createAsyncThunk(
 
 export const createTrip = createAsyncThunk(
   "trips/create",
-  async (payload: Partial<TripData>) => {
+  async (payload: TripInput) => {
     return await tripService.create(payload);
   }
 );
 
-export const updateTrip = createAsyncThunk("trips/update", async ({ id, payload }: { id: string; payload: Partial<TripData> }) => {
+export const updateTrip = createAsyncThunk("trips/update", async ({ id, payload }: { id: string; payload: Partial<TripInput> }) => {
   return await tripService.update(id, payload);
 });
 
