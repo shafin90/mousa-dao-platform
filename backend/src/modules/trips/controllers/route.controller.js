@@ -6,7 +6,7 @@ const { respond } = require('../../../utils/response');
  */
 const createRoute = async (req, res, next) => {
   try {
-    const route = await routeService.createRoute(req.user.companyId, req.body);
+    const route = await routeService.createRoute(req.user.companyId, req.body, req.user._id);
     respond(res, 201, route, 'Route created');
   } catch (error) {
     next(error);

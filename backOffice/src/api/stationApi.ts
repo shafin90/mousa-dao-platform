@@ -4,11 +4,21 @@ import type { ApiResponse } from "@/shared/types";
 export interface StationData {
   _id: string;
   name: string;
-  cityId?: { _id: string; name: string } | null;
+  cityId?: { _id: string; name: string; country?: string } | null;
   address?: string;
+  address1?: string;
+  address2?: string;
+  phone1?: string;
+  phone2?: string;
+  email1?: string;
+  email2?: string;
   isActive?: boolean;
   location: { lat: number; lng: number };
+  manager1?: string | { _id: string; profile: { firstName: string; lastName: string } };
+  manager2?: string | { _id: string; profile: { firstName: string; lastName: string } };
+  createdBy?: string | { _id: string; profile: { firstName: string; lastName: string } };
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DistanceData {

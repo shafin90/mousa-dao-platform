@@ -56,7 +56,7 @@ const TicketsPage: React.FC = () => {
   const columns = [
     { header: t("tickets.ticketNo"), accessor: (item: TicketData) => <span className="font-mono font-medium">{item.ticketNumber}</span> },
     { header: t("tickets.passenger"), accessor: (item: TicketData) => item.userId?.profile ? `${item.userId.profile.firstName} ${item.userId.profile.lastName}` : item.userId?.email || t("common.na") },
-    { header: t("tickets.route"), accessor: (item: TicketData) => item.tripId?.routeId ? `${item.tripId.routeId.fromStation?.name || ''} → ${item.tripId.routeId.toStation?.name || ''}` : t("common.na") },
+    { header: t("tickets.route"), accessor: (item: TicketData) => item.tripId?.routeId ? `${item.tripId.routeId.fromCity?.name || ''} → ${item.tripId.routeId.toCity?.name || ''}` : t("common.na") },
     { header: t("tickets.status"), accessor: (item: TicketData) => (
         <Badge variant={STATUS_VARIANTS[item.status] || "outline"}>{t(`tickets.${item.status}`, { defaultValue: item.status?.toUpperCase() })}</Badge>
     )},
@@ -138,7 +138,7 @@ const TicketsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">{t("tickets.route")}</p>
-                <p className="font-medium">{selectedTicket.tripId?.routeId?.fromStation?.name || '?'} → {selectedTicket.tripId?.routeId?.toStation?.name || '?'}</p>
+                <p className="font-medium">{selectedTicket.tripId?.routeId?.fromCity?.name || '?'} → {selectedTicket.tripId?.routeId?.toCity?.name || '?'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">{t("tickets.date")}</p>

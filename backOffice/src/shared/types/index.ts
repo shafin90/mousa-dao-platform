@@ -46,7 +46,7 @@ export interface Booking {
   userId: { _id: string; profile: { firstName: string; lastName: string }; email: string; phone: string };
   tripId: {
     _id: string;
-    routeId: { _id: string; fromStation: { name: string }; toStation: { name: string } };
+    routeId: { _id: string; fromCity: { name: string }; toCity: { name: string } };
     busId: { busNumber: string };
     departureTime: string;
     arrivalTime: string;
@@ -68,9 +68,8 @@ export interface Trip {
   _id: string;
   routeId: {
     _id: string;
-    fromStation: { _id: string; name: string };
-    toStation: { _id: string; name: string };
-    baseFare: number;
+    fromCity: { _id: string; name: string };
+    toCity: { _id: string; name: string };
     distanceKm: number;
     estimatedTimeMinutes: number;
   };
@@ -87,9 +86,8 @@ export interface Trip {
 
 export interface Route {
   _id: string;
-  fromStation: { _id: string; name: string };
-  toStation: { _id: string; name: string };
-  baseFare: number;
+  fromCity: { _id: string; name: string };
+  toCity: { _id: string; name: string };
   distanceKm: number;
   estimatedTimeMinutes: number;
   createdAt: string;
@@ -124,7 +122,7 @@ export interface Ticket {
   _id: string;
   bookingId: { _id: string; bookingCode: string };
   userId: { _id: string; profile: { firstName: string; lastName: string }; email: string };
-  tripId: { _id: string; routeId: { fromStation: { name: string }; toStation: { name: string } }; departureTime: string; date: string };
+  tripId: { _id: string; routeId: { fromCity: { name: string }; toCity: { name: string } }; departureTime: string; date: string };
   ticketNumber: string;
   qrCode: string;
   status: string;

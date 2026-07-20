@@ -6,6 +6,7 @@ import type { RecentBookingItem } from "@/api/analyticsApi";
 interface Props {
   data: RecentBookingItem[];
   loading?: boolean;
+  onRowClick?: (booking: RecentBookingItem) => void;
 }
 
 const PAYMENT_VARIANT: Record<string, "success" | "destructive" | "warning"> = {
@@ -20,7 +21,7 @@ const STATUS_VARIANT: Record<string, "success" | "secondary" | "destructive"> = 
   cancelled: "destructive",
 };
 
-export const RecentBookings: React.FC<Props> = ({ data, loading }) => {
+export const RecentBookings: React.FC<Props> = ({ data, loading, onRowClick }) => {
   const { t } = useTranslation();
   if (loading) {
     return (
@@ -51,7 +52,7 @@ export const RecentBookings: React.FC<Props> = ({ data, loading }) => {
         </thead>
         <tbody>
           {data.map((b) => (
-            <tr key={b._id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+            <tr key={b._id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => onRowClick?.(b)}>
               <td className="py-2.5 pr-4">{b.customer}</td>
               <td className="py-2.5 pr-4 text-muted-foreground text-xs">{b.route}</td>
               <td className="py-2.5 pr-4">{b.seats}</td>

@@ -5,7 +5,7 @@ import { useFleet } from "../hooks/useFleet";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
-import { Eye, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
 import { userApi } from "@/api/userApi";
@@ -226,9 +226,6 @@ const FleetPage: React.FC = () => {
       header: t("fleet.actions"),
       accessor: (item: BusData) => (
         <div className="flex gap-1">
-          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/fleet/${item._id}`); }}>
-            <Eye size={14} className="mr-1" /> {t("fleet.viewDetails")}
-          </Button>
           <Button variant="outline" size="sm" onClick={(e) => {
             e.stopPropagation();
             openEdit(item);

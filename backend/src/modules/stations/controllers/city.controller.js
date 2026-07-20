@@ -19,7 +19,7 @@ const getCityById = async (req, res, next) => {
 
 const createCity = async (req, res, next) => {
   try {
-    const city = await cityService.createCity(req.user.companyId, req.body);
+    const city = await cityService.createCity(req.user.companyId, req.body, req.user._id);
     respond(res, 201, city, 'City created');
   } catch (error) { next(error); }
 };
@@ -40,4 +40,20 @@ const deleteCity = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { getAllCities, getCityById, createCity, updateCity, deleteCity };
+const getCityDistance = async (req, res, next) => {
+  try {
+    const { from, to } = req.query;
+    if (!from || !to) return respond(res, 400, null, 'from and to query params are required');
+    const result = await cityService.calculateDistance(from, to, req.user.companyId);
+    respond(res, 200, result);
+  } catch (error) { next(error); }
+};
+
+const geocodeCity = async (req, res, next) => {
+  try {
+    const city = await cityService.geocodeCity(req.params.id, req.user.companyId);
+    respond(res, 200, city, 'City geocoded');
+  } catch (error) { next(error); }
+};
+
+module.exports = { getAllCities, getCityById, createCity, updateCity, deleteCity, getCityDistance, geocodeCity };

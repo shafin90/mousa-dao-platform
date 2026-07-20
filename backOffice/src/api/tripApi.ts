@@ -4,15 +4,21 @@ import type { RouteStop } from "./routeApi";
 
 export interface TripData {
   _id: string;
-  routeId: { _id: string; fromStation: { _id: string; name: string }; toStation: { _id: string; name: string }; baseFare: number; distanceKm: number; estimatedTimeMinutes: number; stops?: RouteStop[] };
+  routeId?: { _id: string; fromCity: { _id: string; name: string }; toCity: { _id: string; name: string }; fromStations?: { _id: string; name: string }[]; toStations?: { _id: string; name: string }[]; distanceKm: number; estimatedTimeMinutes: number; baseRate?: number; stops?: RouteStop[] };
+  fromStation?: { _id: string; name: string };
+  toStation?: { _id: string; name: string };
   busId: { _id: string; busNumber: string; name: string; capacity: number; type: string };
   departureTime: string;
   arrivalTime: string;
+  actualDepartureTime?: string;
+  actualArrivalTime?: string;
+  delayMinutes?: number;
   date: string;
   price: number;
   seatsTotal: number;
   seatsBooked: number;
   status: "scheduled" | "active" | "completed" | "cancelled";
+  createdBy?: { _id: string; firstName: string; lastName: string; email: string };
   createdAt: string;
   updatedAt?: string;
 }

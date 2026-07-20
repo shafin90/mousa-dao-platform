@@ -224,8 +224,8 @@ const BusDetailsPage: React.FC = () => {
     {
       header: t("trips.route"),
       accessor: (tr: TripData) =>
-        tr.routeId?.fromStation?.name
-          ? `${tr.routeId.fromStation.name} → ${tr.routeId.toStation?.name || "?"}`
+        tr.routeId?.fromCity?.name
+          ? `${tr.routeId.fromCity.name} → ${tr.routeId.toCity?.name || "?"}`
           : t("common.na"),
     },
     {

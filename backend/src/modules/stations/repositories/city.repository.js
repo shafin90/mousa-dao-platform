@@ -11,7 +11,7 @@ const findAll = async (companyId, filters = {}) => {
   const query = { companyId };
   if (filters.country) query.country = filters.country;
   if (filters.search) query.name = { $regex: filters.search, $options: 'i' };
-  return await City.find(query).sort({ country: 1, name: 1 });
+  return await City.find(query).sort({ country: 1, name: 1 }).populate('manager1 manager2', 'profile.firstName profile.lastName email');
 };
 
 /**
@@ -22,7 +22,7 @@ const findAll = async (companyId, filters = {}) => {
  * @returns {Promise<Object|null>}
  */
 const findById = async (id, companyId) => {
-  return await City.findOne({ _id: id, companyId });
+  return await City.findOne({ _id: id, companyId }).populate('manager1 manager2 createdBy', 'profile.firstName profile.lastName email');
 };
 
 /**

@@ -7,6 +7,7 @@ import LoginPage from "@/features/auth/pages/LoginPage";
 
 const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
 const BookingsPage = lazy(() => import("@/features/bookings/pages/BookingsPage"));
+const BookingDetailsPage = lazy(() => import("@/features/bookings/pages/BookingDetailsPage"));
 const PaymentsPage = lazy(() => import("@/features/payments/pages/PaymentsPage"));
 const TripsPage = lazy(() => import("@/features/trips/pages/TripsPage"));
 const TripDetailsPage = lazy(() => import("@/features/trips/pages/TripDetailsPage"));
@@ -17,20 +18,12 @@ const AnalyticsPage = lazy(() => import("@/features/analytics/pages/AnalyticsPag
 const RoutesPage = lazy(() => import("@/features/routes/pages/RoutesPage"));
 const RouteDetailsPage = lazy(() => import("@/features/routes/pages/RouteDetailsPage"));
 const StationsPage = lazy(() => import("@/features/stations/pages/StationsPage"));
+const StationDetailsPage = lazy(() => import("@/features/stations/pages/StationDetailsPage"));
 const CitiesPage = lazy(() => import("@/features/cities/pages/CitiesPage"));
-const MaintenanceFacilitiesPage = lazy(() => import("@/features/maintenance-facilities/pages/MaintenanceFacilitiesPage"));
-const MaintenanceStaffPage = lazy(() => import("@/features/maintenance-staff/pages/MaintenanceStaffPage"));
-const MaintenanceRecordsPage = lazy(() => import("@/features/maintenance-records/pages/MaintenanceRecordsPage"));
-const MaintenanceLayout = lazy(() => import("@/features/maintenance/layouts/MaintenanceLayout"));
-const MaintenanceDashboardPage = lazy(() => import("@/features/maintenance/pages/MaintenanceDashboardPage"));
-const MaintenanceSchedulePage = lazy(() => import("@/features/maintenance/pages/MaintenanceSchedulePage"));
-const WorkOrdersPage = lazy(() => import("@/features/maintenance/pages/WorkOrdersPage"));
-const ComingSoon = lazy(() => import("@/features/maintenance/components/ComingSoon"));
-const TicketsPage = lazy(() => import("@/features/tickets/pages/TicketsPage"));
-const AuditLogsPage = lazy(() => import("@/features/audit-logs/pages/AuditLogsPage"));
-const NotificationsPage = lazy(() => import("@/features/notifications/pages/NotificationsPage"));
-const ConfigPage = lazy(() => import("@/features/config/pages/ConfigPage"));
-const LiveTrackingPage = lazy(() => import("@/features/tracking/pages/LiveTrackingPage"));
+const CityDetailsPage = lazy(() => import("@/features/cities/pages/CityDetailsPage"));
+const MaintenancePage = lazy(() => import("@/features/maintenance/pages/MaintenancePage"));
+const MaintenanceDetailsPage = lazy(() => import("@/features/maintenance/pages/MaintenanceDetailsPage"));
+const TutorialPage = lazy(() => import("@/features/onboarding/pages/TutorialPage"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -68,6 +61,10 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><BookingsPage /></SuspenseWrapper>,
       },
       {
+        path: "bookings/:id",
+        element: <SuspenseWrapper><BookingDetailsPage /></SuspenseWrapper>,
+      },
+      {
         path: "payments",
         element: <SuspenseWrapper><PaymentsPage /></SuspenseWrapper>,
       },
@@ -88,7 +85,7 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><BusDetailsPage /></SuspenseWrapper>,
       },
       {
-        path: "users",
+        path: "passengers",
         element: <SuspenseWrapper><UsersPage /></SuspenseWrapper>,
       },
       {
@@ -108,58 +105,28 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><StationsPage /></SuspenseWrapper>,
       },
       {
+        path: "stations/:id",
+        element: <SuspenseWrapper><StationDetailsPage /></SuspenseWrapper>,
+      },
+      {
         path: "cities",
         element: <SuspenseWrapper><CitiesPage /></SuspenseWrapper>,
       },
       {
-        path: "maintenance",
-        element: <SuspenseWrapper><MaintenanceLayout /></SuspenseWrapper>,
-        children: [
-          { index: true, element: <Navigate to="/maintenance/dashboard" replace /> },
-          { path: "dashboard", element: <SuspenseWrapper><MaintenanceDashboardPage /></SuspenseWrapper> },
-          { path: "schedule", element: <SuspenseWrapper><MaintenanceSchedulePage /></SuspenseWrapper> },
-          { path: "work-orders", element: <SuspenseWrapper><WorkOrdersPage /></SuspenseWrapper> },
-          { path: "history", element: <SuspenseWrapper><MaintenanceRecordsPage /></SuspenseWrapper> },
-          { path: "facilities", element: <SuspenseWrapper><MaintenanceFacilitiesPage /></SuspenseWrapper> },
-          { path: "staff", element: <SuspenseWrapper><MaintenanceStaffPage /></SuspenseWrapper> },
-          { path: "breakdowns", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.breakdowns" /></SuspenseWrapper> },
-          { path: "spare-parts", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.spareParts" /></SuspenseWrapper> },
-          { path: "cost", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.cost" /></SuspenseWrapper> },
-          { path: "documents", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.documents" /></SuspenseWrapper> },
-          { path: "reminders", element: <SuspenseWrapper><ComingSoon titleKey="maintenance.nav.reminders" /></SuspenseWrapper> },
-        ],
-      },
-      {
-        path: "maintenance-facilities",
-        element: <Navigate to="/maintenance/facilities" replace />,
-      },
-      {
-        path: "maintenance-staff",
-        element: <Navigate to="/maintenance/staff" replace />,
+        path: "cities/:id",
+        element: <SuspenseWrapper><CityDetailsPage /></SuspenseWrapper>,
       },
       {
         path: "maintenance-records",
-        element: <Navigate to="/maintenance/history" replace />,
+        element: <SuspenseWrapper><MaintenancePage /></SuspenseWrapper>,
       },
       {
-        path: "tickets",
-        element: <SuspenseWrapper><TicketsPage /></SuspenseWrapper>,
+        path: "maintenance-records/:id",
+        element: <SuspenseWrapper><MaintenanceDetailsPage /></SuspenseWrapper>,
       },
       {
-        path: "audit-logs",
-        element: <SuspenseWrapper><AuditLogsPage /></SuspenseWrapper>,
-      },
-      {
-        path: "notifications",
-        element: <SuspenseWrapper><NotificationsPage /></SuspenseWrapper>,
-      },
-      {
-        path: "config",
-        element: <SuspenseWrapper><ConfigPage /></SuspenseWrapper>,
-      },
-      {
-        path: "tracking",
-        element: <SuspenseWrapper><LiveTrackingPage /></SuspenseWrapper>,
+        path: "tutorial",
+        element: <SuspenseWrapper><TutorialPage /></SuspenseWrapper>,
       },
     ],
   },

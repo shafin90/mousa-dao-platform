@@ -32,13 +32,13 @@ const getStationById = async (id, companyId) => {
  * @param {Object} data
  * @returns {Promise<Object>}
  */
-const createStation = async (companyId, data) => {
+const createStation = async (companyId, data, userId) => {
   const existing = await stationRepository.findAll(companyId);
   const dup = existing.find(
     (s) => s.name.toLowerCase() === data.name?.toLowerCase() && String(s.cityId?._id || s.cityId) === String(data.cityId)
   );
   if (dup) throw new AppError('A station with this name already exists in the selected city', 409, ErrorCodes.STATION_ALREADY_EXISTS);
-  return await stationRepository.create({ ...data, companyId });
+  return await stationRepository.create({ ...data, companyId, createdBy: userId });
 };
 
 /**

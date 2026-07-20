@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { useAppSelector } from "@/app/store";
-import { LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, Settings, History, Ticket, Bell, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Building2 } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Calendar, CreditCard, Map, Route, Users, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Building2, Wrench } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
@@ -37,26 +37,10 @@ const NavKeys: NavItem[] = [
   { icon: MapPin, key: "stations", href: "/stations", roles: ["admin"] },
   { icon: Building2, key: "cities", href: "/cities", roles: ["admin"] },
   { icon: Bus, key: "fleet", href: "/fleet", roles: ["admin"] },
-  // --- MAINTENANCE MENU DISABLED ---
-  // {
-  //   icon: Wrench,
-  //   key: "maintenance",
-  //   roles: ["admin"],
-  //   children: [
-  //     { key: "maintenanceDashboard", href: "/maintenance/dashboard", icon: LayoutDashboard },
-  //     { key: "maintenanceSchedule", href: "/maintenance/schedule", icon: CalendarClock },
-  //     { key: "maintenanceWorkOrders", href: "/maintenance/work-orders", icon: ClipboardList },
-  //     { key: "maintenanceHistory", href: "/maintenance/history", icon: History },
-  //     { key: "maintenanceFacilities", href: "/maintenance/facilities", icon: Wrench },
-  //     { key: "maintenanceStaff", href: "/maintenance/staff", icon: HardHat },
-  //   ],
-  // },
-  { icon: Users, key: "users", href: "/users", roles: ["admin"] },
+  { icon: Wrench, key: "maintenance", href: "/maintenance-records", roles: ["admin"] },
+  { icon: Users, key: "passengers", href: "/passengers", roles: ["admin"] },
   { icon: BarChart3, key: "analytics", href: "/analytics", roles: ["admin"] },
-  { icon: Ticket, key: "tickets", href: "/tickets", roles: ["admin", "staff"] },
-  { icon: History, key: "auditLogs", href: "/audit-logs", roles: ["admin"] },
-  { icon: Bell, key: "notifications", href: "/notifications", roles: ["admin", "staff"] },
-  { icon: Settings, key: "configuration", href: "/config", roles: ["admin"] },
+  { icon: GraduationCap, key: "tutorial", href: "/tutorial", roles: ["admin", "staff"] },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
@@ -87,6 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
 
   return (
     <aside
+      data-tour="sidebar"
       className={cn(
         "fixed left-0 top-0 z-40 h-screen transition-all duration-300 border-r bg-card flex flex-col",
         collapsed ? "w-20" : "w-64"
@@ -157,6 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
             <NavLink
               key={item.href}
               to={item.href as string}
+              data-tour={`nav-${item.key}`}
               className={({ isActive }) => linkClasses(isActive)}
             >
               <item.icon className={cn("shrink-0", collapsed ? "mx-auto" : "mr-3")} size={20} />

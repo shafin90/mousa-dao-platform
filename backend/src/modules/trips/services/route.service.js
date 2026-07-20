@@ -2,8 +2,6 @@ const routeRepository = require('../repositories/route.repository');
 const AppError = require('../../../errors/AppError');
 const ErrorCodes = require('../../../errors/errorCodes');
 
-const routePopulate = [{ path: 'fromStation' }, { path: 'toStation' }];
-
 /**
  * Creates a new route for a company.
  *
@@ -11,10 +9,10 @@ const routePopulate = [{ path: 'fromStation' }, { path: 'toStation' }];
  * @param {Object} data
  * @returns {Promise<Object>}
  */
-const createRoute = async (companyId, data) => {
-  const existing = await routeRepository.findWhere({ companyId, fromStation: data.fromStation, toStation: data.toStation });
-  if (existing.length > 0) throw new AppError('A route between these stations already exists', 409, ErrorCodes.ROUTE_ALREADY_EXISTS);
-  const route = await routeRepository.create({ ...data, companyId });
+const createRoute = async (companyId, data, userId) => {
+  const existing = await routeRepository.findWhere({ companyId, fromCity: data.fromCity, toCity: data.toCity });
+  if (existing.length > 0) throw new AppError('A route between these cities already exists', 409, ErrorCodes.ROUTE_ALREADY_EXISTS);
+  const route = await routeRepository.create({ ...data, companyId, createdBy: userId });
   return await routeRepository.findById(route._id, companyId);
 };
 

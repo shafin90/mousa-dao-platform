@@ -6,11 +6,11 @@ import { DataTable } from "@/shared/components/tables/DataTable";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 import { Select } from "@/shared/components/ui/Select";
-import { Plus, RefreshCw, Eye, Pencil, Trash2, Search, X, AlertTriangle } from "lucide-react";
+import { Plus, RefreshCw, Pencil, Trash2, Search, X, AlertTriangle } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
-import { routeApi, type RouteData } from "@/api/routeApi";
 import { busApi, type BusData } from "@/api/busApi";
+import { stationApi, type StationData } from "@/api/stationApi";
 import { tripApi, type TripData, type TripFilters } from "@/api/tripApi";
 
 const statusOptions = ["scheduled", "active", "completed", "cancelled"];
@@ -20,7 +20,6 @@ const TripsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [filterRouteId, setFilterRouteId] = useState("");
   const [filterBusId, setFilterBusId] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -30,7 +29,6 @@ const TripsPage: React.FC = () => {
 
   const filters = useMemo<TripFilters>(() => {
     const f: TripFilters = {};
-    if (filterRouteId) f.routeId = filterRouteId;
     if (filterBusId) f.busId = filterBusId;
     if (filterDate) f.date = filterDate;
     if (filterStatus) f.status = filterStatus;
@@ -38,7 +36,7 @@ const TripsPage: React.FC = () => {
     if (filterPriceMax) f.priceMax = Number(filterPriceMax);
     if (filterSearch) f.search = filterSearch;
     return f;
-  }, [filterRouteId, filterBusId, filterDate, filterStatus, filterPriceMin, filterPriceMax, filterSearch]);
+  }, [filterBusId, filterDate, filterStatus, filterPriceMin, filterPriceMax, filterSearch]);
 
   const { trips, loading, create, update, remove, refresh } = useTrips(filters);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,16 +44,16 @@ const TripsPage: React.FC = () => {
   const [tripToDelete, setTripToDelete] = useState<TripData | null>(null);
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [routes, setRoutes] = useState<RouteData[]>([]);
   const [buses, setBuses] = useState<BusData[]>([]);
-  const [routesLoading, setRoutesLoading] = useState(false);
+  const [stations, setStations] = useState<StationData[]>([]);
   const [busesLoading, setBusesLoading] = useState(false);
-  const [form, setForm] = useState({ routeId: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" });
+  const [form, setForm] = useState({ fromStation: "", toStation: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" });
 
   const openEdit = (item: TripData) => {
     setEditingTripId(item._id);
     setForm({
-      routeId: typeof item.routeId === "string" ? item.routeId : item.routeId?._id || "",
+      fromStation: item.routeId?.fromCity?._id || "",
+      toStation: item.routeId?.toCity?._id || "",
       busId: typeof item.busId === "string" ? item.busId : item.busId?._id || "",
       departureTime: item.departureTime,
       arrivalTime: item.arrivalTime,
@@ -66,13 +64,6 @@ const TripsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const fetchRoutes = async () => {
-    setRoutesLoading(true);
-    try { setRoutes(await routeApi.getAll()); }
-    catch { toast.error(t("trips.routesLoadFailed")); }
-    finally { setRoutesLoading(false); }
-  };
-
   const fetchBuses = async () => {
     setBusesLoading(true);
     try { const data = await busApi.getAll(); setBuses(data.buses || []); }
@@ -80,9 +71,8 @@ const TripsPage: React.FC = () => {
     finally { setBusesLoading(false); }
   };
 
-  useEffect(() => { fetchRoutes(); fetchBuses(); }, []);
+  useEffect(() => { fetchBuses(); stationApi.getAll().then(setStations).catch(() => setStations([])); }, []);
   useEffect(() => {
-    if (isModalOpen && routes.length === 0) fetchRoutes();
     if (isModalOpen && buses.length === 0) fetchBuses();
   }, [isModalOpen]);
 
@@ -97,7 +87,6 @@ const TripsPage: React.FC = () => {
   }, [location.state, trips]);
 
   const clearFilters = () => {
-    setFilterRouteId("");
     setFilterBusId("");
     setFilterDate("");
     setFilterStatus("");
@@ -106,20 +95,21 @@ const TripsPage: React.FC = () => {
     setFilterSearch("");
   };
 
-  const hasFilters = filterRouteId || filterBusId || filterDate || filterStatus || filterPriceMin || filterPriceMax || filterSearch;
+  const hasFilters = filterBusId || filterDate || filterStatus || filterPriceMin || filterPriceMax || filterSearch;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const payload = {
-        routeId: form.routeId as unknown as TripData["routeId"],
-        busId: form.busId as unknown as TripData["busId"],
+        fromStation: form.fromStation,
+        toStation: form.toStation,
+        busId: form.busId,
         departureTime: form.departureTime,
         arrivalTime: form.arrivalTime,
         date: form.date,
         price: Number(form.price),
-        status: form.status as TripData["status"],
-      } as Partial<TripData>;
+        status: form.status,
+      } as Partial<TripData>
       if (editingTripId) {
         await update(editingTripId, payload);
         toast.success(t("trips.updated"));
@@ -129,13 +119,13 @@ const TripsPage: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingTripId(null);
-      setForm({ routeId: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" });
+      setForm({ fromStation: "", toStation: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" });
     } catch { toast.error(t("trips.saveFailed")); }
   };
 
-  const routeOptions = routes.map((r) => ({
-    value: r._id,
-    label: `${r.fromStation?.name || '?'} → ${r.toStation?.name || '?'}`,
+  const stationOptions = stations.map((s) => ({
+    value: s._id,
+    label: `${s.name} (${s.cityId?.name || "?"})`,
   }));
 
   const busOptions = buses.map((b) => ({
@@ -168,7 +158,8 @@ const TripsPage: React.FC = () => {
         </span>
       ),
     },
-    { header: t("trips.route"), accessor: (item: TripData) => item.routeId ? `${item.routeId.fromStation?.name || ''} → ${item.routeId.toStation?.name || ''}` : t("common.na") },
+    { header: t("trips.from"), accessor: (item: TripData) => item.routeId?.fromCity?.name || "" },
+    { header: t("trips.to"), accessor: (item: TripData) => item.routeId?.toCity?.name || "" },
     { header: t("trips.date"), accessor: (item: TripData) => new Date(item.date).toLocaleDateString() },
     { header: t("trips.departure"), accessor: (item: TripData) => item.departureTime },
     { header: t("trips.bus"), accessor: (item: TripData) => item.busId?.busNumber || item.busId?._id || t("common.na") },
@@ -182,9 +173,6 @@ const TripsPage: React.FC = () => {
       header: t("trips.actions"),
       accessor: (item: TripData) => (
         <div className="flex gap-1">
-          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/trips/${item._id}`); }}>
-            <Eye size={14} className="mr-1" /> {t("trips.viewDetails")}
-          </Button>
           <Button variant="outline" size="sm" onClick={(e) => {
             e.stopPropagation();
             openEdit(item);
@@ -201,19 +189,19 @@ const TripsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
+      <div data-tour="trips-header" className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("trips.title")}</h1>
           <p className="text-muted-foreground mt-1">{t("trips.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={refresh}><RefreshCw size={16} /> {t("common.refresh")}</Button>
+          <Button data-tour="trips-refresh" variant="outline" size="sm" className="gap-2" onClick={refresh}><RefreshCw size={16} /> {t("common.refresh")}</Button>
           {trips.length > 0 && (
             <Button variant="destructive" size="sm" className="gap-2" onClick={() => setIsDeleteAllOpen(true)}>
               <Trash2 size={16} /> {t("trips.deleteAll")}
             </Button>
           )}
-          <Button size="sm" className="gap-2" onClick={() => { setEditingTripId(null); setForm({ routeId: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" }); setIsModalOpen(true); }}><Plus size={16} /> {t("trips.scheduleTrip")}</Button>
+          <Button data-tour="trips-add" size="sm" className="gap-2" onClick={() => { setEditingTripId(null); setForm({ fromStation: "", toStation: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" }); setIsModalOpen(true); }}><Plus size={16} /> {t("trips.scheduleTrip")}</Button>
         </div>
       </div>
 
@@ -221,6 +209,7 @@ const TripsPage: React.FC = () => {
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
+            data-tour="trips-search"
             type="text"
             placeholder={`${t("common.search")} route / bus...`}
             value={filterSearch}
@@ -230,18 +219,7 @@ const TripsPage: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-3">
           <select
-            value={filterRouteId}
-            onChange={(e) => setFilterRouteId(e.target.value)}
-            className="h-9 min-w-[160px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">{t("trips.selectRoute")}</option>
-            {routes.map((r) => (
-              <option key={r._id} value={r._id}>
-                {r.fromStation?.name || '?'} → {r.toStation?.name || '?'}
-              </option>
-            ))}
-          </select>
-          <select
+            data-tour="trips-filter-bus"
             value={filterBusId}
             onChange={(e) => setFilterBusId(e.target.value)}
             className="h-9 min-w-[160px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -254,12 +232,14 @@ const TripsPage: React.FC = () => {
             ))}
           </select>
           <input
+            data-tour="trips-filter-date"
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
             className="h-9 rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <select
+            data-tour="trips-filter-status"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="h-9 min-w-[130px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -269,8 +249,9 @@ const TripsPage: React.FC = () => {
               <option key={s} value={s}>{t(`trips.${s}`)}</option>
             ))}
           </select>
-          <input
-            type="number"
+          <div data-tour="trips-filter-price" className="flex gap-2">
+           <input
+             type="number"
 placeholder="Min CFA"
              value={filterPriceMin}
              onChange={(e) => setFilterPriceMin(e.target.value)}
@@ -279,10 +260,11 @@ placeholder="Min CFA"
            <input
              type="number"
              placeholder="Max CFA"
-            value={filterPriceMax}
-            onChange={(e) => setFilterPriceMax(e.target.value)}
-            className="h-9 w-[100px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+             value={filterPriceMax}
+             onChange={(e) => setFilterPriceMax(e.target.value)}
+             className="h-9 w-[100px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+           />
+          </div>
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
               <X size={14} className="mr-1" /> {t("common.clear")}
@@ -291,7 +273,7 @@ placeholder="Min CFA"
         </div>
       </div>
 
-      <DataTable columns={columns} data={trips} isLoading={loading} onRowClick={(item) => navigate(`/trips/${item._id}`)} />
+      <div data-tour="trips-table"><DataTable columns={columns} data={trips} isLoading={loading} onRowClick={(item) => navigate(`/trips/${item._id}`)} /></div>
 
       <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setTripToDelete(null); }} title={t("trips.deleteTrip")}>
         {tripToDelete && (
@@ -331,15 +313,27 @@ placeholder="Min CFA"
 
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingTripId(null); }} title={editingTripId ? t("trips.editTrip") : t("trips.scheduleNewTrip")}>
         <form className="space-y-4" onSubmit={handleCreate}>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("trips.route")}</label>
-            <Select
-              required
-              value={form.routeId}
-              onChange={(e) => setForm({...form, routeId: e.target.value})}
-              options={routeOptions}
-              placeholder={routesLoading ? t("trips.loadingRoutes") : t("trips.selectRoute")}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("trips.fromStation")}</label>
+              <Select
+                required
+                value={form.fromStation}
+                onChange={(e) => setForm({...form, fromStation: e.target.value})}
+                options={stationOptions}
+                placeholder={t("trips.selectFromStation")}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("trips.toStation")}</label>
+              <Select
+                required
+                value={form.toStation}
+                onChange={(e) => setForm({...form, toStation: e.target.value})}
+                options={stationOptions}
+                placeholder={t("trips.selectToStation")}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">{t("trips.bus")}</label>

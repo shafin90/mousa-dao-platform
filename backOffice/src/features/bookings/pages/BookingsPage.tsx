@@ -1,18 +1,19 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { useBookings } from "../hooks/useBookings";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
-import { RefreshCw, Eye, Search, X } from "lucide-react";
+import { RefreshCw, Search, X } from "lucide-react";
 import type { BookingData, BookingFilters } from "@/api/bookingApi";
-import { BookingDetailModal } from "../components/BookingDetailModal";
 
 const statusOptions = ["", "confirmed", "pending", "cancelled"];
 const paymentOptions = ["", "paid", "unpaid", "refunded"];
 
 const BookingsPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -35,18 +36,6 @@ const BookingsPage: React.FC = () => {
   }, [search, status, paymentStatus, dateFrom, dateTo, amountMin, amountMax]);
 
   const { bookings, loading, refresh } = useBookings(filters);
-  const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-
-  const openDetails = (item: BookingData) => {
-    setSelectedBooking(item);
-    setModalOpen(true);
-  };
-
-  const closeDetails = () => {
-    setModalOpen(false);
-    setSelectedBooking(null);
-  };
 
   const clearFilters = () => {
     setSearch("");
@@ -69,7 +58,7 @@ const BookingsPage: React.FC = () => {
         </div>
       )
     },
-    { header: t("bookings.route"), accessor: (item: BookingData) => item.tripId?.routeId ? `${item.tripId.routeId.fromStation?.name || ''} → ${item.tripId.routeId.toStation?.name || ''}` : t("common.na") },
+    { header: t("bookings.route"), accessor: (item: BookingData) => item.tripId?.routeId ? `${item.tripId.routeId.fromCity?.name || ''} → ${item.tripId.routeId.toCity?.name || ''}` : t("common.na") },
     { header: t("bookings.seats"), accessor: (item: BookingData) => Array.isArray(item.seats) ? item.seats.join(', ') : t("common.na") },
     { header: t("bookings.amount"), accessor: (item: BookingData) => <span className="font-medium">CFA {(item.totalAmount || 0).toFixed(2)}</span> },
     { header: t("bookings.status"), accessor: (item: BookingData) => {
@@ -83,14 +72,6 @@ const BookingsPage: React.FC = () => {
         const variants: Record<string, "success"|"warning"|"destructive"> = { paid: "success", unpaid: "warning", refunded: "destructive" };
         return <Badge variant={variants[item.paymentStatus] || "warning"}>{item.paymentStatus?.toUpperCase() || t("bookings.unpaid")}</Badge>;
       }
-    },
-    {
-      header: t("bookings.actions"),
-      accessor: (item: BookingData) => (
-        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openDetails(item); }}>
-          <Eye size={16} />
-        </Button>
-      ),
     },
   ];
 
@@ -172,8 +153,7 @@ const BookingsPage: React.FC = () => {
         </div>
       </div>
 
-      <DataTable columns={columns} data={bookings} isLoading={loading} />
-      <BookingDetailModal booking={selectedBooking} isOpen={modalOpen} onClose={closeDetails} />
+      <DataTable columns={columns} data={bookings} isLoading={loading} onRowClick={(item) => navigate(`/bookings/${item._id}`)} />
     </div>
   );
 };

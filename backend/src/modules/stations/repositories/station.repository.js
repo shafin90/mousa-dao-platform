@@ -8,7 +8,9 @@ const Station = require('../models/Station');
  * @returns {Promise<Object|null>}
  */
 const findById = async (id, companyId) => {
-  return await Station.findOne({ _id: id, companyId }).populate('cityId', 'name');
+  return await Station.findOne({ _id: id, companyId })
+    .populate('cityId', 'name country')
+    .populate('manager1 manager2 createdBy', 'profile.firstName profile.lastName email');
 };
 
 /**
@@ -18,7 +20,9 @@ const findById = async (id, companyId) => {
  * @returns {Promise<Array>}
  */
 const findAll = async (companyId) => {
-  return await Station.find({ companyId }).populate('cityId', 'name');
+  return await Station.find({ companyId })
+    .populate('cityId', 'name country')
+    .populate('manager1 manager2', 'profile.firstName profile.lastName email');
 };
 
 /**
@@ -40,7 +44,9 @@ const create = async (data) => {
  * @returns {Promise<Object|null>}
  */
 const updateOne = async (id, companyId, update) => {
-  return await Station.findOneAndUpdate({ _id: id, companyId }, update, { new: true });
+  return await Station.findOneAndUpdate({ _id: id, companyId }, update, { new: true })
+    .populate('cityId', 'name country')
+    .populate('manager1 manager2 createdBy', 'profile.firstName profile.lastName email');
 };
 
 /**

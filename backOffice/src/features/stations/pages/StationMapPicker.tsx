@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useTranslation } from "react-i18next";
@@ -21,21 +21,36 @@ const icon = L.icon({
   shadowSize: [41, 41],
 });
 
+const fetchAddress = async (lat: number, lng: number, marker: L.Marker, t: (key: string) => string, onAddressFound?: (address: string) => void) => {
+  marker.setPopupContent(`<div class="flex items-center gap-2 text-sm"><svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ${t("stations.resolving")}</div>`);
+  marker.openPopup();
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2`,
+      { headers: { "Accept-Language": "en", "User-Agent": "BusAdminApp/1.0" } }
+    );
+    const data = await res.json();
+    const address = data?.display_name || data?.address?.road || data?.name || t("stations.addressResolved");
+    marker.setPopupContent(`<div class="text-sm">${address}</div>`);
+    marker.openPopup();
+    if (address && onAddressFound) onAddressFound(address);
+  } catch {
+    marker.setPopupContent(`<div class="text-sm text-muted-foreground">${t("stations.addressNotFound")}</div>`);
+  }
+};
+
+const isOutsideBounds = (lat: number, lng: number, b: Props["cityBounds"]) =>
+  b && (lat < b.minLat || lat > b.maxLat || lng < b.minLng || lng > b.maxLng);
+
 const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, cityBounds }) => {
   const { t } = useTranslation();
   const mapRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const boundsRef = useRef(cityBounds);
   const onPickRef = useRef(onPick);
   const onAddressFoundRef = useRef(onAddressFound);
   onPickRef.current = onPick;
   onAddressFoundRef.current = onAddressFound;
-  boundsRef.current = cityBounds;
-
-  const [activeTool, setActiveTool] = useState<"point" | "drag" | null>(null);
-  const activeToolRef = useRef(activeTool);
-  activeToolRef.current = activeTool;
 
   const center: [number, number] = lat != null && lng != null
     ? [lat, lng]
@@ -74,7 +89,7 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
 
     const markerCenter = lat != null && lng != null ? [lat, lng] : center;
     const marker = L.marker(markerCenter as [number, number], {
-      draggable: false,
+      draggable: true,
       icon,
     }).addTo(map);
 
@@ -87,36 +102,25 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
 
     map.on("click", (e: L.LeafletMouseEvent) => {
       const { lat: clickedLat, lng: clickedLng } = e.latlng;
-      const b = boundsRef.current;
-      if (b && (clickedLat < b.minLat || clickedLat > b.maxLat || clickedLng < b.minLng || clickedLng > b.maxLng)) {
+      if (isOutsideBounds(clickedLat, clickedLng, cityBounds)) return;
+      marker.setLatLng([clickedLat, clickedLng]);
+      onPickRef.current(clickedLat, clickedLng);
+      fetchAddress(clickedLat, clickedLng, marker, t, onAddressFoundRef.current);
+    });
+
+    marker.on("dragstart", () => {
+      marker.setPopupContent(`<div class="text-sm">${t("stations.dragMarker")}</div>`);
+      marker.openPopup();
+    });
+
+    marker.on("dragend", () => {
+      const pos = marker.getLatLng();
+      if (isOutsideBounds(pos.lat, pos.lng, cityBounds)) {
+        marker.setLatLng([markerCenter[0], markerCenter[1]]);
         return;
       }
-      marker.setLatLng([clickedLat, clickedLng]);
-      marker.setPopupContent(`<div class="flex items-center gap-2 text-sm"><svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ${t("stations.resolving")}</div>`);
-      marker.openPopup();
-      onPickRef.current(clickedLat, clickedLng);
-      if (activeToolRef.current === "point") setActiveTool(null);
-
-      fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${clickedLat}&lon=${clickedLng}&format=jsonv2`,
-        { headers: { "Accept-Language": "en", "User-Agent": "BusAdminApp/1.0" } }
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          const address = data?.display_name || data?.address?.road || data?.name || t("stations.addressResolved");
-          if (markerRef.current) {
-            markerRef.current.setPopupContent(`<div class="text-sm">${address}</div>`);
-            markerRef.current.openPopup();
-          }
-          if (address && onAddressFoundRef.current) {
-            onAddressFoundRef.current(address);
-          }
-        })
-        .catch(() => {
-          if (markerRef.current) {
-            markerRef.current.setPopupContent(`<div class="text-sm text-muted-foreground">${t("stations.addressNotFound")}</div>`);
-          }
-        });
+      onPickRef.current(pos.lat, pos.lng);
+      fetchAddress(pos.lat, pos.lng, marker, t, onAddressFoundRef.current);
     });
 
     instanceRef.current = map;
@@ -128,32 +132,6 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!instanceRef.current) return;
-    instanceRef.current.getContainer().style.cursor = activeTool === "point" ? "crosshair" : "";
-  }, [activeTool]);
-
-  useEffect(() => {
-    if (!markerRef.current) return;
-    if (activeTool === "drag") {
-      markerRef.current.dragging?.enable();
-      markerRef.current.once("dragend", () => {
-        const pos = markerRef.current?.getLatLng();
-        if (!pos) return;
-        const b = boundsRef.current;
-        if (b && (pos.lat < b.minLat || pos.lat > b.maxLat || pos.lng < b.minLng || pos.lng > b.maxLng)) {
-          return;
-        }
-        onPickRef.current(pos.lat, pos.lng);
-        setActiveTool(null);
-      });
-    } else {
-      markerRef.current.dragging?.disable();
-      markerRef.current.off("dragend");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTool]);
 
   useEffect(() => {
     if (lat != null && lng != null && markerRef.current && instanceRef.current) {
@@ -178,37 +156,12 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
     }
   }, [cityBounds]);
 
-  const toggleTool = (tool: "point" | "drag") => {
-    setActiveTool((prev) => (prev === tool ? null : tool));
-  };
-
   return (
     <div className="relative w-full h-96 rounded-lg border overflow-hidden">
-      <div className="absolute top-2 right-2 z-[1000] flex gap-1">
-        <button
-          type="button"
-          onClick={() => toggleTool("point")}
-          title={t("stations.placeMarker")}
-          className={`p-1.5 rounded text-xs font-medium shadow transition-colors ${
-            activeTool === "point"
-              ? "bg-primary text-primary-foreground"
-              : "bg-background text-foreground border hover:bg-muted"
-          }`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
-        </button>
-        <button
-          type="button"
-          onClick={() => toggleTool("drag")}
-          title={t("stations.dragMarker")}
-          className={`p-1.5 rounded text-xs font-medium shadow transition-colors ${
-            activeTool === "drag"
-              ? "bg-primary text-primary-foreground"
-              : "bg-background text-foreground border hover:bg-muted"
-          }`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>
-        </button>
+      <div className="absolute top-2 right-2 z-[1000] flex gap-1 pointer-events-none">
+        <div className="px-2 py-1 rounded text-xs font-medium shadow bg-background text-muted-foreground pointer-events-auto select-none">
+          {t("stations.clickToPlace")}
+        </div>
       </div>
       <div ref={mapRef} className="w-full h-full z-0" />
     </div>

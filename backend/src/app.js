@@ -15,6 +15,11 @@ app.use(helmet());
 app.use(cors());
 app.use(compression());
 app.use(morgan('dev'));
+
+// Stripe webhook needs raw body — must be before express.json()
+const stripeRoutes = require('./modules/payments/stripe.routes');
+app.use('/api/v1/stripe/webhook', stripeRoutes.webhookRouter);
+
 app.use(express.json());
 
 // Serve uploaded files (bus photos, etc.). CORP header lets the frontend
@@ -62,6 +67,12 @@ app.use('/api/v1/stations', require('./modules/stations/station.routes'));
 app.use('/api/v1/cities', require('./modules/stations/city.routes'));
 app.use('/api/v1/tracking', require('./modules/tracking/tracking.routes'));
 app.use('/api/v1/tenants', require('./modules/tenants/tenant.routes'));
+
+// Firebase auth (mobile app)
+app.use('/api/v1/auth', require('./modules/auth/firebase.routes'));
+
+// Stripe payments (mobile app)
+app.use('/api/v1/stripe', stripeRoutes.apiRouter);
 
 app.use(errorHandler);
 

@@ -26,7 +26,7 @@ const getDistance = async (req, res, next) => {
 
 const createStation = async (req, res, next) => {
   try {
-    const station = await stationService.createStation(req.user.companyId, req.body);
+    const station = await stationService.createStation(req.user.companyId, req.body, req.user._id);
     respond(res, 201, station, 'Station created');
   } catch (error) { next(error); }
 };

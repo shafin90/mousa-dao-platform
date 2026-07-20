@@ -6,7 +6,7 @@ export interface TicketData {
   _id: string;
   bookingId: { _id: string; bookingCode: string };
   userId: { _id: string; profile: { firstName: string; lastName: string }; email: string };
-  tripId: { _id: string; routeId: { fromStation: { name: string }; toStation: { name: string } }; departureTime: string; date: string };
+  tripId: { _id: string; routeId: { fromCity: { name: string }; toCity: { name: string } }; departureTime: string; date: string };
   ticketNumber: string;
   qrCode: string;
   status: string;

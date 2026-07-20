@@ -5,7 +5,6 @@ import { useAppSelector } from "@/app/store";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { LanguageSwitcher } from "@/shared/components/ui/LanguageSwitcher";
-
 interface TopbarProps {
   onMenuClick: () => void;
 }
@@ -32,7 +31,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
     : t("common.user");
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background/95 backdrop-blur px-4 sm:px-6">
+    <header data-tour="topbar" className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background/95 backdrop-blur px-4 sm:px-6">
       <div className="flex items-center gap-4">
         <button 
           onClick={onMenuClick}

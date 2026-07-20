@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useStations } from "../hooks/useStations";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Modal } from "@/shared/components/modals/Modal";
-import { Plus, RefreshCw, Pencil, Eye, Search, Trash2 } from "lucide-react";
+import { Plus, RefreshCw, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { StationData } from "@/api/stationApi";
 import { cityApi, type CityData } from "@/api/cityApi";
+import { userApi } from "@/api/userApi";
+import type { User } from "@/shared/types";
 import { StationMapPicker } from "./StationMapPicker";
 
 const idOf = (value: unknown): string => {
@@ -20,7 +23,11 @@ const idOf = (value: unknown): string => {
   return "";
 };
 
-const EMPTY_FORM = { name: "", cityId: "", address: "", lat: "", lng: "", isActive: true };
+function getUserName(u: User): string {
+  return `${u.profile.firstName} ${u.profile.lastName}`;
+}
+
+const EMPTY_FORM = { name: "", cityId: "", address1: "", address2: "", phone1: "", phone2: "", email1: "", email2: "", lat: "", lng: "", isActive: true, manager1: "", manager2: "" };
 
 interface Bounds {
   minLat: number; maxLat: number;
@@ -29,17 +36,20 @@ interface Bounds {
 
 const StationsPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { stations, loading, create, remove, refresh } = useStations();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [stationToDelete, setStationToDelete] = useState<StationData | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [cities, setCities] = useState<CityData[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [cityBounds, setCityBounds] = useState<Bounds | null>(null);
   const [cityName, setCityName] = useState("");
 
   useEffect(() => {
     cityApi.getAll().then(setCities).catch(() => setCities([]));
+    userApi.getAll({ limit: 1000 }).then((res) => setUsers(res.users.filter((u) => u.role !== "customer"))).catch(() => setUsers([]));
   }, []);
 
   const selectedCity = useCallback((cityId: string) => {
@@ -88,7 +98,7 @@ const StationsPage: React.FC = () => {
       const data = await res.json();
       const address = data?.display_name || data?.address?.road || data?.name || "";
       if (address) {
-        setForm((prev) => ({ ...prev, address }));
+        setForm((prev) => ({ ...prev, address1: address }));
       }
     } catch {
       // silent
@@ -128,9 +138,16 @@ const StationsPage: React.FC = () => {
       await create({
         name: form.name,
         cityId: form.cityId,
-        address: form.address || undefined,
+        address1: form.address1 || undefined,
+        address2: form.address2 || undefined,
+        phone1: form.phone1 || undefined,
+        phone2: form.phone2 || undefined,
+        email1: form.email1 || undefined,
+        email2: form.email2 || undefined,
         location: { lat, lng },
         isActive: form.isActive,
+        manager1: form.manager1 || undefined,
+        manager2: form.manager2 || undefined,
       } as unknown as Partial<StationData>);
       toast.success(t("stations.created"));
       setIsModalOpen(false);
@@ -143,10 +160,11 @@ const StationsPage: React.FC = () => {
   };
 
   const handleSearchAddress = async () => {
-    if (!form.address) return;
+    const addr = form.address1 || form.address;
+    if (!addr) return;
     const city = selectedCity(form.cityId);
     const countryPart = city ? city.country : "";
-    const query = cityName ? `${form.address}, ${cityName}${countryPart ? `, ${countryPart}` : ""}` : form.address;
+    const query = cityName ? `${addr}, ${cityName}${countryPart ? `, ${countryPart}` : ""}` : addr;
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=jsonv2&limit=1`,
@@ -160,7 +178,7 @@ const StationsPage: React.FC = () => {
           toast.error(t("stations.outsideCity"));
           return;
         }
-        setForm((prev) => ({ ...prev, lat: String(lat), lng: String(lng), address: data[0].display_name || prev.address }));
+        setForm((prev) => ({ ...prev, lat: String(lat), lng: String(lng), address1: data[0].display_name || prev.address1 }));
         toast.success(t("stations.locationFound"));
       } else {
         toast.error(t("stations.addressNotFound"));
@@ -176,7 +194,7 @@ const StationsPage: React.FC = () => {
       const cityId = idOf(item.cityId);
       return cities.find((c) => c._id === cityId)?.name || "—";
     } },
-    { header: t("stations.address"), accessor: (item: StationData) => item.address || "—" },
+    { header: t("stations.address1"), accessor: (item: StationData) => item.address1 || item.address || "—" },
     { header: t("stations.coordinates"), accessor: (item: StationData) => t("stations.coordsFormat", { lat: item.location.lat.toFixed(4), lng: item.location.lng.toFixed(4) }) },
     {
       header: t("stations.status"),
@@ -190,12 +208,9 @@ const StationsPage: React.FC = () => {
       header: t("stations.actions"),
       accessor: (item: StationData) => (
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedStation(item); setDetailOpen(true); }}>
-            <Eye size={16} />
-          </Button>
           <Button variant="outline" size="sm" onClick={(e) => {
             e.stopPropagation();
-            setForm({ name: item.name, cityId: idOf(item.cityId), address: item.address || "", lat: String(item.location.lat), lng: String(item.location.lng), isActive: item.isActive !== false });
+            setForm({ name: item.name, cityId: idOf(item.cityId), address1: item.address1 || item.address || "", address2: item.address2 || "", phone1: item.phone1 || "", phone2: item.phone2 || "", email1: item.email1 || "", email2: item.email2 || "", lat: String(item.location.lat), lng: String(item.location.lng), isActive: item.isActive !== false, manager1: idOf(item.manager1), manager2: idOf(item.manager2) });
             setIsModalOpen(true);
           }}>
             <Pencil size={14} />
@@ -220,12 +235,12 @@ const StationsPage: React.FC = () => {
           <p className="text-sm text-muted-foreground mt-1">{t("stations.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={refresh} disabled={loading}><RefreshCw size={16} /></Button>
-          <Button onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }} disabled={cities.length === 0}><Plus size={16} /> {t("stations.newStation")}</Button>
+          <Button data-tour="stations-refresh" variant="outline" onClick={refresh} disabled={loading}><RefreshCw size={16} /></Button>
+          <Button data-tour="stations-add" onClick={() => { setForm({ ...EMPTY_FORM }); setIsModalOpen(true); }} disabled={cities.length === 0}><Plus size={16} /> {t("stations.newStation")}</Button>
         </div>
       </div>
 
-      <DataTable columns={columns} data={stations} isLoading={loading} keyExtractor={(item: StationData) => item._id} />
+      <div data-tour="stations-table"><DataTable columns={columns} data={stations} isLoading={loading} keyExtractor={(item: StationData) => item._id} onRowClick={(item) => navigate(`/stations/${item._id}`)} /></div>
 
       <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setStationToDelete(null); }} title={t("stations.deleteStation")}>
         {stationToDelete && (
@@ -259,11 +274,57 @@ const StationsPage: React.FC = () => {
             <input required type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" placeholder={t("stations.namePlaceholder")} />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("stations.address")}</label>
-            <div className="flex gap-2">
-              <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="flex-1 p-2 border rounded-md bg-muted/30" placeholder={t("stations.addressPlaceholder")} />
-              <Button type="button" variant="outline" size="sm" onClick={handleSearchAddress} disabled={!cityName}><Search size={14} /></Button>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.address1")}</label>
+              <div className="flex gap-2">
+                <input type="text" value={form.address1} onChange={(e) => setForm({ ...form, address1: e.target.value })} className="flex-1 p-2 border rounded-md bg-muted/30" placeholder={t("stations.addressPlaceholder")} />
+                <Button type="button" variant="outline" size="sm" onClick={handleSearchAddress} disabled={!cityName}><Search size={14} /></Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.address2")}</label>
+              <input type="text" value={form.address2} onChange={(e) => setForm({ ...form, address2: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.phone1")}</label>
+              <input type="tel" value={form.phone1} onChange={(e) => setForm({ ...form, phone1: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.phone2")}</label>
+              <input type="tel" value={form.phone2} onChange={(e) => setForm({ ...form, phone2: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.email1")}</label>
+              <input type="email" value={form.email1} onChange={(e) => setForm({ ...form, email1: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.email2")}</label>
+              <input type="email" value={form.email2} onChange={(e) => setForm({ ...form, email2: e.target.value })} className="w-full p-2 border rounded-md bg-muted/30" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.manager1")}</label>
+              <select value={form.manager1} onChange={(e) => setForm({ ...form, manager1: e.target.value })} className="w-full p-2 border rounded-md bg-background">
+                <option value="">{t("cities.selectManager")}</option>
+                {users.map((u) => (
+                  <option key={u._id} value={u._id}>{getUserName(u)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("stations.manager2")}</label>
+              <select value={form.manager2} onChange={(e) => setForm({ ...form, manager2: e.target.value })} className="w-full p-2 border rounded-md bg-background">
+                <option value="">{t("cities.selectManager")}</option>
+                {users.map((u) => (
+                  <option key={u._id} value={u._id}>{getUserName(u)}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -283,7 +344,7 @@ const StationsPage: React.FC = () => {
               lat={form.lat ? Number(form.lat) : undefined}
               lng={form.lng ? Number(form.lng) : undefined}
               onPick={handleMapPick}
-              onAddressFound={(address) => setForm((prev) => ({ ...prev, address }))}
+              onAddressFound={(address) => setForm((prev) => ({ ...prev, address1: address }))}
               cityBounds={cityBounds}
             />
           </div>

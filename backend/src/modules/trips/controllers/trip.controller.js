@@ -6,7 +6,7 @@ const { respond } = require('../../../utils/response');
  */
 const createTrip = async (req, res, next) => {
   try {
-    const trip = await tripService.createTrip(req.user.companyId, req.body);
+    const trip = await tripService.createTrip(req.user.companyId, req.body, req.user._id);
     respond(res, 201, trip, 'Trip created');
   } catch (error) {
     next(error);

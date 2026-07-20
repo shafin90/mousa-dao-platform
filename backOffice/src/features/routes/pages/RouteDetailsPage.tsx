@@ -11,21 +11,26 @@ import {
   Ruler,
   Building2,
   CalendarClock,
+  Phone,
+  Mail,
+  User as UserIcon,
+  ShieldCheck,
+  DollarSign,
+  Fingerprint,
+  Home,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
-import { RouteMap } from "@/shared/components/maps/RouteMap";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { StopsCard } from "@/shared/components/stops/StopsCard";
 import { useAppSelector } from "@/app/store";
-import { routeApi, type RouteData } from "@/api/routeApi";
-import { stationApi, type StationData } from "@/api/stationApi";
+import { routeApi, type RouteData, type RouteStop } from "@/api/routeApi";
 import { cityApi, type CityData } from "@/api/cityApi";
+import { stationApi, type StationData } from "@/api/stationApi";
 import { tripApi, type TripData } from "@/api/tripApi";
 
-/** Extracts an id from a value that is either a populated object or a raw id string. */
 const idOf = (value: unknown): string => {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -57,47 +62,19 @@ const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; 
   </Card>
 );
 
-const StationCard: React.FC<{ title: string; accent: string; station?: StationData; fallback: string }> = ({
-  title,
-  accent,
-  station,
-  fallback,
-}) => {
-  const { t } = useTranslation();
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <span className={`inline-block h-2.5 w-2.5 rounded-full ${accent}`} />
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 text-sm">
-        <p className="text-lg font-semibold">{station?.name || fallback}</p>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Building2 size={14} />
-          <span>{station?.cityId?.name || t("common.na")}</span>
-          {station && (
-            <Badge variant={station.isActive ? "success" : "secondary"} className="ml-1">
-              {station.isActive ? t("stations.active") : t("stations.inactive")}
-            </Badge>
-          )}
-        </div>
-        {station?.address && (
-          <div className="flex items-start gap-2 text-muted-foreground">
-            <MapPin size={14} className="mt-0.5 shrink-0" />
-            <span>{station.address}</span>
-          </div>
-        )}
-        {station?.location && (
-          <p className="font-mono text-xs text-muted-foreground">
-            {station.location.lat.toFixed(5)}, {station.location.lng.toFixed(5)}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+const renderField = (
+  label: string,
+  value: React.ReactNode,
+  icon?: React.ReactNode
+) => (
+  <div className="flex items-center justify-between gap-4 py-1.5 text-sm">
+    <span className="flex items-center gap-2 text-muted-foreground">
+      {icon && <span className="shrink-0">{icon}</span>}
+      {label}
+    </span>
+    <span className="text-right font-medium">{value}</span>
+  </div>
+);
 
 const formatDuration = (minutes?: number): string => {
   if (minutes == null) return "—";
@@ -121,6 +98,22 @@ const statusVariant = (status: TripData["status"]) => {
   }
 };
 
+function getUserName(
+  u: string | { _id: string; profile: { firstName: string; lastName: string } } | undefined
+): string {
+  if (!u) return "—";
+  if (typeof u === "string") return u;
+  return `${u.profile.firstName} ${u.profile.lastName}`;
+}
+
+function getStationName(
+  s: string | { _id: string; name: string } | undefined
+): string {
+  if (!s) return "";
+  if (typeof s === "string") return "";
+  return s.name;
+}
+
 const RouteDetailsPage: React.FC = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -128,8 +121,8 @@ const RouteDetailsPage: React.FC = () => {
 
   const routeFromStore = useAppSelector((s) => s.routes.routes.find((r) => r._id === id));
   const [route, setRoute] = useState<RouteData | null>(routeFromStore ?? null);
-  const [stations, setStations] = useState<StationData[]>([]);
   const [cities, setCities] = useState<CityData[]>([]);
+  const [stations, setStations] = useState<StationData[]>([]);
   const [trips, setTrips] = useState<TripData[]>([]);
   const [loading, setLoading] = useState(!routeFromStore);
   const [tripsLoading, setTripsLoading] = useState(true);
@@ -139,10 +132,10 @@ const RouteDetailsPage: React.FC = () => {
     let active = true;
     (async () => {
       try {
-        const [routeData, stationData, cityData] = await Promise.all([
+        const [routeData, cityData, stationData] = await Promise.all([
           routeApi.getById(id).catch(() => routeFromStore ?? null),
-          stationApi.getAll().catch(() => [] as StationData[]),
           cityApi.getAll().catch(() => [] as CityData[]),
+          stationApi.getAll().catch(() => [] as StationData[]),
         ]);
         if (!active) return;
         if (!routeData) {
@@ -150,17 +143,14 @@ const RouteDetailsPage: React.FC = () => {
         } else {
           setRoute(routeData);
         }
-        setStations(stationData);
         setCities(cityData);
+        setStations(stationData);
       } finally {
         if (active) setLoading(false);
       }
     })();
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    return () => { active = false; };
+  }, [id, routeFromStore]);
 
   useEffect(() => {
     let active = true;
@@ -175,23 +165,30 @@ const RouteDetailsPage: React.FC = () => {
         if (active) setTripsLoading(false);
       }
     })();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [id]);
 
-  const fromStation = useMemo(
-    () => stations.find((s) => s._id === idOf(route?.fromStation)),
-    [stations, route]
+  const fromCity = useMemo(
+    () => cities.find((c) => c._id === idOf(route?.fromCity)),
+    [cities, route]
   );
-  const toStation = useMemo(
-    () => stations.find((s) => s._id === idOf(route?.toStation)),
-    [stations, route]
+  const toCity = useMemo(
+    () => cities.find((c) => c._id === idOf(route?.toCity)),
+    [cities, route]
+  );
+
+  const fromStationNames = useMemo(
+    () => (route?.fromStations || []).map((s) => getStationName(s)).filter(Boolean).join(", "),
+    [route]
+  );
+
+  const toStationNames = useMemo(
+    () => (route?.toStations || []).map((s) => getStationName(s)).filter(Boolean).join(", "),
+    [route]
   );
 
   const metrics = useMemo(() => {
     if (!route) return null;
-
     const avgSpeed =
       route.estimatedTimeMinutes && route.estimatedTimeMinutes > 0
         ? route.distanceKm / (route.estimatedTimeMinutes / 60)
@@ -250,87 +247,140 @@ const RouteDetailsPage: React.FC = () => {
     );
   }
 
-  const canRenderMap = !!(fromStation?.location && toStation?.location);
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <Button variant="ghost" size="sm" className="-ml-2 gap-2" onClick={() => navigate("/routes")}>
             <ArrowLeft size={16} /> {t("routes.backToRoutes")}
           </Button>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <RouteIcon size={22} className="text-primary" />
-            <span>{fromStation?.name || route.fromStation?.name || t("common.na")}</span>
+            <span>{fromCity?.name || route.fromCity?.name || t("common.na")}</span>
             <span className="text-muted-foreground">→</span>
-            <span>{toStation?.name || route.toStation?.name || t("common.na")}</span>
+            <span>{toCity?.name || route.toCity?.name || t("common.na")}</span>
           </h1>
-          <p className="font-mono text-xs text-muted-foreground">{route._id}</p>
+          <p className="font-mono text-xs text-muted-foreground">{t("routes.routeId")}: {route._id}</p>
         </div>
-        <Button
-          className="gap-2"
-          onClick={() => {
-            navigate("/routes", { state: { editRouteId: route._id } });
-            toast.info(t("routes.editFromList"));
-          }}
-        >
-          <Pencil size={16} /> {t("common.edit")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Badge variant={route.isActive !== false ? "success" : "secondary"}>
+            {route.isActive !== false ? t("routes.active") : t("routes.inactive")}
+          </Badge>
+          <Button
+            className="gap-2"
+            onClick={() => {
+              navigate("/routes", { state: { editRouteId: route._id } });
+              toast.info(t("routes.editFromList"));
+            }}
+          >
+            <Pencil size={16} /> {t("common.edit")}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Ruler size={18} />}
           label={t("routes.distance")}
           value={t("routes.distanceValue", { value: route.distanceKm })}
         />
-
         <StatCard
           icon={<Clock size={18} />}
           label={t("routes.estTime")}
-          value={formatDuration(route.estimatedTimeMinutes)}
+          value={route.estimatedTimeMinutes ? formatDuration(route.estimatedTimeMinutes) : t("common.na")}
+          hint={route.estimatedTimeMinutes ? t("routes.estTimeMinutes") : undefined}
         />
+        {metrics?.avgSpeed != null && (
+          <StatCard
+            icon={<Gauge size={18} />}
+            label={t("routes.avgSpeed")}
+            value={t("routes.speedValue", { value: metrics.avgSpeed.toFixed(1) })}
+          />
+        )}
         <StatCard
-          icon={<Gauge size={18} />}
-          label={t("routes.avgSpeed")}
-          value={metrics?.avgSpeed != null ? `${metrics.avgSpeed.toFixed(0)} km/h` : "—"}
+          icon={<DollarSign size={18} />}
+          label={t("routes.baseRate")}
+          value={route.baseRate ? `CFA ${route.baseRate}` : "—"}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <StationCard
-          title={t("routes.fromStation")}
-          accent="bg-emerald-500"
-          station={fromStation}
-          fallback={route.fromStation?.name || t("common.na")}
-        />
-        <StationCard
-          title={t("routes.toStation")}
-          accent="bg-blue-500"
-          station={toStation}
-          fallback={route.toStation?.name || t("common.na")}
-        />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Building2 size={18} className="text-primary" /> {t("routes.departureCity")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {renderField(t("routes.departureCity"), fromCity?.name || route.fromCity?.name || "—", <MapPin size={14} />)}
+              {fromCity?.country && renderField(t("cities.country"), fromCity.country, <MapPin size={14} />)}
+              {renderField(t("routes.fromStations"), fromStationNames || "—", <Home size={14} />)}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Building2 size={18} className="text-primary" /> {t("routes.destinationCity")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {renderField(t("routes.destinationCity"), toCity?.name || route.toCity?.name || "—", <MapPin size={14} />)}
+              {toCity?.country && renderField(t("cities.country"), toCity.country, <MapPin size={14} />)}
+              {renderField(t("routes.toStations"), toStationNames || "—", <Home size={14} />)}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <DollarSign size={18} className="text-primary" /> {t("routes.baseRate")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {renderField(t("routes.baseRate"), route.baseRate ? `CFA ${route.baseRate}` : "—", <DollarSign size={14} />)}
+              {renderField(t("routes.distance"), t("routes.distanceValue", { value: route.distanceKm }), <Ruler size={14} />)}
+              {renderField(t("routes.estTime"), route.estimatedTimeMinutes ? formatDuration(route.estimatedTimeMinutes) : "—", <Clock size={14} />)}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck size={18} className="text-primary" /> {t("routes.status")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {renderField(
+                t("routes.status"),
+                <Badge variant={route.isActive !== false ? "success" : "secondary"}>
+                  {route.isActive !== false ? t("routes.active") : t("routes.inactive")}
+                </Badge>,
+                <ShieldCheck size={14} />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarClock size={18} className="text-primary" /> {t("cities.auditInfo")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {renderField(t("routes.createdAt"), new Date(route.createdAt).toLocaleString(), <CalendarClock size={14} />)}
+              {renderField(t("routes.createdBy"), getUserName(route.createdBy as never), <UserIcon size={14} />)}
+              {route.updatedAt && renderField(t("routes.updatedAt"), new Date(route.updatedAt).toLocaleString(), <Clock size={14} />)}
+              {renderField(t("routes.routeId"), route._id, <Fingerprint size={14} />)}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {canRenderMap && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MapPin size={18} className="text-primary" /> {t("routes.mapTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RouteMap
-              from={{ lat: fromStation!.location.lat, lng: fromStation!.location.lng }}
-              to={{ lat: toStation!.location.lat, lng: toStation!.location.lng }}
-              fromLabel={fromStation!.name}
-              toLabel={toStation!.name}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      <StopsCard stops={route.stops ?? []} cities={cities} />
+      <StopsCard stops={route.stops ?? []} cities={cities} stations={stations} />
 
       <Card>
         <CardHeader className="flex-row items-center justify-between pb-3">
@@ -351,23 +401,6 @@ const RouteDetailsPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <DataTable columns={tripColumns} data={trips} isLoading={tripsLoading} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-          <div className="flex items-center gap-2 text-sm">
-            <CalendarClock size={16} className="text-muted-foreground" />
-            <span className="text-muted-foreground">{t("routes.createdAt")}:</span>
-            <span className="font-medium">{new Date(route.createdAt).toLocaleString()}</span>
-          </div>
-          {route.updatedAt && (
-            <div className="flex items-center gap-2 text-sm">
-              <CalendarClock size={16} className="text-muted-foreground" />
-              <span className="text-muted-foreground">{t("routes.updatedAt")}:</span>
-              <span className="font-medium">{new Date(route.updatedAt).toLocaleString()}</span>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

@@ -11,7 +11,7 @@ interface StationInfo {
 export interface BookingData {
   _id: string;
   userId: { _id: string; profile: { firstName: string; lastName: string }; email: string; phone: string };
-  tripId: { _id: string; routeId: { _id: string; fromStation: StationInfo; toStation: StationInfo }; busId: { busNumber: string }; departureTime: string; arrivalTime: string; date: string; price: number; seatsTotal: number; seatsBooked: number; status: string };
+  tripId: { _id: string; routeId: { _id: string; fromCity: { _id: string; name: string }; toCity: { _id: string; name: string } }; busId: { busNumber: string }; departureTime: string; arrivalTime: string; date: string; price: number; seatsTotal: number; seatsBooked: number; status: string };
   seats: string[];
   bookingCode: string;
   totalAmount: number;

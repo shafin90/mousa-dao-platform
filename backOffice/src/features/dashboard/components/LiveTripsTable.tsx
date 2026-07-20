@@ -6,6 +6,7 @@ import type { LiveTrip } from "@/api/analyticsApi";
 interface Props {
   data: LiveTrip[];
   loading?: boolean;
+  onRowClick?: (trip: LiveTrip) => void;
 }
 
 const STATUS_VARIANT: Record<string, "success" | "warning" | "secondary" | "default"> = {
@@ -14,7 +15,7 @@ const STATUS_VARIANT: Record<string, "success" | "warning" | "secondary" | "defa
   active: "success",
 };
 
-export const LiveTripsTable: React.FC<Props> = ({ data, loading }) => {
+export const LiveTripsTable: React.FC<Props> = ({ data, loading, onRowClick }) => {
   const { t } = useTranslation();
   if (loading) {
     return (
@@ -44,7 +45,7 @@ export const LiveTripsTable: React.FC<Props> = ({ data, loading }) => {
         </thead>
         <tbody>
           {data.map((trip) => (
-            <tr key={trip._id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+            <tr key={trip._id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => onRowClick?.(trip)}>
               <td className="py-2.5 pr-4">{trip.route}</td>
               <td className="py-2.5 pr-4 text-muted-foreground">{trip.bus}</td>
               <td className="py-2.5 pr-4 font-mono text-xs">{trip.departureTime}</td>

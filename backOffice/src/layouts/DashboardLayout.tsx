@@ -3,6 +3,8 @@ import { Outlet } from "react-router-dom";;
 import { Sidebar } from "./Sidebar";;
 import { Topbar } from "./Topbar";;
 import { cn } from "@/shared/utils/cn";;
+import { TourGuideProvider } from "@/features/onboarding/context/TourGuideContext";
+import { TourGuide } from "@/features/onboarding/components/TourGuide";
 
 import { Toaster } from 'sonner';
 
@@ -11,6 +13,7 @@ export const DashboardLayout: React.FC = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
+    <TourGuideProvider>
     <div className="min-h-screen bg-background">
       <Toaster position="top-right" richColors />
       {/* Sidebar - Desktop */}
@@ -47,5 +50,7 @@ export const DashboardLayout: React.FC = () => {
         </div>
       )}
     </div>
+      <TourGuide />
+    </TourGuideProvider>
   );
 };

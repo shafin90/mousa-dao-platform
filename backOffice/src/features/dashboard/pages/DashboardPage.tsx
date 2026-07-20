@@ -59,7 +59,7 @@ const DashboardPage: React.FC = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/trips')}>{t("dashboard.viewAll")}</Button>
           </CardHeader>
           <CardContent>
-            <LiveTripsTable data={liveTrips} loading={extendedLoading} />
+            <LiveTripsTable data={liveTrips} loading={extendedLoading} onRowClick={(trip) => navigate(`/trips/${trip._id}`)} />
           </CardContent>
         </Card>
 
@@ -84,7 +84,7 @@ const DashboardPage: React.FC = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/bookings')}>{t("dashboard.viewAll")}</Button>
           </CardHeader>
           <CardContent>
-            <RecentBookings data={recentBookings} loading={extendedLoading} />
+            <RecentBookings data={recentBookings} loading={extendedLoading} onRowClick={(b) => navigate(`/bookings/${b._id}`)} />
           </CardContent>
         </Card>
 

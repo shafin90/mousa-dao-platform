@@ -9,40 +9,49 @@ export interface StopCity {
   name: string;
 }
 
+export interface StopStation {
+  _id: string;
+  name: string;
+}
+
 export interface RouteStop {
   _id?: string;
   cityId: StopCity | string;
-  arrivalTime?: string;
-  departureTime?: string;
+  stationId?: StopStation | string;
+  name?: string;
   status?: StopStatus;
 }
 
 /** Shape sent to the API when persisting stops (city id only). */
 export interface RouteStopInput {
   cityId: string;
-  arrivalTime?: string;
-  departureTime?: string;
+  stationId?: string;
+  name?: string;
   status?: StopStatus;
 }
 
 export interface RouteData {
   _id: string;
-  fromStation: { _id: string; name: string };
-  toStation: { _id: string; name: string };
-  baseFare: number;
+  fromCity: { _id: string; name: string };
+  toCity: { _id: string; name: string };
+  fromStations?: Array<{ _id: string; name: string }>;
+  toStations?: Array<{ _id: string; name: string }>;
   distanceKm: number;
   estimatedTimeMinutes?: number;
+  baseRate?: number;
+  isActive?: boolean;
   stops?: RouteStop[];
+  createdBy?: string | { _id: string; profile: { firstName: string; lastName: string } };
   createdAt: string;
   updatedAt?: string;
 }
 
-/** Normalizes stops (which may contain populated station objects) to the id-only input shape the API expects. */
+/** Normalizes stops to the id-only input shape the API expects. */
 export const normalizeStops = (stops?: RouteStop[]): RouteStopInput[] =>
   (stops || []).map((s) => ({
     cityId: typeof s.cityId === "object" ? s.cityId._id : s.cityId,
-    arrivalTime: s.arrivalTime || "",
-    departureTime: s.departureTime || "",
+    stationId: s.stationId ? (typeof s.stationId === "object" ? s.stationId._id : s.stationId) : undefined,
+    name: s.name || "",
     status: s.status || "confirmed",
   }));
 

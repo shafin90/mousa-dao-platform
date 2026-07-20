@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   Pencil,
   Bus as BusIcon,
-  Route as RouteIcon,
   Clock,
   Coins,
   Users,
@@ -13,19 +12,19 @@ import {
   CalendarClock,
   User,
   Wallet,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { DataTable } from "@/shared/components/tables/DataTable";
-import { StopsCard } from "@/shared/components/stops/StopsCard";
 import { cn } from "@/shared/utils/cn";
 import { useAppSelector } from "@/app/store";
 import { tripApi, type TripData } from "@/api/tripApi";
 import { busApi, type BusData } from "@/api/busApi";
 import { bookingApi, type BookingData } from "@/api/bookingApi";
-import { cityApi, type CityData } from "@/api/cityApi";
+
 
 const SEATS_PER_ROW = 4;
 const ROW_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -146,7 +145,6 @@ const TripDetailsPage: React.FC = () => {
   const [trip, setTrip] = useState<TripData | null>(tripFromStore ?? null);
   const [bus, setBus] = useState<BusData | null>(null);
   const [bookings, setBookings] = useState<BookingData[]>([]);
-  const [cities, setCities] = useState<CityData[]>([]);
   const [loading, setLoading] = useState(!tripFromStore);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -197,21 +195,6 @@ const TripDetailsPage: React.FC = () => {
   }, [id]);
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const data = await cityApi.getAll();
-        if (active) setCities(data);
-      } catch {
-        if (active) setCities([]);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!trip?.date) return;
     let active = true;
     (async () => {
@@ -252,10 +235,11 @@ const TripDetailsPage: React.FC = () => {
     [bookings]
   );
 
-  const route = trip && typeof trip.routeId === "object" ? trip.routeId : undefined;
-  const routeLabel = route
-    ? `${route.fromStation?.name || "?"} → ${route.toStation?.name || "?"}`
-    : t("common.na");
+  const fromStationName = (typeof trip?.fromStation === "object" ? trip.fromStation?.name : trip?.routeId?.fromCity?.name) || "";
+  const toStationName = (typeof trip?.toStation === "object" ? trip.toStation?.name : trip?.routeId?.toCity?.name) || "";
+  const fromStationLabel = typeof trip?.fromStation === "object" ? trip.fromStation?.name : undefined;
+  const toStationLabel = typeof trip?.toStation === "object" ? trip.toStation?.name : undefined;
+  const tripLabel = fromStationName && toStationName ? `${fromStationName} → ${toStationName}` : t("common.na");
 
   const bookingColumns = [
     {
@@ -333,8 +317,8 @@ const TripDetailsPage: React.FC = () => {
           </Button>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-              <RouteIcon size={22} className="text-primary" />
-              {routeLabel}
+              <BusIcon size={22} className="text-primary" />
+              {tripLabel}
             </h1>
             {serial != null && (
               <Badge variant="default">{`${t("trips.tripNo")}${serial}`}</Badge>
@@ -443,34 +427,32 @@ const TripDetailsPage: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <RouteIcon size={18} className="text-primary" /> {t("trips.routeDetails")}
+              <MapPin size={18} className="text-primary" /> {t("trips.stationDetails")}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label={t("routes.fromStation")} value={route?.fromStation?.name || t("common.na")} />
-            <InfoRow label={t("routes.toStation")} value={route?.toStation?.name || t("common.na")} />
             <InfoRow
-              label={t("routes.distance")}
-              value={route?.distanceKm != null ? t("routes.distanceValue", { value: route.distanceKm }) : t("common.na")}
+              label={t("trips.fromStation")}
+              value={fromStationLabel || trip.routeId?.fromCity?.name || t("common.na")}
             />
             <InfoRow
-              label={t("routes.baseFare")}
-              value={route?.baseFare != null ? `CFA ${route.baseFare.toFixed(2)}` : t("common.na")}
+              label={t("trips.toStation")}
+              value={toStationLabel || trip.routeId?.toCity?.name || t("common.na")}
             />
-            {route?.baseFare != null && trip.price != null && (
+            {trip.routeId?.fromStations && trip.routeId.fromStations.length > 0 && (
               <InfoRow
-                label={t("trips.priceVsBase")}
-                value={
-                  <span className={trip.price >= route.baseFare ? "text-emerald-600" : "text-amber-600"}>
-                    {trip.price >= route.baseFare ? "+" : ""}
-                    CFA {(trip.price - route.baseFare).toFixed(2)}
-                  </span>
-                }
+                label={t("routes.fromStations")}
+                value={trip.routeId.fromStations.map((s) => s.name).join(", ")}
+              />
+            )}
+            {trip.routeId?.toStations && trip.routeId.toStations.length > 0 && (
+              <InfoRow
+                label={t("routes.toStations")}
+                value={trip.routeId.toStations.map((s) => s.name).join(", ")}
               />
             )}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -479,19 +461,37 @@ const TripDetailsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <InfoRow label={t("trips.date")} value={new Date(trip.date).toLocaleDateString()} />
-            <InfoRow label={t("trips.departure")} value={trip.departureTime} />
+            <InfoRow label={t("trips.scheduledTime")} value={`${trip.departureTime} → ${trip.arrivalTime}`} />
             <InfoRow label={t("trips.tripNumber")} value={serial != null ? `#${serial}` : t("common.na")} />
-            <InfoRow label={t("trips.arrival")} value={trip.arrivalTime} />
+            {(trip.actualDepartureTime || trip.actualArrivalTime) && (
+              <InfoRow
+                label={t("trips.actualTime")}
+                value={`${trip.actualDepartureTime || "—"} → ${trip.actualArrivalTime || "—"}`}
+              />
+            )}
+            {(trip.delayMinutes ?? 0) > 0 && (
+              <InfoRow
+                label={t("trips.delay")}
+                value={<span className="text-destructive">{trip.delayMinutes} min</span>}
+              />
+            )}
+            <InfoRow label={t("routes.distance")} value={trip.routeId?.distanceKm ? `${trip.routeId.distanceKm} km` : t("common.na")} />
             <InfoRow label={t("routes.estTime")} value={formatDuration(metrics?.duration)} />
+            <InfoRow label={t("routes.baseRate")} value={trip.routeId?.baseRate ? `CFA ${trip.routeId.baseRate}` : t("common.na")} />
+            <InfoRow label={t("trips.price")} value={`CFA ${trip.price?.toFixed(2) ?? "0.00"}`} />
             <InfoRow label={t("trips.createdAt")} value={new Date(trip.createdAt).toLocaleString()} />
             {trip.updatedAt && (
               <InfoRow label={t("routes.updatedAt")} value={new Date(trip.updatedAt).toLocaleString()} />
             )}
+            {trip.createdBy && (
+              <InfoRow
+                label={t("routes.createdBy")}
+                value={`${trip.createdBy.firstName} ${trip.createdBy.lastName}`}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
-
-      <StopsCard stops={route?.stops ?? []} cities={cities} />
 
       {seatCapacity > 0 && (
         <Card>

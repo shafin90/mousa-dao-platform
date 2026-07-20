@@ -82,8 +82,17 @@ async function seed() {
   console.log(`Created 1 staff, ${drivers.length} drivers, ${customers.length} customers`);
 
   // ── CITIES ──
-  const cityNames = ['Abidjan', 'Yamoussoukro', 'Bouaké', 'San Pedro', 'Korhogo', 'Man', 'Daloa', 'Gagnoa'];
-  const cities = await City.insertMany(cityNames.map((name) => ({ companyId, name })));
+  const cityData = [
+    { name: 'Abidjan', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 5600000, location: { lat: 5.3476, lng: -4.0083 } },
+    { name: 'Yamoussoukro', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 355000, location: { lat: 6.8275, lng: -5.2893 } },
+    { name: 'Bouaké', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 575000, location: { lat: 7.6908, lng: -5.0310 } },
+    { name: 'San Pedro', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 261000, location: { lat: 4.7480, lng: -6.6443 } },
+    { name: 'Korhogo', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 286000, location: { lat: 9.4566, lng: -5.6293 } },
+    { name: 'Man', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 172000, location: { lat: 7.4125, lng: -7.5508 } },
+    { name: 'Daloa', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 245000, location: { lat: 6.8774, lng: -6.4502 } },
+    { name: 'Gagnoa', country: "Côte d'Ivoire", timezone: 'Africa/Abidjan', approxPopulation: 215000, location: { lat: 6.1319, lng: -5.9506 } },
+  ];
+  const cities = await City.insertMany(cityData.map((c) => ({ ...c, companyId })));
   const cityMap = {};
   cities.forEach((c) => { cityMap[c.name] = c._id; });
   console.log(`Created ${cities.length} cities`);

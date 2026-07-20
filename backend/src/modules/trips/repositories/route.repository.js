@@ -1,6 +1,11 @@
 const Route = require('../models/Route');
 
-const stopsPopulate = { path: 'stops.cityId', select: 'name' };
+const stopsPopulate = [
+  { path: 'stops.cityId', select: 'name' },
+  { path: 'stops.stationId', select: 'name' },
+];
+const stationPopulate = { path: 'fromStations toStations', select: 'name' };
+const userPopulate = { path: 'createdBy', select: 'profile.firstName profile.lastName email' };
 
 /**
  * Finds a route by ID scoped to company.
@@ -11,8 +16,10 @@ const stopsPopulate = { path: 'stops.cityId', select: 'name' };
  */
 const findById = async (id, companyId) => {
   return await Route.findOne({ _id: id, companyId })
-    .populate('fromStation toStation')
-    .populate(stopsPopulate);
+    .populate('fromCity toCity')
+    .populate(stopsPopulate)
+    .populate(stationPopulate)
+    .populate(userPopulate);
 };
 
 /**
@@ -33,8 +40,9 @@ const create = async (data) => {
  */
 const findAll = async (companyId) => {
   return await Route.find({ companyId })
-    .populate('fromStation toStation')
-    .populate(stopsPopulate);
+    .populate('fromCity toCity')
+    .populate(stopsPopulate)
+    .populate(stationPopulate);
 };
 
 /**
@@ -47,8 +55,10 @@ const findAll = async (companyId) => {
  */
 const updateOne = async (id, companyId, update) => {
   return await Route.findOneAndUpdate({ _id: id, companyId }, update, { new: true })
-    .populate('fromStation toStation')
-    .populate(stopsPopulate);
+    .populate('fromCity toCity')
+    .populate(stopsPopulate)
+    .populate(stationPopulate)
+    .populate(userPopulate);
 };
 
 /**

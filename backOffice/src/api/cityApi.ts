@@ -5,6 +5,17 @@ export interface CityData {
   _id: string;
   name: string;
   country: string;
+  location?: { lat: number; lng: number };
+  address1?: string;
+  address2?: string;
+  phone1?: string;
+  phone2?: string;
+  email1?: string;
+  email2?: string;
+  manager1?: string | { _id: string; profile: { firstName: string; lastName: string } };
+  manager2?: string | { _id: string; profile: { firstName: string; lastName: string } };
+  isActive?: boolean;
+  createdBy?: string | { _id: string; profile: { firstName: string; lastName: string } };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -33,5 +44,14 @@ export const cityApi = {
   },
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/cities/${id}`);
+  },
+
+  getDistance: async (from: string, to: string): Promise<{ distanceKm: number; estimatedTimeMinutes: number }> => {
+    const { data } = await apiClient.get<ApiResponse<{ distanceKm: number; estimatedTimeMinutes: number }>>("/cities/distance", { params: { from, to } });
+    return data.data;
+  },
+  geocode: async (id: string): Promise<CityData> => {
+    const { data } = await apiClient.post<ApiResponse<CityData>>(`/cities/${id}/geocode`);
+    return data.data;
   },
 };

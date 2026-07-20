@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
 const createTripSchema = Joi.object({
-  routeId: Joi.string().required(),
+  routeId: Joi.string().optional(),
   busId: Joi.string().required(),
   departureTime: Joi.string().required(),
   arrivalTime: Joi.string().required(),

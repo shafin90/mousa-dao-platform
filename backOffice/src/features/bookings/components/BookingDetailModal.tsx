@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/modals/Modal";
 import { Badge } from "@/shared/components/ui/Badge";
-import { RouteMap } from "@/shared/components/maps/RouteMap";
 import { Calendar, Clock, MapPin, Bus, User, CreditCard, Ticket, Shield, Wallet } from "lucide-react";
 import type { BookingData } from "@/api/bookingApi";
 
@@ -77,7 +76,7 @@ export const BookingDetailModal: React.FC<Props> = ({ booking, isOpen, onClose }
               label={t("routes.from") + " → " + t("routes.to")}
               value={
                 route
-                  ? `${route.fromStation?.name || "?"} → ${route.toStation?.name || "?"}`
+                  ? `${route.fromCity?.name || "?"} → ${route.toCity?.name || "?"}`
                   : "—"
               }
             />
@@ -101,14 +100,6 @@ export const BookingDetailModal: React.FC<Props> = ({ booking, isOpen, onClose }
         </div>
       </div>
 
-      {route?.fromStation?.location && route?.toStation?.location && (
-        <RouteMap
-          from={route.fromStation.location}
-          to={route.toStation.location}
-          fromLabel={route.fromStation.name}
-          toLabel={route.toStation.name}
-        />
-      )}
     </Modal>
   );
 };

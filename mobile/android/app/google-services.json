@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "992033884897",
+    "project_id": "transport-15094",
+    "storage_bucket": "transport-15094.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:992033884897:android:3aa2465eaedf3d3fae85a0",
+        "android_client_info": {
+          "package_name": "com.mousa.transport"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7JAJJ39Kr6xqTAgKDsZYii1JQe8RCZQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
