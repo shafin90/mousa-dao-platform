@@ -112,7 +112,7 @@ const RoutesPage: React.FC = () => {
       return;
     }
     try {
-      const payload: Partial<RouteData> = {
+      const payload = {
         fromCity: form.fromCity,
         toCity: form.toCity,
         fromStations: form.fromStations.filter(Boolean),
@@ -122,7 +122,7 @@ const RoutesPage: React.FC = () => {
         baseRate: form.baseRate ? Number(form.baseRate) : undefined,
         isActive: form.isActive,
         stops: form.stops.filter((s) => s.cityId),
-      };
+      } satisfies Partial<RouteData>;
       if (editingRouteId) {
         await update(editingRouteId, payload);
         toast.success(t("routes.updated"));

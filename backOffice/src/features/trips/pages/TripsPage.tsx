@@ -11,7 +11,7 @@ import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
 import { busApi, type BusData } from "@/api/busApi";
 import { stationApi, type StationData } from "@/api/stationApi";
-import { tripApi, type TripData, type TripFilters } from "@/api/tripApi";
+import { tripApi, type TripData, type TripInput, type TripFilters } from "@/api/tripApi";
 
 const statusOptions = ["scheduled", "active", "completed", "cancelled"];
 
@@ -100,7 +100,7 @@ const TripsPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = {
+      const payload: TripInput = {
         fromStation: form.fromStation,
         toStation: form.toStation,
         busId: form.busId,
@@ -109,7 +109,7 @@ const TripsPage: React.FC = () => {
         date: form.date,
         price: Number(form.price),
         status: form.status,
-      } as Partial<TripData>
+      }
       if (editingTripId) {
         await update(editingTripId, payload);
         toast.success(t("trips.updated"));

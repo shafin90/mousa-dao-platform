@@ -34,8 +34,8 @@ export interface RouteData {
   _id: string;
   fromCity: { _id: string; name: string };
   toCity: { _id: string; name: string };
-  fromStations?: Array<string | { _id: string; name: string }>;
-  toStations?: Array<string | { _id: string; name: string }>;
+  fromStations?: Array<{ _id: string; name: string }>;
+  toStations?: Array<{ _id: string; name: string }>;
   distanceKm: number;
   estimatedTimeMinutes?: number;
   baseRate?: number;

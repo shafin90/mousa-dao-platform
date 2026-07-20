@@ -5,9 +5,23 @@ import type { RouteStop } from "./routeApi";
 export interface TripData {
   _id: string;
   routeId?: { _id: string; fromCity: { _id: string; name: string }; toCity: { _id: string; name: string }; fromStations?: { _id: string; name: string }[]; toStations?: { _id: string; name: string }[]; distanceKm: number; estimatedTimeMinutes: number; baseRate?: number; stops?: RouteStop[] };
-  fromStation?: string | { _id: string; name: string };
-  toStation?: string | { _id: string; name: string };
-  busId: string | { _id: string; busNumber: string; name: string; capacity: number; type: string };
+  fromStation?: { _id: string; name: string };
+  toStation?: { _id: string; name: string };
+  busId: { _id: string; busNumber: string; name: string; capacity: number; type: string };
+
+export interface TripInput {
+  fromStation: string;
+  toStation: string;
+  busId: string;
+  departureTime: string;
+  arrivalTime: string;
+  actualDepartureTime?: string;
+  actualArrivalTime?: string;
+  delayMinutes?: number;
+  date: string;
+  price: number;
+  status?: string;
+}
   departureTime: string;
   arrivalTime: string;
   actualDepartureTime?: string;
@@ -44,11 +58,11 @@ export const tripApi = {
     const { data } = await apiClient.get<ApiResponse<TripData>>(`/trips/${id}`);
     return data.data;
   },
-  create: async (payload: Partial<TripData>): Promise<TripData> => {
+  create: async (payload: TripInput): Promise<TripData> => {
     const { data } = await apiClient.post<ApiResponse<TripData>>("/trips", payload);
     return data.data;
   },
-  update: async (id: string, payload: Partial<TripData>): Promise<TripData> => {
+  update: async (id: string, payload: Partial<TripInput>): Promise<TripData> => {
     const { data } = await apiClient.patch<ApiResponse<TripData>>(`/trips/${id}`, payload);
     return data.data;
   },
