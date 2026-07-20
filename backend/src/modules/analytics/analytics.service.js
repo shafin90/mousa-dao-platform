@@ -248,7 +248,7 @@ const getLiveTrips = async (companyId) => {
 
   return trips.map(t => ({
     _id: t._id,
-    route: t.routeId ? `${t.routeId.fromStation?.name || ''} → ${t.routeId.toStation?.name || ''}` : 'N/A',
+    route: `${t.fromStation?.name || ''} → ${t.toStation?.name || ''}`,
     bus: t.busId ? `${t.busId.busNumber} - ${t.busId.name}` : 'N/A',
     departureTime: t.departureTime,
     date: t.date,
