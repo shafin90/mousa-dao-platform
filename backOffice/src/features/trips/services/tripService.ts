@@ -1,5 +1,5 @@
 import { tripApi } from "@/api/tripApi";
-import type { TripData, TripFilters } from "@/api/tripApi";
+import type { TripData, TripInput, TripFilters } from "@/api/tripApi";
 
 export const tripService = {
   getAll: async (params?: TripFilters) => {
@@ -8,10 +8,10 @@ export const tripService = {
   getById: async (id: string): Promise<TripData> => {
     return tripApi.getById(id);
   },
-  create: async (payload: Partial<TripData>): Promise<TripData> => {
+  create: async (payload: TripInput): Promise<TripData> => {
     return tripApi.create(payload);
   },
-  update: async (id: string, payload: Partial<TripData>): Promise<TripData> => {
+  update: async (id: string, payload: Partial<TripInput>): Promise<TripData> => {
     return tripApi.update(id, payload);
   },
   updateStatus: async (id: string, status: string): Promise<TripData> => {
