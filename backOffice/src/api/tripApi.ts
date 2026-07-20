@@ -8,20 +8,6 @@ export interface TripData {
   fromStation?: { _id: string; name: string };
   toStation?: { _id: string; name: string };
   busId: { _id: string; busNumber: string; name: string; capacity: number; type: string };
-
-export interface TripInput {
-  fromStation: string;
-  toStation: string;
-  busId: string;
-  departureTime: string;
-  arrivalTime: string;
-  actualDepartureTime?: string;
-  actualArrivalTime?: string;
-  delayMinutes?: number;
-  date: string;
-  price: number;
-  status?: string;
-}
   departureTime: string;
   arrivalTime: string;
   actualDepartureTime?: string;
@@ -35,6 +21,17 @@ export interface TripInput {
   createdBy?: { _id: string; firstName: string; lastName: string; email: string };
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface TripInput {
+  fromStation: string;
+  toStation: string;
+  busId: string;
+  departureTime: string;
+  arrivalTime: string;
+  date: string;
+  price: number;
+  status?: string;
 }
 
 export interface TripFilters {
