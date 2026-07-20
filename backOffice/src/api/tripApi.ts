@@ -5,8 +5,8 @@ import type { RouteStop } from "./routeApi";
 export interface TripData {
   _id: string;
   routeId?: { _id: string; fromCity: { _id: string; name: string }; toCity: { _id: string; name: string }; fromStations?: { _id: string; name: string }[]; toStations?: { _id: string; name: string }[]; distanceKm: number; estimatedTimeMinutes: number; baseRate?: number; stops?: RouteStop[] };
-  fromStation?: { _id: string; name: string };
-  toStation?: { _id: string; name: string };
+  fromStation?: string | { _id: string; name: string };
+  toStation?: string | { _id: string; name: string };
   busId: { _id: string; busNumber: string; name: string; capacity: number; type: string };
   departureTime: string;
   arrivalTime: string;
