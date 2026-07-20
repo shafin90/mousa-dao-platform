@@ -64,6 +64,8 @@ function getTargetRect(selector?: string): TourRect | null {
   }
 }
 
+void getTargetRect;
+
 const PADDING = 12;
 
 export function paddedRect(rect: TourRect | null): TourRect | null {

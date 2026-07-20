@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store";
 import { fetchRoutes, createRoute as createRouteAction, updateRoute as updateRouteAction, deleteRoute as deleteRouteAction } from "../store/routeSlice";
-import type { RouteData, RouteInput } from "@/api/routeApi";
+import type { RouteInput } from "@/api/routeApi";
 
 export const useRoutes = () => {
   const dispatch = useAppDispatch();

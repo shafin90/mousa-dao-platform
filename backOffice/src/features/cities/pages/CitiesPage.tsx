@@ -65,6 +65,8 @@ const CITIES_BY_COUNTRY: Record<string, string[]> = {
   "Niger": ["Niamey", "Maradi", "Zinder", "Tahoua", "Agadez", "Arlit", "Birni"],
 };
 
+void CITIES_BY_COUNTRY;
+
 interface CustomCityForm {
   name: string;
   country: string;

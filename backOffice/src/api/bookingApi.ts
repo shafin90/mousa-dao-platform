@@ -2,11 +2,11 @@ import apiClient from "./apiClient";
 import { extractList } from "./extractList";
 import type { ApiResponse } from "@/shared/types";
 
-interface StationInfo {
-  _id: string;
-  name: string;
-  location: { lat: number; lng: number };
-}
+// interface StationInfo {
+//   _id: string;
+//   name: string;
+//   location: { lat: number; lng: number };
+// }
 
 export interface BookingData {
   _id: string;
