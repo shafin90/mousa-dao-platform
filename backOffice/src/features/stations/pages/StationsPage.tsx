@@ -160,7 +160,7 @@ const StationsPage: React.FC = () => {
   };
 
   const handleSearchAddress = async () => {
-    const addr = form.address1 || form.address;
+    const addr = form.address1;
     if (!addr) return;
     const city = selectedCity(form.cityId);
     const countryPart = city ? city.country : "";
@@ -240,7 +240,7 @@ const StationsPage: React.FC = () => {
         </div>
       </div>
 
-      <div data-tour="stations-table"><DataTable columns={columns} data={stations} isLoading={loading} keyExtractor={(item: StationData) => item._id} onRowClick={(item) => navigate(`/stations/${item._id}`)} /></div>
+      <div data-tour="stations-table"><DataTable columns={columns} data={stations} isLoading={loading} onRowClick={(item) => navigate(`/stations/${item._id}`)} /></div>
 
       <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setStationToDelete(null); }} title={t("stations.deleteStation")}>
         {stationToDelete && (

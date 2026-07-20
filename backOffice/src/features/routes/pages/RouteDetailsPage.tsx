@@ -11,8 +11,6 @@ import {
   Ruler,
   Building2,
   CalendarClock,
-  Phone,
-  Mail,
   User as UserIcon,
   ShieldCheck,
   DollarSign,
@@ -26,7 +24,7 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { StopsCard } from "@/shared/components/stops/StopsCard";
 import { useAppSelector } from "@/app/store";
-import { routeApi, type RouteData, type RouteStop } from "@/api/routeApi";
+import { routeApi, type RouteData } from "@/api/routeApi";
 import { cityApi, type CityData } from "@/api/cityApi";
 import { stationApi, type StationData } from "@/api/stationApi";
 import { tripApi, type TripData } from "@/api/tripApi";
