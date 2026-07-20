@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store";
 import { fetchTrips, createTrip as createTripAction, updateTrip as updateTripAction, updateTripStatus as updateStatusAction, deleteTrip as deleteTripAction } from "../store/tripSlice";
-import type { TripData, TripInput, TripFilters } from "@/api/tripApi";
+import type { TripInput, TripFilters } from "@/api/tripApi";
 
 export const useTrips = (filters?: TripFilters) => {
   const dispatch = useAppDispatch();
