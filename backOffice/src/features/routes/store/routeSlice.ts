@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import type { RouteData } from "@/api/routeApi";
+import type { RouteData, RouteInput } from "@/api/routeApi";
 import { routeService } from "../services/routeService";
 
 interface RouteState {
@@ -14,11 +14,11 @@ export const fetchRoutes = createAsyncThunk("routes/fetchRoutes", async () => {
   return await routeService.getAll();
 });
 
-export const createRoute = createAsyncThunk("routes/create", async (payload: Partial<RouteData>) => {
+export const createRoute = createAsyncThunk("routes/create", async (payload: RouteInput) => {
   return await routeService.create(payload);
 });
 
-export const updateRoute = createAsyncThunk("routes/update", async ({ id, payload }: { id: string; payload: Partial<RouteData> }) => {
+export const updateRoute = createAsyncThunk("routes/update", async ({ id, payload }: { id: string; payload: Partial<RouteInput> }) => {
   return await routeService.update(id, payload);
 });
 

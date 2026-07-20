@@ -32,10 +32,10 @@ export interface RouteStopInput {
 
 export interface RouteData {
   _id: string;
-  fromCity: string | { _id: string; name: string };
-  toCity: string | { _id: string; name: string };
-  fromStations?: Array<string | { _id: string; name: string }>;
-  toStations?: Array<string | { _id: string; name: string }>;
+  fromCity: { _id: string; name: string };
+  toCity: { _id: string; name: string };
+  fromStations?: Array<{ _id: string; name: string }>;
+  toStations?: Array<{ _id: string; name: string }>;
   distanceKm: number;
   estimatedTimeMinutes?: number;
   baseRate?: number;
@@ -44,6 +44,18 @@ export interface RouteData {
   createdBy?: string | { _id: string; profile: { firstName: string; lastName: string } };
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface RouteInput {
+  fromCity: string;
+  toCity: string;
+  fromStations?: string[];
+  toStations?: string[];
+  distanceKm: number;
+  estimatedTimeMinutes?: number;
+  baseRate?: number;
+  isActive?: boolean;
+  stops?: RouteStopInput[];
 }
 
 /** Normalizes stops to the id-only input shape the API expects. */

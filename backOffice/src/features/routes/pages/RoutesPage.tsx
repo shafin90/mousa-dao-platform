@@ -9,7 +9,7 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
-import { normalizeStops, type RouteData, type RouteStopInput } from "@/api/routeApi";
+import { normalizeStops, type RouteData, type RouteInput, type RouteStopInput } from "@/api/routeApi";
 import { cityApi, type CityData } from "@/api/cityApi";
 import { stationApi, type StationData } from "@/api/stationApi";
 import { RouteStopsEditor } from "../components/RouteStopsEditor";
@@ -112,7 +112,7 @@ const RoutesPage: React.FC = () => {
       return;
     }
     try {
-      const payload = {
+      const payload: RouteInput = {
         fromCity: form.fromCity,
         toCity: form.toCity,
         fromStations: form.fromStations.filter(Boolean),
@@ -122,7 +122,7 @@ const RoutesPage: React.FC = () => {
         baseRate: form.baseRate ? Number(form.baseRate) : undefined,
         isActive: form.isActive,
         stops: form.stops.filter((s) => s.cityId),
-      } satisfies Partial<RouteData>;
+      };
       if (editingRouteId) {
         await update(editingRouteId, payload);
         toast.success(t("routes.updated"));
