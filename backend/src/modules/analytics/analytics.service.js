@@ -264,8 +264,12 @@ const getRecentBookings = async (companyId) => {
     .populate({ path: 'userId', select: 'profile email' })
     .populate({
       path: 'tripId',
-      select: 'routeId departureTime date price',
-      populate: { path: 'routeId', select: 'fromStation toStation', populate: { path: 'fromStation toStation', select: 'name' } }
+      select: 'routeId fromStation toStation departureTime date price',
+      populate: [
+        { path: 'routeId', select: 'fromCity toCity' },
+        { path: 'fromStation', select: 'name' },
+        { path: 'toStation', select: 'name' },
+      ],
     })
     .sort({ createdAt: -1 })
     .limit(10);
@@ -273,7 +277,7 @@ const getRecentBookings = async (companyId) => {
   return bookings.map(b => ({
     _id: b._id,
     customer: b.userId ? `${b.userId.profile?.firstName || ''} ${b.userId.profile?.lastName || ''}`.trim() || b.userId.email : 'N/A',
-    route: b.tripId?.routeId ? `${b.tripId.routeId.fromStation?.name || ''} → ${b.tripId.routeId.toStation?.name || ''}` : 'N/A',
+    route: b.tripId ? `${b.tripId.fromStation?.name || ''} → ${b.tripId.toStation?.name || ''}` : 'N/A',
     seats: b.seats?.length || 0,
     totalAmount: b.totalAmount,
     paymentStatus: b.paymentStatus,
