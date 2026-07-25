@@ -10,20 +10,28 @@ const BookingsPage = lazy(() => import("@/features/bookings/pages/BookingsPage")
 const BookingDetailsPage = lazy(() => import("@/features/bookings/pages/BookingDetailsPage"));
 const PaymentsPage = lazy(() => import("@/features/payments/pages/PaymentsPage"));
 const TripsPage = lazy(() => import("@/features/trips/pages/TripsPage"));
+const TripCreatePage = lazy(() => import("@/features/trips/pages/TripCreatePage"));
 const TripDetailsPage = lazy(() => import("@/features/trips/pages/TripDetailsPage"));
 const FleetPage = lazy(() => import("@/features/fleet/pages/FleetPage"));
+const FleetCreatePage = lazy(() => import("@/features/fleet/pages/FleetCreatePage"));
 const BusDetailsPage = lazy(() => import("@/features/fleet/pages/BusDetailsPage"));
 const UsersPage = lazy(() => import("@/features/users/pages/UsersPage"));
+const EmployeesPage = lazy(() => import("@/features/users/pages/EmployeesPage"));
+const PassengerDetailsPage = lazy(() => import("@/features/users/pages/PassengerDetailsPage"));
 const AnalyticsPage = lazy(() => import("@/features/analytics/pages/AnalyticsPage"));
 const RoutesPage = lazy(() => import("@/features/routes/pages/RoutesPage"));
+const RouteCreatePage = lazy(() => import("@/features/routes/pages/RouteCreatePage"));
 const RouteDetailsPage = lazy(() => import("@/features/routes/pages/RouteDetailsPage"));
 const StationsPage = lazy(() => import("@/features/stations/pages/StationsPage"));
+const StationCreatePage = lazy(() => import("@/features/stations/pages/StationCreatePage"));
 const StationDetailsPage = lazy(() => import("@/features/stations/pages/StationDetailsPage"));
 const CitiesPage = lazy(() => import("@/features/cities/pages/CitiesPage"));
+const CityCreatePage = lazy(() => import("@/features/cities/pages/CityCreatePage"));
 const CityDetailsPage = lazy(() => import("@/features/cities/pages/CityDetailsPage"));
-const MaintenancePage = lazy(() => import("@/features/maintenance/pages/MaintenancePage"));
-const MaintenanceDetailsPage = lazy(() => import("@/features/maintenance/pages/MaintenanceDetailsPage"));
 const TutorialPage = lazy(() => import("@/features/onboarding/pages/TutorialPage"));
+const NotificationsPage = lazy(() => import("@/features/notifications/pages/NotificationsPage"));
+const SettingsPage = lazy(() => import("@/features/settings/pages/SettingsPage"));
+const ActivityLogPage = lazy(() => import("@/features/audit-logs/pages/AuditLogsPage"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -73,12 +81,20 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><TripsPage /></SuspenseWrapper>,
       },
       {
+        path: "trips/new",
+        element: <SuspenseWrapper><TripCreatePage /></SuspenseWrapper>,
+      },
+      {
         path: "trips/:id",
         element: <SuspenseWrapper><TripDetailsPage /></SuspenseWrapper>,
       },
       {
         path: "fleet",
         element: <SuspenseWrapper><FleetPage /></SuspenseWrapper>,
+      },
+      {
+        path: "fleet/new",
+        element: <SuspenseWrapper><FleetCreatePage /></SuspenseWrapper>,
       },
       {
         path: "fleet/:id",
@@ -89,12 +105,28 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><UsersPage /></SuspenseWrapper>,
       },
       {
+        path: "passengers/:id",
+        element: <SuspenseWrapper><PassengerDetailsPage /></SuspenseWrapper>,
+      },
+      {
+        path: "employees",
+        element: <SuspenseWrapper><EmployeesPage /></SuspenseWrapper>,
+      },
+      {
+        path: "employees/:id",
+        element: <SuspenseWrapper><PassengerDetailsPage /></SuspenseWrapper>,
+      },
+      {
         path: "analytics",
         element: <SuspenseWrapper><AnalyticsPage /></SuspenseWrapper>,
       },
       {
         path: "routes",
         element: <SuspenseWrapper><RoutesPage /></SuspenseWrapper>,
+      },
+      {
+        path: "routes/new",
+        element: <SuspenseWrapper><RouteCreatePage /></SuspenseWrapper>,
       },
       {
         path: "routes/:id",
@@ -105,6 +137,10 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><StationsPage /></SuspenseWrapper>,
       },
       {
+        path: "stations/new",
+        element: <SuspenseWrapper><StationCreatePage /></SuspenseWrapper>,
+      },
+      {
         path: "stations/:id",
         element: <SuspenseWrapper><StationDetailsPage /></SuspenseWrapper>,
       },
@@ -113,20 +149,28 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><CitiesPage /></SuspenseWrapper>,
       },
       {
+        path: "cities/new",
+        element: <SuspenseWrapper><CityCreatePage /></SuspenseWrapper>,
+      },
+      {
         path: "cities/:id",
         element: <SuspenseWrapper><CityDetailsPage /></SuspenseWrapper>,
       },
       {
-        path: "maintenance-records",
-        element: <SuspenseWrapper><MaintenancePage /></SuspenseWrapper>,
+        path: "notifications",
+        element: <SuspenseWrapper><NotificationsPage /></SuspenseWrapper>,
       },
       {
-        path: "maintenance-records/:id",
-        element: <SuspenseWrapper><MaintenanceDetailsPage /></SuspenseWrapper>,
+        path: "settings",
+        element: <SuspenseWrapper><SettingsPage /></SuspenseWrapper>,
       },
       {
         path: "tutorial",
         element: <SuspenseWrapper><TutorialPage /></SuspenseWrapper>,
+      },
+      {
+        path: "activity-log",
+        element: <SuspenseWrapper><ActivityLogPage /></SuspenseWrapper>,
       },
     ],
   },

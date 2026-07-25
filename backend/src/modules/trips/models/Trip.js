@@ -19,6 +19,6 @@ const tripSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
-tripSchema.index({ companyId: 1, busId: 1, date: 1, departureTime: 1 }, { unique: true });
+
 
 module.exports = mongoose.model('Trip', tripSchema);

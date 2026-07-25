@@ -27,7 +27,7 @@ export const userApi = {
     const { data } = await apiClient.get<ApiResponse<User>>(`/users/${id}`);
     return data.data;
   },
-  create: async (payload: { firstName: string; lastName: string; email: string; phone: string; password: string; role: string }): Promise<User> => {
+  create: async (payload: { firstName: string; lastName: string; email: string; email2?: string; phone: string; phone2?: string; password: string; role: string; dateOfBirth?: string; employmentStatus?: string }): Promise<User> => {
     const { data } = await apiClient.post<ApiResponse<User>>("/users", payload);
     return data.data;
   },
@@ -39,7 +39,7 @@ export const userApi = {
     const { data } = await apiClient.patch<ApiResponse<User>>(`/users/${id}/role`, { role });
     return data.data;
   },
-  update: async (id: string, payload: Partial<{ firstName: string; lastName: string; email: string; phone: string; password: string; role: string }>): Promise<User> => {
+  update: async (id: string, payload: Partial<{ firstName: string; lastName: string; email: string; email2: string; phone: string; phone2: string; password: string; role: string; dateOfBirth: string; employmentStatus: string }>): Promise<User> => {
     const { data } = await apiClient.patch<ApiResponse<User>>(`/users/${id}`, payload);
     return data.data;
   },

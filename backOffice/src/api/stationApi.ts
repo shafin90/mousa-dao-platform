@@ -27,8 +27,8 @@ export interface DistanceData {
 }
 
 export const stationApi = {
-  getAll: async (): Promise<StationData[]> => {
-    const { data } = await apiClient.get<ApiResponse<StationData[]>>("/stations");
+  getAll: async (params?: { cityId?: string }): Promise<StationData[]> => {
+    const { data } = await apiClient.get<ApiResponse<StationData[]>>("/stations", { params });
     return data.data;
   },
 

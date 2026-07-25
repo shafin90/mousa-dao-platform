@@ -18,7 +18,7 @@ const createRoute = async (req, res, next) => {
  */
 const getAllRoutes = async (req, res, next) => {
   try {
-    const routes = await routeService.getAllRoutes(req.user.companyId);
+    const routes = await routeService.getAllRoutes(req.user.companyId, req.query);
     respond(res, 200, routes);
   } catch (error) {
     next(error);

@@ -23,6 +23,19 @@ const getAllCities = async (companyId, filters = {}) => {
 };
 
 /**
+ * Paginated version of getAllCities.
+ *
+ * @param {string} companyId
+ * @param {Object} filters
+ * @param {number} page
+ * @param {number} limit
+ * @returns {Promise<{items: Array, total: number}>}
+ */
+const getAllCitiesPaginated = async (companyId, filters = {}, page = 1, limit = 20) => {
+  return await cityRepository.findAllPaginated(companyId, filters, page, limit);
+};
+
+/**
  * Fetches a single city by ID within company.
  *
  * @param {string} id
@@ -165,4 +178,4 @@ const geocodeCity = async (id, companyId) => {
   }
 };
 
-module.exports = { getAllCities, getCityById, createCity, updateCity, deleteCity, calculateDistance, geocodeCity };
+module.exports = { getAllCities, getAllCitiesPaginated, getCityById, createCity, updateCity, deleteCity, calculateDistance, geocodeCity };

@@ -19,10 +19,12 @@ const findById = async (id, companyId) => {
  * @param {string} companyId
  * @returns {Promise<Array>}
  */
-const findAll = async (companyId) => {
-  return await Station.find({ companyId })
+const findAll = async (companyId, filters = {}) => {
+  const query = { companyId };
+  if (filters.cityId) query.cityId = filters.cityId;
+  return await Station.find(query)
     .populate('cityId', 'name country')
-    .populate('manager1 manager2', 'profile.firstName profile.lastName email');
+    .populate('manager1 manager2 createdBy', 'profile.firstName profile.lastName email');
 };
 
 /**

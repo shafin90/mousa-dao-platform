@@ -1,437 +1,228 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw, Building2, Trash2, Search, X, Globe } from "lucide-react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { toast } from "sonner";
+import { Search, X, ToggleLeft, ToggleRight, Plus } from "lucide-react";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { DataTable } from "@/shared/components/tables/DataTable";
+import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
-import { Modal } from "@/shared/components/modals/Modal";
-import { Select } from "@/shared/components/ui/Select";
-import { cityApi, type CityData } from "@/api/cityApi";
-import { userApi } from "@/api/userApi";
+import { toast } from "sonner";
+import { cityApi, type CityData, type CityFilters, type PaginationInfo } from "@/api/cityApi";
 
 const COUNTRIES = [
-  "Côte d'Ivoire", "Benin", "Burkina Faso", "Mali", "Togo",
+  "C\u00f4te d'Ivoire", "Benin", "Burkina Faso", "Mali", "Togo",
   "Nigeria", "Ghana", "Guinee Conakry", "Senegal", "Niger",
 ] as const;
-
-const CITIES_BY_COUNTRY: Record<string, string[]> = {
-  "Côte d'Ivoire": [
-    "ABENGOUROU", "ABOBO", "ABOISSO", "ADIAKE", "ADJAME", "ADZOPE", "AFFERY",
-    "AGBOVILLE", "AGNIBILEKRO", "AGOU", "AKOUPE", "ALEPE", "ANOUMABA", "ANYAMA",
-    "ARRAH", "ASSINIE-MAFIA", "ASSUEFRY", "ATTECOUBE", "ATTIEGOUAKRO", "AYAME",
-    "AZAGUIE", "BAKO", "BANGOLO", "BASSAWA", "BEDIALA", "BEOUMI", "BETTIE",
-    "BIANKOUMA", "BINGERVILLE", "BINHOUYE", "BLOLEQUIN", "BOCANDA", "BODOKRO",
-    "BONDOUKOU", "BONGOUANOU", "BONIEREDOUGOU", "BONON", "BONOUA", "BOOKO",
-    "BOROTOU", "BOTRO", "BOUAFLE", "BOUAKE", "BOUNA", "BOUNDIALI", "BROBO",
-    "BUYO", "COCODY", "DABAKALA", "DABOU", "DALOA", "DANANE", "DAOUKRO",
-    "DIABO", "DIANRA", "DIAWALA", "DIDIEVI", "DIEGONEFLA", "DIKODOUGOU",
-    "DIMBOKRO", "DIOULATIEDOUGOU", "DIVO", "DJEBONOUA", "DJEKANOU",
-    "DJIBROSSO", "DOROPO", "DUALLA", "DUEKOUE", "ETTROKRO", "FACOBLY",
-    "FERKESSEDOUGOU", "FOUMBOLO", "FRESCO", "FRONAN", "GAGNOA", "GBELEBAN",
-    "GBOGUHE", "GBON", "GBONNE", "GOHITAFLA", "GOULIA", "GRABO", "GRAND LAHOU",
-    "GRAND ZATTRY", "GRAND-BASSAM", "GRAND-BEREBY", "GUEYO", "GUIBEROUA",
-    "GUIEMBE", "GUIGLO", "GUINTEGUELA", "GUITRY", "HIRE", "ISSIA", "JACQUEVILLE",
-    "KANAKONO", "KANI", "KANIASSO", "KARAKORO", "KASSERE", "KATIOLA",
-    "KOKOUMBO", "KOLIA", "KOMBORODOUGOU", "KONG", "KONGASSO", "KOONAN",
-    "KORHOGO", "KORO", "KOUASSI DATTEKRO", "KOUASSI KOUASSIKRO", "KOUIBLY",
-    "KOUMASSI", "KOUMBALA", "KOUN FAO", "KOUNAHIRI", "KOUTO", "LAKOTA",
-    "LOGOUALE", "M'BAHIAKRO", "M'BATTO", "M'BENGUE", "MADINANI", "MAFERE",
-    "MAN", "MANKONO", "MARCORY", "MASSALA", "MAYO", "MEAGUI", "MINIGNAN",
-    "MORONDO", "N'DOUCI", "NAPIE", "NASSIAN", "NIABLE", "NIAKARAMADOUGOU",
-    "NIELLE", "NIOFOIN", "ODIENNE", "OUANGOLODOUGOU", "OUANINOU", "OUELLE",
-    "OUME", "OURAGAHIO", "PLATEAU", "PORT BOUET", "PRIKRO", "RUBINO",
-    "SAIOUA", "SAKASSOU", "SAMATIGUILA", "SAN-PEDRO", "SANDEGUE", "SANGOUINE",
-    "SARHALA", "SASSANDRA", "SATAMA SOKORO", "SATAMA SOKOURA", "SEGUELA",
-    "SEGUELON", "SEYDOUGOU", "SIFIE", "SIKENSI", "SINEMATIALI", "SINFRA",
-    "SIPILOU", "SIRASSO", "SONGON", "SOUBRE", "TAABO", "TABOU", "TAFIRE",
-    "TAI", "TANDA", "TEHINI", "TENGRELA", "TIAPOUM", "TIASSALE",
-    "TIE N'DIEKRO", "TIEBISSOU", "TIEME", "TIEMELEKRO", "TIENINGBOUE",
-    "TIENKO", "TIORONIARADOUGOU", "TORTIYA", "TOUBA", "TOULEPLEU", "TOUMODI",
-    "TRANSUA", "TREICHVILLE", "VAVOUA", "WOROFLA", "YAKASSE ATTOBROU",
-    "YAMOUSSOUKRO", "YOPOUGON", "ZIKISSO", "ZOUAN HOUNIEN", "ZOUKOUGBEU",
-    "ZUENOULA",
-  ],
-  "Benin": ["Cotonou", "Porto-Novo", "Parakou", "Abomey", "Ouidah", "Natitingou"],
-  "Burkina Faso": ["Ouagadougou", "Bobo-Dioulasso", "Koudougou", "Banfora", "Ouahigouya", "Kaya", "Fada N'Gourma"],
-  "Mali": ["Bamako", "Sikasso", "Segou", "Koutiala", "Kayes", "Mopti"],
-  "Togo": ["Lome", "Kara", "Dapaong", "Sokode", "Atakpame", "Kpalime", "Tsevie", "Anie", "Cinkasse", "Notse", "Tabligbo", "Tchamba"],
-  "Nigeria": ["Lagos", "Abuja", "Kano", "Ibadan", "Port Harcourt", "Benin City"],
-  "Ghana": ["Accra", "Kumasi", "Takoradi", "Tamale", "Cape Coast", "Noe"],
-  "Guinee Conakry": ["Conakry", "Kankan", "Nzerekore", "Kindia", "Labe", "Boke", "Mamou", "Faranah"],
-  "Senegal": ["Dakar", "Touba", "Thies", "Saint-Louis", "Ziguinchor", "M'bour"],
-  "Niger": ["Niamey", "Maradi", "Zinder", "Tahoua", "Agadez", "Arlit", "Birni"],
-};
-
-void CITIES_BY_COUNTRY;
-
-interface CustomCityForm {
-  name: string;
-  country: string;
-  address1: string;
-  address2: string;
-  phone1: string;
-  phone2: string;
-  email1: string;
-  email2: string;
-  lat: string;
-  lng: string;
-  manager1: string;
-  manager2: string;
-  isActive: boolean;
-}
-
-const emptyCustomForm: CustomCityForm = {
-  name: "", country: "",
-  address1: "", address2: "", phone1: "", phone2: "", email1: "", email2: "",
-  lat: "", lng: "", manager1: "", manager2: "", isActive: true,
-};
 
 const CitiesPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showError } = useErrorModal();
+  const { isAdmin } = useAuth();
   const [cities, setCities] = useState<CityData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [toDelete, setToDelete] = useState<CityData | null>(null);
-  const [customForm, setCustomForm] = useState<CustomCityForm>({ ...emptyCustomForm });
-  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [pagination, setPagination] = useState<PaginationInfo>({ total: 0, page: 1, limit: 15, pages: 1 });
   const [filterCountry, setFilterCountry] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
-  const [managerOptions, setManagerOptions] = useState<{ value: string; label: string }[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const filtersRef = useRef({ country: filterCountry, q: search, status: filterStatus });
 
-  const customMapRef = useRef<HTMLDivElement>(null);
-  const customMapInstanceRef = useRef<L.Map | null>(null);
-  const customMarkerRef = useRef<L.Marker | null>(null);
+  filtersRef.current = { country: filterCountry, q: search, status: filterStatus };
 
-  const load = useCallback(async (country?: string, q?: string) => {
+  const load = useCallback(async (country?: string, q?: string, status?: string, page = 1) => {
     setLoading(true);
     try {
-      const params: { country?: string; search?: string } = {};
+      const params: CityFilters = { page, limit: 15 };
       if (country) params.country = country;
       if (q) params.search = q;
-      const data = await cityApi.getAll(params);
-      setCities(data);
+      if (status) params.isActive = status;
+      const result = await cityApi.getAll(params);
+      setCities(result.data);
+      const p = result.pagination;
+      setPagination(p && typeof p.total === "number" ? p : { total: result.data.length, page, limit: 15, pages: Math.ceil(result.data.length / 15) || 1 });
     } catch {
-      toast.error(t("cities.loadFailed"));
+      showError(t("cities.loadFailed"));
     } finally {
       setLoading(false);
     }
   }, [t]);
 
-  useEffect(() => { load(filterCountry, search); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
-    (async () => {
-      try {
-        const result = await userApi.getAll({ limit: 1000 });
-        const filtered = result.users.filter((u) => u.role !== "customer");
-        setManagerOptions(filtered.map((u) => ({
-          value: u._id,
-          label: `${u.profile.firstName} ${u.profile.lastName}`,
-        })));
-      } catch { /* ignore */ }
-    })();
-  }, []);
+    load(filterCountry, search, filterStatus);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const refresh = () => load(filterCountry, search);
+  const hasFilters = filterCountry || search || filterStatus;
 
   const handleFilterCountry = (value: string) => {
     setFilterCountry(value);
-    load(value, search);
+    setSearch("");
+    load(value, "", filterStatus);
+  };
+
+  const handleFilterStatus = (value: string) => {
+    setFilterStatus(value);
+    load(filterCountry, search, value);
   };
 
   const handleSearch = (value: string) => {
     setSearch(value);
-    load(filterCountry, value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const { country, status } = filtersRef.current;
+      load(country, value, status);
+    }, 350);
   };
 
-  const initCustomMap = () => {
-    if (!customMapRef.current) return;
-    if (customMapInstanceRef.current) {
-      customMapInstanceRef.current.remove();
-      customMapInstanceRef.current = null;
-    }
-    const lat = customForm.lat ? parseFloat(customForm.lat) : 6.8501;
-    const lng = customForm.lng ? parseFloat(customForm.lng) : -5.2986;
-    const map = L.map(customMapRef.current, { zoomControl: true, scrollWheelZoom: true }).setView([lat, lng], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap", maxZoom: 18,
-    }).addTo(map);
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-    const updatePosition = (pos: L.LatLng) => {
-      marker.setLatLng(pos);
-      setCustomForm((prev) => ({
-        ...prev,
-        lat: pos.lat.toFixed(6),
-        lng: pos.lng.toFixed(6),
-      }));
-    };
-
-    marker.on("dragend", () => updatePosition(marker.getLatLng()));
-    map.on("click", (e: L.LeafletMouseEvent) => updatePosition(e.latlng));
-
-    customMarkerRef.current = marker;
-    customMapInstanceRef.current = map;
+  const clearSearch = () => {
+    setSearch("");
+    load(filterCountry, "", filterStatus);
   };
 
-  const handleCustomSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customForm.name || !customForm.country) {
-      toast.error(t("cities.validationRequired"));
-      return;
-    }
-    setSaving(true);
+  const clearAllFilters = () => {
+    setFilterCountry("");
+    setFilterStatus("");
+    setSearch("");
+    load("", "", "");
+  };
+
+  const handlePageChange = (page: number) => {
+    load(filterCountry, search, filterStatus, page);
+  };
+
+  const toggleStatus = async (city: CityData) => {
     try {
-      await cityApi.create({
-        name: customForm.name,
-        country: customForm.country,
-        address1: customForm.address1 || undefined,
-        address2: customForm.address2 || undefined,
-        phone1: customForm.phone1 || undefined,
-        phone2: customForm.phone2 || undefined,
-        email1: customForm.email1 || undefined,
-        email2: customForm.email2 || undefined,
-        location: (customForm.lat && customForm.lng)
-          ? { lat: parseFloat(customForm.lat), lng: parseFloat(customForm.lng) }
-          : undefined,
-        manager1: customForm.manager1 || undefined,
-        manager2: customForm.manager2 || undefined,
-        isActive: customForm.isActive,
-      });
-      toast.success(t("cities.created"));
-      setIsCustomModalOpen(false);
-      setCustomForm({ ...emptyCustomForm });
-      if (customMapInstanceRef.current) {
-        customMapInstanceRef.current.remove();
-        customMapInstanceRef.current = null;
-      }
-      await refresh();
+      const updated = await cityApi.update(city._id, { isActive: !city.isActive });
+      setCities((prev) => prev.map((c) => (c._id === city._id ? { ...c, isActive: updated.isActive } : c)));
+      toast.success(t("cities.updated"));
     } catch {
       toast.error(t("cities.saveFailed"));
-    } finally {
-      setSaving(false);
     }
   };
 
-  useEffect(() => {
-    if (isCustomModalOpen) {
-      setTimeout(initCustomMap, 100);
-    }
-    return () => {
-      if (customMapInstanceRef.current) {
-        customMapInstanceRef.current.remove();
-        customMapInstanceRef.current = null;
-      }
-    };
-  }, [isCustomModalOpen]);
-
-  const handleDelete = async () => {
-    if (!toDelete) return;
-    try {
-      await cityApi.delete(toDelete._id);
-      toast.success(t("cities.deleted"));
-      setIsDeleteOpen(false);
-      setToDelete(null);
-      await refresh();
-    } catch {
-      toast.error(t("cities.deleteFailed"));
-    }
+  const renderManager = (m: CityData["manager1"]) => {
+    if (!m) return "\u2014";
+    if (typeof m === "object" && m.profile)
+      return `${m.profile.firstName} ${m.profile.lastName}`;
+    return "\u2014";
   };
 
   const columns = [
     { header: t("cities.cityName"), accessor: (row: CityData) => <span className="font-medium">{row.name}</span> },
     { header: t("cities.country"), accessor: (row: CityData) => row.country },
-    {
-      header: t("cities.actions"),
-      className: "text-right",
-      accessor: (row: CityData) => (
-        <div className="flex justify-end gap-1">
-          <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); setToDelete(row); setIsDeleteOpen(true); }}>
-            <Trash2 size={14} />
-          </Button>
-        </div>
-      ),
-    },
+    { header: t("cities.manager"), accessor: (row: CityData) => renderManager(row.manager1) },
+    ...(isAdmin
+      ? [
+          {
+            header: t("common.status"),
+            accessor: (row: CityData) => (
+              <Badge variant={row.isActive !== false ? "success" : "destructive"}>
+                {row.isActive !== false ? t("common.active") : t("common.inactive")}
+              </Badge>
+            ),
+          },
+          {
+            header: t("common.actions"),
+            accessor: (row: CityData) => (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleStatus(row); }}
+                  title={row.isActive !== false ? t("common.disable") : t("common.enable")}
+                >
+                  {row.isActive !== false ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
+                </Button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-            <Building2 size={26} className="text-primary" /> {t("cities.title")}
-          </h1>
-          <p className="mt-1 text-muted-foreground">{t("cities.subtitle")}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button data-tour="cities-refresh" variant="outline" size="sm" className="gap-2" onClick={refresh}>
-            <RefreshCw size={16} /> {t("common.refresh")}
-          </Button>
-          <Button data-tour="cities-add-custom" size="sm" variant="outline" className="gap-2" onClick={() => { setCustomForm({ ...emptyCustomForm }); setIsCustomModalOpen(true); }}>
-            <Globe size={16} /> {t("cities.createCity")}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-3 rounded-xl border bg-card p-4">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            data-tour="cities-search"
-            type="text"
-            placeholder={t("cities.searchPlaceholder")}
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <select
-          data-tour="cities-filter-country"
-          value={filterCountry}
-          onChange={(e) => handleFilterCountry(e.target.value)}
-          className="h-10 min-w-[180px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">{t("cities.allCountries")}</option>
-          {COUNTRIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-        {(filterCountry || search) && (
-          <Button variant="ghost" size="sm" onClick={() => { setFilterCountry(""); setSearch(""); load(); }}>
-            <X size={14} className="mr-1" /> {t("common.clear")}
-          </Button>
-        )}
-      </div>
-
-      <div data-tour="cities-table"><DataTable columns={columns} data={cities} isLoading={loading} onRowClick={(row) => navigate(`/cities/${row._id}`)} /></div>
-
-      <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setToDelete(null); }} title={t("cities.deleteCity")}>
-        {toDelete && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">{t("cities.confirmDelete", { name: toDelete.name })}</p>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => { setIsDeleteOpen(false); setToDelete(null); }}>{t("common.cancel")}</Button>
-              <Button variant="destructive" onClick={handleDelete}>{t("common.delete")}</Button>
-            </div>
+      <div data-tour="cities-table">
+        <div className="flex flex-wrap items-center gap-2 rounded-t-lg border border-b-0 bg-muted/30 px-2.5 py-1.5">
+          <div className="relative flex-1 min-w-[160px] max-w-[260px]">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              data-tour="cities-search"
+              type="text"
+              placeholder={t("cities.searchPlaceholder")}
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full h-7 pl-8 pr-7 rounded border bg-background/80 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {search && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
-        )}
-      </Modal>
-
-      <Modal isOpen={isCustomModalOpen} onClose={() => { setIsCustomModalOpen(false); if (customMapInstanceRef.current) { customMapInstanceRef.current.remove(); customMapInstanceRef.current = null; } }} title={t("cities.createCityCustom")}>
-        <form className="max-h-[70vh] space-y-4 overflow-y-auto pr-1" onSubmit={handleCustomSubmit}>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.countryRequired")}</label>
+          <div className="flex items-center gap-2">
             <select
-              required value={customForm.country}
-              onChange={(e) => setCustomForm({ ...customForm, country: e.target.value })}
-              className="w-full rounded-md border bg-muted/30 p-2"
+              data-tour="cities-filter-country"
+              value={filterCountry}
+              onChange={(e) => handleFilterCountry(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              <option value="">{t("cities.selectCountry")}</option>
+              <option value="">{t("cities.allCountries")}</option>
               {COUNTRIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
+            {isAdmin && (
+              <select
+                value={filterStatus}
+                onChange={(e) => handleFilterStatus(e.target.value)}
+                className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">{t("common.all")}</option>
+                <option value="true">{t("common.active")}</option>
+                <option value="false">{t("common.inactive")}</option>
+              </select>
+            )}
+            {isAdmin && (
+              <>
+                <div className="w-px h-5 bg-border" />
+                <Button
+                  onClick={() => navigate("/cities/new")}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                >
+                  <Plus size={13} />
+                  {t("cities.addCity")}
+                </Button>
+              </>
+            )}
+            {hasFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="h-7 px-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors"
+              >
+                <X size={12} />
+                Clear
+              </button>
+            )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.cityNameRequired")}</label>
-            <input
-              required type="text" value={customForm.name}
-              onChange={(e) => setCustomForm({ ...customForm, name: e.target.value })}
-              placeholder={t("cities.cityNamePlaceholder")}
-              className="w-full rounded-md border bg-muted/30 p-2"
-            />
-          </div>
-
-          <hr className="border-muted" />
-          <h4 className="text-sm font-semibold text-muted-foreground">{t("cities.addressInfo")}</h4>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.address1")}</label>
-            <input type="text" value={customForm.address1} onChange={(e) => setCustomForm({ ...customForm, address1: e.target.value })} className="w-full rounded-md border bg-muted/30 p-2" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.address2")}</label>
-            <input type="text" value={customForm.address2} onChange={(e) => setCustomForm({ ...customForm, address2: e.target.value })} className="w-full rounded-md border bg-muted/30 p-2" />
-          </div>
-
-          <hr className="border-muted" />
-          <h4 className="text-sm font-semibold text-muted-foreground">{t("cities.contactInfo")}</h4>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.phone1")}</label>
-            <input type="tel" value={customForm.phone1} onChange={(e) => setCustomForm({ ...customForm, phone1: e.target.value })} placeholder={t("cities.phone1Placeholder")} className="w-full rounded-md border bg-muted/30 p-2" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.phone2")}</label>
-            <input type="tel" value={customForm.phone2} onChange={(e) => setCustomForm({ ...customForm, phone2: e.target.value })} placeholder={t("cities.phone1Placeholder")} className="w-full rounded-md border bg-muted/30 p-2" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.email1")}</label>
-            <input type="email" value={customForm.email1} onChange={(e) => setCustomForm({ ...customForm, email1: e.target.value })} placeholder={t("cities.email1Placeholder")} className="w-full rounded-md border bg-muted/30 p-2" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.email2")}</label>
-            <input type="email" value={customForm.email2} onChange={(e) => setCustomForm({ ...customForm, email2: e.target.value })} placeholder={t("cities.email1Placeholder")} className="w-full rounded-md border bg-muted/30 p-2" />
-          </div>
-
-          <hr className="border-muted" />
-          <h4 className="text-sm font-semibold text-muted-foreground">{t("cities.coordinates")}</h4>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("cities.latitude")}</label>
-              <input type="number" step="any" value={customForm.lat} onChange={(e) => setCustomForm({ ...customForm, lat: e.target.value })} placeholder="6.8501" className="w-full rounded-md border bg-muted/30 p-2" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("cities.longitude")}</label>
-              <input type="number" step="any" value={customForm.lng} onChange={(e) => setCustomForm({ ...customForm, lng: e.target.value })} placeholder="-5.2986" className="w-full rounded-md border bg-muted/30 p-2" />
-            </div>
-          </div>
-          <div ref={customMapRef} className="h-56 w-full rounded-lg border z-0" />
-
-          <hr className="border-muted" />
-          <h4 className="text-sm font-semibold text-muted-foreground">{t("cities.management")}</h4>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.manager1")}</label>
-            <Select
-              value={customForm.manager1}
-              onChange={(e) => setCustomForm({ ...customForm, manager1: e.target.value })}
-              options={managerOptions}
-              placeholder={t("cities.selectManager")}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.manager2")}</label>
-            <Select
-              value={customForm.manager2}
-              onChange={(e) => setCustomForm({ ...customForm, manager2: e.target.value })}
-              options={managerOptions}
-              placeholder={t("cities.selectManager")}
-            />
-          </div>
-
-          <hr className="border-muted" />
-          <h4 className="text-sm font-semibold text-muted-foreground">{t("cities.statusSection")}</h4>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("cities.status")}</label>
-            <Select
-              value={customForm.isActive ? "active" : "inactive"}
-              onChange={(e) => setCustomForm({ ...customForm, isActive: e.target.value === "active" })}
-              options={[
-                { value: "active", label: t("common.active") },
-                { value: "inactive", label: t("common.inactive") },
-              ]}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => { setIsCustomModalOpen(false); if (customMapInstanceRef.current) { customMapInstanceRef.current.remove(); customMapInstanceRef.current = null; } }}>{t("common.cancel")}</Button>
-            <Button type="submit" disabled={saving}>{saving ? t("common.saving") : t("cities.saveCity")}</Button>
-          </div>
-        </form>
-      </Modal>
+        </div>
+        <DataTable
+          className="rounded-t-none border-t-0"
+          columns={columns}
+          data={cities}
+          isLoading={loading}
+          onRowClick={(row) => navigate(`/cities/${row._id}`)}
+          totalRows={pagination?.total ?? 0}
+          totalPages={Math.max(1, pagination?.pages ?? 1)}
+          currentPage={Math.max(1, pagination?.page ?? 1)}
+          onPageChange={handlePageChange}
+        />
+      </div>
     </div>
   );
 };

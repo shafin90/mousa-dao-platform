@@ -7,6 +7,7 @@ import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/modals/Modal";
 import { Search, ShieldCheck, Eye, Shield, User, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { ticketApi } from "@/api/ticketApi";
 import { useAppSelector } from "@/app/store";
 import type { TicketData } from "@/api/ticketApi";
@@ -17,6 +18,7 @@ const STATUS_VARIANTS: Record<string, "success"|"secondary"|"destructive"|"warni
 
 const TicketsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const { tickets, loading, search, refresh } = useTickets();
   const currentUser = useAppSelector((state) => state.auth.user);
   const [ticketNumber, setTicketNumber] = useState("");
@@ -33,7 +35,7 @@ const TicketsPage: React.FC = () => {
       toast.success(t("tickets.verified", { status: result.status }));
       setTicketNumber("");
     } catch {
-      toast.error(t("tickets.verifyFailed"));
+      showError(t("tickets.verifyFailed"));
     } finally {
       setVerifying(false);
     }
@@ -47,7 +49,7 @@ const TicketsPage: React.FC = () => {
       setSelectedTicket(result);
       toast.success(t("tickets.verifiedSuccess"));
     } catch {
-      toast.error(t("tickets.verifyFailed"));
+      showError(t("tickets.verifyFailed"));
     } finally {
       setVerifyingTicket(false);
     }

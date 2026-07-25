@@ -6,7 +6,7 @@ const { authenticate, requireRole } = require('../auth/auth.middleware');
 router.use(authenticate);
 
 router.get('/my', ticketController.getUserTickets);
-router.get('/', requireRole(['admin']), ticketController.getAllTickets);
+router.get('/', requireRole(['admin', 'manager']), ticketController.getAllTickets);
 router.get('/:id', ticketController.getTicketById);
 router.post('/verify', requireRole(['admin', 'staff']), ticketController.verifyTicket);
 

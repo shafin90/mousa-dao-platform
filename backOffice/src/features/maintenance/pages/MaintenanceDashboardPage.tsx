@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, Bus, Wrench, CalendarClock, AlertTriangle, ShieldAlert, Wallet, Ban } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { Button } from "@/shared/components/ui/Button";
 import { StatsCard } from "@/features/dashboard/components/StatsCard";
 import { maintenanceDashboardApi, type MaintenanceDashboardData } from "@/api/maintenanceDashboardApi";
 
 const MaintenanceDashboardPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const [data, setData] = useState<MaintenanceDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +19,7 @@ const MaintenanceDashboardPage: React.FC = () => {
       const overview = await maintenanceDashboardApi.getOverview();
       setData(overview);
     } catch {
-      toast.error(t("maintenance.dashboard.loadFailed"));
+      showError(t("maintenance.dashboard.loadFailed"));
     } finally {
       setLoading(false);
     }

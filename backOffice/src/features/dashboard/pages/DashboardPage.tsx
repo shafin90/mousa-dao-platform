@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useDashboard } from "../hooks/useDashboard";
 import { StatsCard } from "../components/StatsCard";
-import { LiveTripsTable } from "../components/LiveTripsTable";
 import { RecentBookings } from "../components/RecentBookings";
 import { PaymentOverview } from "../components/PaymentOverview";
 import { AlertsPanel } from "../components/AlertsPanel";
@@ -11,12 +10,12 @@ import { QuickActions } from "../components/QuickActions";
 import { RevenueMiniChart, BookingsMiniChart } from "../components/MiniCharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
-import { RefreshCw, Wallet, Calendar, Bus, Users, Ticket, CreditCard, TrendingUp, Activity } from "lucide-react";
+import { RefreshCw, Wallet, Calendar, Bus, Users, Ticket, CreditCard, TrendingUp } from "lucide-react";
 
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { stats, charts, liveTrips, recentBookings, paymentSummary, alerts, todayStats, loading, chartLoading, extendedLoading, refreshStats } = useDashboard();
+  const { stats, charts, recentBookings, paymentSummary, alerts, todayStats, loading, chartLoading, extendedLoading, refreshStats } = useDashboard();
 
   const allLoading = loading || !stats;
 
@@ -50,19 +49,6 @@ const DashboardPage: React.FC = () => {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Live Trips */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity size={16} /> {t("dashboard.liveTrips")}
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/trips')}>{t("dashboard.viewAll")}</Button>
-          </CardHeader>
-          <CardContent>
-            <LiveTripsTable data={liveTrips} loading={extendedLoading} onRowClick={(trip) => navigate(`/trips/${trip._id}`)} />
-          </CardContent>
-        </Card>
-
         {/* Alerts */}
         <Card>
           <CardHeader className="pb-3">

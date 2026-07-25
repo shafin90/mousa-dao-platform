@@ -9,7 +9,7 @@ router.use(authenticate);
 
 router.post('/', validate(createBookingSchema), bookingController.createBooking);
 router.get('/my', bookingController.getUserBookings);
-router.get('/', requireRole(['admin']), bookingController.getAllBookings);
+router.get('/', requireRole(['admin', 'manager']), bookingController.getAllBookings);
 router.get('/:id', bookingController.getBookingById);
 router.patch('/:id/cancel', bookingController.cancelBooking);
 

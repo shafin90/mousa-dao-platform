@@ -17,8 +17,13 @@ export interface AuthResponse {
 export interface User {
   _id: string;
   email: string;
+  email2?: string;
   phone: string;
+  phone2?: string;
   role: string;
+  dateOfBirth?: string;
+  employmentStatus?: string;
+  createdBy?: { _id: string; profile: { firstName: string; lastName: string } } | string;
   profile: {
     firstName: string;
     lastName: string;

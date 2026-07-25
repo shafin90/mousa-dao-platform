@@ -3,7 +3,7 @@ const routeRepository = require("../repositories/route.repository");
 const busRepository = require("../../fleet/repositories/bus.repository");
 const stationRepository = require("../../stations/repositories/station.repository");
 const gpsRepository = require("../../tracking/repositories/gps.repository");
-const { delBusLocationCache } = require("../../../redis/client");
+const { deleteBusLocation: delBusLocationCache } = require("../../../services/redis/busLocation.service");
 const AppError = require("../../../errors/AppError");
 const ErrorCodes = require("../../../errors/errorCodes");
 const mongoose = require("mongoose");
@@ -33,25 +33,22 @@ const findOrCreateRoute = async (companyId, fromStationId, toStationId) => {
   ]);
   const fromCityId = fromS?.cityId?._id || fromS?.cityId;
   const toCityId = toS?.cityId?._id || toS?.cityId;
-  let routes = await routeRepository.findWhere({ companyId, fromCity: fromCityId, toCity: toCityId });
-  if (routes.length === 0) {
-    let distanceKm = 100;
-    if (fromS?.location?.lat && toS?.location?.lat) {
-      const R = 6371;
-      const dLat = ((toS.location.lat - fromS.location.lat) * Math.PI) / 180;
-      const dLon = ((toS.location.lng - fromS.location.lng) * Math.PI) / 180;
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos((fromS.location.lat * Math.PI) / 180) * Math.cos((toS.location.lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-      distanceKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-    }
-    routes = [await routeRepository.create({
-      companyId,
-      fromCity: fromCityId,
-      toCity: toCityId,
-      distanceKm,
-      estimatedTimeMinutes: Math.round(distanceKm / 60 * 60),
-    })];
+  let distanceKm = 100;
+  if (fromS?.location?.lat && toS?.location?.lat) {
+    const R = 6371;
+    const dLat = ((toS.location.lat - fromS.location.lat) * Math.PI) / 180;
+    const dLon = ((toS.location.lng - fromS.location.lng) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((fromS.location.lat * Math.PI) / 180) * Math.cos((toS.location.lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    distanceKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
   }
-  return routes[0];
+  const route = await routeRepository.create({
+    companyId,
+    fromCity: fromCityId,
+    toCity: toCityId,
+    distanceKm,
+    estimatedTimeMinutes: Math.round(distanceKm / 60 * 60),
+  });
+  return route;
 };
 
 const validateBus = async (busId, companyId) => {
@@ -97,6 +94,17 @@ const buildTripFilter = async (companyId, filters) => {
     filter.price = {};
     if (filters.priceMin) filter.price.$gte = Number(filters.priceMin);
     if (filters.priceMax) filter.price.$lte = Number(filters.priceMax);
+  }
+
+  if (filters.cityId && mongoose.Types.ObjectId.isValid(filters.cityId)) {
+    const cityId = new mongoose.Types.ObjectId(filters.cityId);
+    const cityStations = await stationRepository.findAll(companyId, { cityId });
+    const stationIds = cityStations.map((s) => s._id);
+    const cityRouteIds = await routeRepository.findWhere({ companyId, $or: [{ fromCity: cityId }, { toCity: cityId }, { 'stops.cityId': cityId }] });
+    const orClauses = [];
+    if (stationIds.length) orClauses.push({ fromStation: { $in: stationIds } }, { toStation: { $in: stationIds } });
+    if (cityRouteIds.length) orClauses.push({ routeId: { $in: cityRouteIds.map((r) => r._id) } });
+    if (orClauses.length) filter.$or = orClauses;
   }
 
   if (filters.fromStation || filters.toStation) {

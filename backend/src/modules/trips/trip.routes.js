@@ -3,18 +3,18 @@ const router = express.Router();
 const tripController = require('./controllers/trip.controller');
 const validate = require('../../middlewares/validate.middleware');
 const { createTripSchema, updateStatusSchema } = require('./validators/trip.validator');
-const { authenticate, requireRole } = require('../auth/auth.middleware');
+const { authenticate, requireRole, logManagerAction } = require('../auth/auth.middleware');
 
 router.use(authenticate);
 
 router.route('/')
   .post(requireRole(['admin', 'staff']), validate(createTripSchema), tripController.createTrip)
-  .get(tripController.getAllTrips)
+  .get(requireRole(['admin', 'staff', 'manager']), tripController.getAllTrips)
   .delete(requireRole(['admin']), tripController.deleteAllTrips);
 
 router.route('/:id')
-  .get(tripController.getTripById)
-  .patch(requireRole(['admin', 'staff']), tripController.updateTrip)
+  .get(requireRole(['admin', 'staff', 'manager']), tripController.getTripById)
+  .patch(requireRole(['admin', 'staff', 'manager']), logManagerAction('UPDATE_TRIP', 'TRIPS'), tripController.updateTrip)
   .delete(requireRole(['admin']), tripController.deleteTrip);
 
 router.patch('/:id/status', requireRole(['admin', 'staff']), validate(updateStatusSchema), tripController.updateTripStatus);

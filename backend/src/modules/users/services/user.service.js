@@ -15,9 +15,14 @@ const createUser = async (companyId, data) => {
   return await userRepository.create({
     companyId,
     email: data.email,
+    email2: data.email2 || undefined,
     phone: data.phone,
+    phone2: data.phone2 || undefined,
     password: hashedPassword,
     role: data.role,
+    dateOfBirth: data.dateOfBirth || undefined,
+    employmentStatus: data.employmentStatus || 'active',
+    createdBy: data.createdBy,
     profile: { firstName: data.firstName, lastName: data.lastName },
   });
 };
@@ -107,9 +112,13 @@ const updateUser = async (id, companyId, data) => {
     if (data.lastName) update.profile.lastName = data.lastName;
   }
   if (data.email) update.email = data.email;
+  if (data.email2 !== undefined) update.email2 = data.email2 || null;
   if (data.phone) update.phone = data.phone;
+  if (data.phone2 !== undefined) update.phone2 = data.phone2 || null;
   if (data.role) update.role = data.role;
   if (data.password) update.password = await bcrypt.hash(data.password, 10);
+  if (data.dateOfBirth !== undefined) update.dateOfBirth = data.dateOfBirth || null;
+  if (data.employmentStatus) update.employmentStatus = data.employmentStatus;
 
   return await userRepository.updateOne(id, companyId, update);
 };

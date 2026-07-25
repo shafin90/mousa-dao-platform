@@ -36,6 +36,7 @@ export const useAuth = () => {
     error,
     isAuthenticated: !!token,
     isAdmin: user?.role === "admin",
+    isManager: user?.role === "manager",
     login: loginAction,
     logout: logoutAction,
   };

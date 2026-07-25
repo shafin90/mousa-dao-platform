@@ -5,7 +5,7 @@ const { authenticate, requireRole } = require('../auth/auth.middleware');
 
 router.use(authenticate);
 
-router.get('/', requireRole(['admin']), notificationController.getAllNotifications);
+router.get('/', requireRole(['admin', 'manager']), notificationController.getAllNotifications);
 router.get('/my', notificationController.getMyNotifications);
 router.patch('/read-all', notificationController.markAllAsRead);
 router.patch('/:id/read', notificationController.markAsRead);

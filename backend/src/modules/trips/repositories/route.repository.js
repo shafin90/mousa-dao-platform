@@ -38,8 +38,16 @@ const create = async (data) => {
  * @param {string} companyId
  * @returns {Promise<Array>}
  */
-const findAll = async (companyId) => {
-  return await Route.find({ companyId })
+const findAll = async (companyId, filters = {}) => {
+  const query = { companyId };
+  if (filters.cityId) {
+    query.$or = [
+      { fromCity: filters.cityId },
+      { toCity: filters.cityId },
+      { 'stops.cityId': filters.cityId },
+    ];
+  }
+  return await Route.find(query)
     .populate('fromCity toCity')
     .populate(stopsPopulate)
     .populate(stationPopulate);

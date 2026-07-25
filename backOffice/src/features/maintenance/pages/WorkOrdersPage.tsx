@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, RefreshCw, ClipboardList, Pencil, Trash2 } from "lucide-react";
+import { Plus, RefreshCw, ClipboardList, Pencil, Trash2, Search, X } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -75,6 +76,7 @@ const emptyForm = {
 
 const WorkOrdersPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
   const [buses, setBuses] = useState<BusData[]>([]);
   const [staff, setStaff] = useState<MaintenanceStaffData[]>([]);
@@ -86,6 +88,9 @@ const WorkOrdersPage: React.FC = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [toDelete, setToDelete] = useState<WorkOrderData | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterPriority, setFilterPriority] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -93,7 +98,7 @@ const WorkOrdersPage: React.FC = () => {
       const data = await workOrderApi.getAll();
       setWorkOrders(data);
     } catch {
-      toast.error(t("maintenance.workOrders.loadFailed"));
+      showError(t("maintenance.workOrders.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -148,7 +153,7 @@ const WorkOrdersPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.busId) {
-      toast.error(t("maintenance.workOrders.busRequired"));
+      showError(t("maintenance.workOrders.busRequired"));
       return;
     }
     setSaving(true);
@@ -164,7 +169,7 @@ const WorkOrdersPage: React.FC = () => {
       setForm({ ...emptyForm });
       await load();
     } catch {
-      toast.error(t("maintenance.workOrders.saveFailed"));
+      showError(t("maintenance.workOrders.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -177,7 +182,7 @@ const WorkOrdersPage: React.FC = () => {
       toast.success(t("maintenance.workOrders.statusUpdated"));
       await load();
     } catch {
-      toast.error(t("maintenance.workOrders.saveFailed"));
+      showError(t("maintenance.workOrders.saveFailed"));
     }
   };
 
@@ -190,7 +195,7 @@ const WorkOrdersPage: React.FC = () => {
       setToDelete(null);
       await load();
     } catch {
-      toast.error(t("maintenance.workOrders.deleteFailed"));
+      showError(t("maintenance.workOrders.deleteFailed"));
     }
   };
 
@@ -238,8 +243,29 @@ const WorkOrdersPage: React.FC = () => {
     },
   ];
 
+  const STATUS_OPTIONS = [
+    { value: "", label: "All Statuses" },
+    ...STATUSES.map((s) => ({ value: s, label: s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) })),
+  ] as const;
+  const PRIORITY_OPTIONS = [
+    { value: "", label: "All Priorities" },
+    ...PRIORITIES.map((p) => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) })),
+  ] as const;
+
+  const filteredWorkOrders = workOrders.filter((r) => {
+    if (filterStatus && r.status !== filterStatus) return false;
+    if (filterPriority && r.priority !== filterPriority) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!r.workOrderNumber.toLowerCase().includes(q) && !busLabelOf(r.busId).toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = search || filterStatus || filterPriority;
+
   return (
-    <div className="space-y-6">
+    <div>
       <div className="flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <ClipboardList size={20} className="text-primary" /> {t("maintenance.workOrders.title")}
@@ -254,7 +280,51 @@ const WorkOrdersPage: React.FC = () => {
         </div>
       </div>
 
-      <DataTable columns={columns} data={workOrders} isLoading={loading} />
+      <div data-tour="work-orders-table">
+        <div className="flex flex-wrap items-center gap-2 rounded-t-lg border border-b-0 bg-muted/30 px-2.5 py-1.5">
+          <div className="relative flex-1 min-w-[160px] max-w-[260px]">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search work order or bus..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-7 pl-8 pr-7 rounded border bg-background/80 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {PRIORITY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            {hasFilters && (
+              <button onClick={() => { setSearch(""); setFilterStatus(""); setFilterPriority(""); }} className="h-7 px-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors">
+                <X size={12} /> Clear
+              </button>
+            )}
+          </div>
+        </div>
+        <DataTable className="rounded-t-none border-t-0" columns={columns} data={filteredWorkOrders} isLoading={loading} />
+      </div>
 
       <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setToDelete(null); }} title={t("maintenance.workOrders.deleteWorkOrder")}>
         {toDelete && (

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MapPin, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -54,6 +55,7 @@ const idOf = (value: unknown): string => {
 
 export const StopsCard: React.FC<StopsCardProps> = ({ stops, cities, stations, onAdd, isLoading }) => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const [isOpen, setIsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ cityId: "", stationId: "", name: "" });
@@ -106,7 +108,7 @@ export const StopsCard: React.FC<StopsCardProps> = ({ stops, cities, stations, o
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.cityId) {
-      toast.error(t("stops.selectCityRequired"));
+      showError(t("stops.selectCityRequired"));
       return;
     }
     if (!onAdd) return;
@@ -122,7 +124,7 @@ export const StopsCard: React.FC<StopsCardProps> = ({ stops, cities, stations, o
       setIsOpen(false);
       resetForm();
     } catch {
-      toast.error(t("stops.addFailed"));
+      showError(t("stops.addFailed"));
     } finally {
       setSaving(false);
     }

@@ -21,6 +21,6 @@ const stationSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
-stationSchema.index({ companyId: 1, name: 1, cityId: 1 }, { unique: true });
+stationSchema.index({ companyId: 1, name: 1, cityId: 1 });
 
 module.exports = mongoose.model('Station', stationSchema);

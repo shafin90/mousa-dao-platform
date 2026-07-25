@@ -55,13 +55,18 @@ async function seed() {
   console.log('Cleared all collections');
 
   // ── Tenant + admin ──
-  const hashedPw = await bcrypt.hash('admin123', 10);
-  const tenant = await Tenant.create({ name: 'Demo Transport Co', email: 'admin@example.com', phone: '0100000000' });
+  const tenant = await Tenant.create({ name: 'Demo Transport Co', email: 'admincompany1@gmail.com', phone: '0100000000' });
   const companyId = tenant._id;
-  const admin = await User.create({ companyId, email: 'admin@example.com', phone: '0100000000', password: hashedPw, role: 'admin', profile: { firstName: 'Admin', lastName: 'User' } });
+  const adminPw = await bcrypt.hash('admincompany1', 10);
+  const admin = await User.create({ companyId, email: 'admincompany1@gmail.com', phone: '0100000000', password: adminPw, role: 'admin', profile: { firstName: 'Admin', lastName: 'User' } });
   console.log('Created tenant + admin. Company:', companyId.toString());
 
-  // ── USERS: staff + drivers + customers ──
+  // ── USERS: manager, staff, drivers, customers ──
+  const managerPw = await bcrypt.hash('manager1company1', 10);
+  const manager = await User.create({ companyId, email: 'manager1company1@gmail.com', phone: '0100000099', password: managerPw, role: 'manager', profile: { firstName: 'Manager', lastName: 'User' } });
+  console.log('Created manager:', manager.email);
+
+  const hashedPw = await bcrypt.hash('admin123', 10);
   const staff = await User.create({ companyId, email: 'staff@example.com', phone: '0100000001', password: hashedPw, role: 'staff', profile: { firstName: 'Grace', lastName: 'Staff' } });
 
   const drivers = [];
@@ -113,7 +118,8 @@ async function seed() {
     companyId, name: s.name, cityId: cityMap[s.city], address: s.address, location: { lat: s.lat, lng: s.lng },
   })));
   const stIdx = {};
-  stations.forEach((s) => { stIdx[s.name] = s._id; });
+  const stCity = {}; // station name -> cityId
+  stations.forEach((s) => { stIdx[s.name] = s._id; stCity[s.name] = s.cityId; });
   console.log(`Created ${stations.length} stations`);
 
   // ── ROUTES ──
@@ -128,7 +134,7 @@ async function seed() {
     { from: 'Daloa Gare', to: 'Gagnoa Terminal', fare: 3000, dist: 130, time: 110 },
   ];
   const routes = await Route.insertMany(routeData.map((r) => ({
-    companyId, fromStation: stIdx[r.from], toStation: stIdx[r.to], baseFare: r.fare, distanceKm: r.dist, estimatedTimeMinutes: r.time,
+    companyId, fromStations: [stIdx[r.from]], toStations: [stIdx[r.to]], fromCity: stCity[r.from], toCity: stCity[r.to], baseRate: r.fare, distanceKm: r.dist, estimatedTimeMinutes: r.time,
   })));
   console.log(`Created ${routes.length} routes`);
 
@@ -139,13 +145,13 @@ async function seed() {
     'https://images.unsplash.com/photo-1557223562-6c77ef16210f?w=800&q=80',
   ];
   const busSeed = [
-    { busNumber: 'BV-001', name: 'Mercedes Sprinter', capacity: 30, type: 'AC', driver: 0, status: 'active', make: 'Mercedes-Benz', model: 'Sprinter', year: 2021, color: 'White', plate: 'CI-1234-AB', vin: 'WDB9066331S123456', fuel: 'diesel', odo: 145000, regOff: 210, insOff: 18, fitOff: 120, insurer: 'NSIA Assurances', policy: 'POL-2024-0012', pDate: -900, pCost: 48000, depot: 'Adjamé Depot', features: { 'WiFi': true, 'AC': true, 'USB Charging': true } },
+    { busNumber: 'BV-001', name: 'Mercedes Sprinter', capacity: 30, type: 'Standard', driver: 0, status: 'active', make: 'Mercedes-Benz', model: 'Sprinter', year: 2021, color: 'White', plate: 'CI-1234-AB', vin: 'WDB9066331S123456', fuel: 'diesel', odo: 145000, regOff: 210, insOff: 18, fitOff: 120, insurer: 'NSIA Assurances', policy: 'POL-2024-0012', pDate: -900, pCost: 48000, depot: 'Adjamé Depot', features: { 'WiFi': true, 'AC': true, 'USB Charging': true } },
     { busNumber: 'BV-002', name: 'Volvo 9700', capacity: 45, type: 'VIP', driver: 1, status: 'active', make: 'Volvo', model: '9700', year: 2022, color: 'Blue', plate: 'CI-2233-CD', vin: 'YV3R8G1179A987654', fuel: 'diesel', odo: 98000, regOff: -12, insOff: 300, fitOff: 25, insurer: 'Allianz CI', policy: 'POL-2023-8890', pDate: -640, pCost: 92000, depot: 'Adjamé Depot', features: { 'WiFi': true, 'AC': true, 'USB Charging': true, 'Restroom': true, 'TV': true } },
-    { busNumber: 'BV-003', name: 'Toyota Coaster', capacity: 25, type: 'AC', driver: 2, status: 'active', make: 'Toyota', model: 'Coaster', year: 2020, color: 'Silver', plate: 'CI-3344-EF', vin: 'JTGFB518001045321', fuel: 'diesel', odo: 176500, regOff: 90, insOff: 60, fitOff: -5, insurer: 'SUNU Assurances', policy: 'POL-2024-1120', pDate: -1200, pCost: 36000, depot: 'Treichville Depot', features: { 'AC': true, 'USB Charging': true } },
-    { busNumber: 'BV-004', name: 'Isuzu Bighorn', capacity: 40, type: 'NON_AC', driver: 3, status: 'active', make: 'Isuzu', model: 'Bighorn', year: 2019, color: 'Green', plate: 'CI-4455-GH', vin: 'JACUA58N1K7654321', fuel: 'diesel', odo: 232000, regOff: 400, insOff: 200, fitOff: 200, insurer: 'NSIA Assurances', policy: 'POL-2022-5540', pDate: -1600, pCost: 30000, depot: 'Treichville Depot', features: { 'GPS': true } },
+    { busNumber: 'BV-003', name: 'Toyota Coaster', capacity: 25, type: 'Standard', driver: 2, status: 'active', make: 'Toyota', model: 'Coaster', year: 2020, color: 'Silver', plate: 'CI-3344-EF', vin: 'JTGFB518001045321', fuel: 'diesel', odo: 176500, regOff: 90, insOff: 60, fitOff: -5, insurer: 'SUNU Assurances', policy: 'POL-2024-1120', pDate: -1200, pCost: 36000, depot: 'Treichville Depot', features: { 'AC': true, 'USB Charging': true } },
+    { busNumber: 'BV-004', name: 'Isuzu Bighorn', capacity: 40, type: 'Standard', driver: 3, status: 'active', make: 'Isuzu', model: 'Bighorn', year: 2019, color: 'Green', plate: 'CI-4455-GH', vin: 'JACUA58N1K7654321', fuel: 'diesel', odo: 232000, regOff: 400, insOff: 200, fitOff: 200, insurer: 'NSIA Assurances', policy: 'POL-2022-5540', pDate: -1600, pCost: 30000, depot: 'Treichville Depot', features: { 'GPS': true } },
     { busNumber: 'BV-005', name: 'Scania Interlink', capacity: 50, type: 'VIP', driver: 4, status: 'maintenance', make: 'Scania', model: 'Interlink', year: 2023, color: 'Red', plate: 'CI-5566-IJ', vin: 'YS2K6X20005112233', fuel: 'diesel', odo: 41000, regOff: 320, insOff: 320, fitOff: 320, insurer: 'Allianz CI', policy: 'POL-2024-3301', pDate: -300, pCost: 110000, depot: 'Yamoussoukro Depot', features: { 'WiFi': true, 'AC': true, 'USB Charging': true, 'Restroom': true, 'TV': true, 'Power Outlets': true, 'Wheelchair Access': true } },
-    { busNumber: 'BV-006', name: 'Hyundai Universe', capacity: 44, type: 'AC', driver: 5, status: 'active', make: 'Hyundai', model: 'Universe', year: 2021, color: 'White', plate: 'CI-6677-KL', vin: 'KMJHG17BPMC334455', fuel: 'diesel', odo: 121000, regOff: 15, insOff: 150, fitOff: 60, insurer: 'SUNU Assurances', policy: 'POL-2023-7712', pDate: -700, pCost: 70000, depot: 'Bouaké Depot', features: { 'WiFi': true, 'AC': true, 'USB Charging': true, 'Water': true } },
-    { busNumber: 'BV-007', name: 'King Long XMQ', capacity: 55, type: 'NON_AC', status: 'inactive', make: 'King Long', model: 'XMQ6127', year: 2018, color: 'Yellow', plate: 'CI-7788-MN', vin: 'LA9F3EED4JASD1122', fuel: 'diesel', odo: 298000, regOff: -60, insOff: -30, fitOff: -40, insurer: 'NSIA Assurances', policy: 'POL-2021-2201', pDate: -2200, pCost: 55000, depot: 'Bouaké Depot', features: {} },
+    { busNumber: 'BV-006', name: 'Hyundai Universe', capacity: 44, type: 'Premium', driver: 5, status: 'active', make: 'Hyundai', model: 'Universe', year: 2021, color: 'White', plate: 'CI-6677-KL', vin: 'KMJHG17BPMC334455', fuel: 'diesel', odo: 121000, regOff: 15, insOff: 150, fitOff: 60, insurer: 'SUNU Assurances', policy: 'POL-2023-7712', pDate: -700, pCost: 70000, depot: 'Bouaké Depot', features: { 'WiFi': true, 'AC': true, 'USB Charging': true, 'Water': true } },
+    { busNumber: 'BV-007', name: 'King Long XMQ', capacity: 55, type: 'Standard', status: 'inactive', make: 'King Long', model: 'XMQ6127', year: 2018, color: 'Yellow', plate: 'CI-7788-MN', vin: 'LA9F3EED4JASD1122', fuel: 'diesel', odo: 298000, regOff: -60, insOff: -30, fitOff: -40, insurer: 'NSIA Assurances', policy: 'POL-2021-2201', pDate: -2200, pCost: 55000, depot: 'Bouaké Depot', features: {} },
     { busNumber: 'BV-008', name: 'BYD K9 Electric', capacity: 36, type: 'VIP', status: 'active', make: 'BYD', model: 'K9', year: 2024, color: 'Teal', plate: 'CI-8899-OP', vin: 'LC0C14C43P0011223', fuel: 'electric', odo: 12000, regOff: 500, insOff: 500, fitOff: 500, insurer: 'Allianz CI', policy: 'POL-2025-0091', pDate: -120, pCost: 130000, depot: 'Adjamé Depot', features: { 'WiFi': true, 'AC': true, 'USB Charging': true, 'Power Outlets': true, 'TV': true } },
   ];
   const buses = await Bus.insertMany(busSeed.map((b) => ({
@@ -194,9 +200,9 @@ async function seed() {
     let status = off < 0 ? 'completed' : off === 0 ? 'active' : 'scheduled';
     if (off > 5 && i % 7 === 0) status = 'cancelled';
     return {
-      companyId, routeId: route._id, busId: bus._id, date: d(off),
+      companyId, routeId: route._id, fromStation: route.fromStations[0], toStation: route.toStations[0], busId: bus._id, date: d(off),
       departureTime: depTimes[i % depTimes.length], arrivalTime: arrTimes[i % arrTimes.length],
-      price: route.baseFare + (bus.type === 'VIP' ? 2000 : 0),
+      price: route.baseRate + (bus.type === 'VIP' ? 2000 : 0),
       seatsTotal: bus.capacity, seatsBooked: 0, status,
     };
   });
@@ -300,7 +306,8 @@ async function seed() {
   console.log('Created notifications');
 
   console.log('\n✅ Seed complete!');
-  console.log('Admin login: admin@example.com / admin123');
+  console.log('Admin login: admincompany1@gmail.com / admincompany1');
+  console.log('Manager login: manager1company1@gmail.com / manager1company1');
   await mongoose.disconnect();
 }
 

@@ -10,6 +10,7 @@ import {
   Users,
   Armchair,
   CalendarClock,
+  LayoutDashboard,
   User,
   Wallet,
   MapPin,
@@ -28,6 +29,15 @@ import { bookingApi, type BookingData } from "@/api/bookingApi";
 
 const SEATS_PER_ROW = 4;
 const ROW_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+const SECTIONS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "bus", label: "Bus", icon: BusIcon },
+  { id: "stations", label: "Stations", icon: MapPin },
+  { id: "schedule", label: "Schedule", icon: Clock },
+  { id: "seats", label: "Seats", icon: Armchair },
+  { id: "bookings", label: "Bookings", icon: User },
+] as const;
 
 /** Builds the seat grid (rows of seat labels) matching the customer app scheme: row letter + 1..4. */
 const buildSeatRows = (capacity: number): string[][] => {
@@ -149,6 +159,7 @@ const TripDetailsPage: React.FC = () => {
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [serial, setSerial] = useState<number | null>(null);
+  const [activeSection, setActiveSection] = useState("overview");
 
   useEffect(() => {
     let active = true;
@@ -326,7 +337,7 @@ const TripDetailsPage: React.FC = () => {
             <Badge variant={tripStatusVariant(trip.status)}>{t(`trips.${trip.status}`)}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {new Date(trip.date).toLocaleDateString()} · {trip.departureTime} → {trip.arrivalTime}
+            {new Date(trip.date).toLocaleDateString()} &middot; {trip.departureTime} &rarr; {trip.arrivalTime}
           </p>
           <p className="font-mono text-xs text-muted-foreground">{trip._id}</p>
         </div>
@@ -341,49 +352,70 @@ const TripDetailsPage: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={<Coins size={18} />}
-          label={t("trips.price")}
-          value={`CFA ${trip.price?.toFixed(2) ?? "0.00"}`}
-        />
-        <StatCard
-          icon={<Armchair size={18} />}
-          label={t("trips.seatsAvailable")}
-          value={`${metrics?.seatsAvailable ?? 0}`}
-          hint={`${trip.seatsBooked || 0} / ${trip.seatsTotal || 0} ${t("trips.booked")}`}
-        />
-        <StatCard
-          icon={<Users size={18} />}
-          label={t("trips.occupancyLabel")}
-          value={`${metrics?.occupancy.toFixed(0) ?? 0}%`}
-        />
-        <StatCard
-          icon={<Wallet size={18} />}
-          label={t("trips.revenue")}
-          value={`CFA ${metrics?.revenueBooked.toFixed(2) ?? "0.00"}`}
-          hint={`${t("trips.ofPotential", { value: `CFA ${metrics?.revenuePotential.toFixed(2) ?? "0.00"}` })}`}
-        />
+      <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 overflow-x-auto border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        {SECTIONS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveSection(id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
+              activeSection === id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon size={14} />
+            {label}
+          </button>
+        ))}
       </div>
 
-      <Card>
-        <CardContent className="p-5">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="font-medium">{t("trips.occupancyLabel")}</span>
-            <span className="text-muted-foreground">
-              {trip.seatsBooked || 0} / {trip.seatsTotal || 0}
-            </span>
-          </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(metrics?.occupancy ?? 0, 100)}%` }}
+      {activeSection === "overview" && (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              icon={<Coins size={18} />}
+              label={t("trips.price")}
+              value={`CFA ${trip.price?.toFixed(2) ?? "0.00"}`}
+            />
+            <StatCard
+              icon={<Armchair size={18} />}
+              label={t("trips.seatsAvailable")}
+              value={`${metrics?.seatsAvailable ?? 0}`}
+              hint={`${trip.seatsBooked || 0} / ${trip.seatsTotal || 0} ${t("trips.booked")}`}
+            />
+            <StatCard
+              icon={<Users size={18} />}
+              label={t("trips.occupancyLabel")}
+              value={`${metrics?.occupancy.toFixed(0) ?? 0}%`}
+            />
+            <StatCard
+              icon={<Wallet size={18} />}
+              label={t("trips.revenue")}
+              value={`CFA ${metrics?.revenueBooked.toFixed(2) ?? "0.00"}`}
+              hint={`${t("trips.ofPotential", { value: `CFA ${metrics?.revenuePotential.toFixed(2) ?? "0.00"}` })}`}
             />
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card>
+            <CardContent className="p-5">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="font-medium">{t("trips.occupancyLabel")}</span>
+                <span className="text-muted-foreground">
+                  {trip.seatsBooked || 0} / {trip.seatsTotal || 0}
+                </span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(metrics?.occupancy ?? 0, 100)}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {activeSection === "bus" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -423,7 +455,9 @@ const TripDetailsPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      )}
 
+      {activeSection === "stations" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -453,6 +487,9 @@ const TripDetailsPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {activeSection === "schedule" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -461,12 +498,12 @@ const TripDetailsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <InfoRow label={t("trips.date")} value={new Date(trip.date).toLocaleDateString()} />
-            <InfoRow label={t("trips.scheduledTime")} value={`${trip.departureTime} → ${trip.arrivalTime}`} />
+            <InfoRow label={t("trips.scheduledTime")} value={`${trip.departureTime} &rarr; ${trip.arrivalTime}`} />
             <InfoRow label={t("trips.tripNumber")} value={serial != null ? `#${serial}` : t("common.na")} />
             {(trip.actualDepartureTime || trip.actualArrivalTime) && (
               <InfoRow
                 label={t("trips.actualTime")}
-                value={`${trip.actualDepartureTime || "—"} → ${trip.actualArrivalTime || "—"}`}
+                value={`${trip.actualDepartureTime || "&mdash;"} &rarr; ${trip.actualArrivalTime || "&mdash;"}`}
               />
             )}
             {(trip.delayMinutes ?? 0) > 0 && (
@@ -491,9 +528,9 @@ const TripDetailsPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      {seatCapacity > 0 && (
+      {activeSection === "seats" && seatCapacity > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -546,17 +583,19 @@ const TripDetailsPage: React.FC = () => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <User size={18} className="text-primary" /> {t("trips.passengerManifest")}
-          </CardTitle>
-          <Badge variant="outline">{t("trips.totalBookings", { count: bookings.length })}</Badge>
-        </CardHeader>
-        <CardContent>
-          <DataTable columns={bookingColumns} data={bookings} isLoading={bookingsLoading} />
-        </CardContent>
-      </Card>
+      {activeSection === "bookings" && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <User size={18} className="text-primary" /> {t("trips.passengerManifest")}
+            </CardTitle>
+            <Badge variant="outline">{t("trips.totalBookings", { count: bookings.length })}</Badge>
+          </CardHeader>
+          <CardContent>
+            <DataTable columns={bookingColumns} data={bookings} isLoading={bookingsLoading} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="flex items-center gap-2 p-5 text-sm">

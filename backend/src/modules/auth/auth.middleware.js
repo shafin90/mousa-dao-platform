@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const userRepository = require('../users/repositories/user.repository');
 const AppError = require('../../errors/AppError');
 const ErrorCodes = require('../../errors/errorCodes');
+const Audit = require('../audit/audit.model');
 
 /**
  * Authenticates a request by verifying the JWT in the Authorization header.
@@ -72,4 +73,30 @@ const requireTenantContext = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireRole, requireTenantContext };
+/**
+ * Logs manager actions to the audit trail.
+ * Fire-and-forget: never blocks the request.
+ */
+const logManagerAction = (action, module) => {
+  return (req, res, next) => {
+    if (req.user && req.user.role === 'manager') {
+      Audit.create({
+        companyId: req.user.companyId,
+        userId: req.user._id,
+        action,
+        module,
+        description: `${req.method} ${req.originalUrl}`,
+        metadata: {
+          body: ['PATCH', 'POST'].includes(req.method) ? req.body : undefined,
+          params: req.params,
+        },
+        status: 'success',
+        ipAddress: req.ip || req.headers['x-forwarded-for'],
+        userAgent: req.headers['user-agent'],
+      }).catch(err => console.error('Manager audit log failed:', err));
+    }
+    next();
+  };
+};
+
+module.exports = { authenticate, requireRole, requireTenantContext, logManagerAction };

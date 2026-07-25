@@ -1,8 +1,19 @@
 import React from "react";
 import { cn } from "@/shared/utils/cn";;
 
-export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...props }) => (
-  <div className={cn("rounded-xl border bg-card text-card-foreground shadow-sm", className)} {...props} />
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  hoverable?: boolean;
+}
+
+export const Card: React.FC<CardProps> = ({ hoverable, className, ...props }) => (
+  <div
+    className={cn(
+      "rounded-lg border bg-card text-card-foreground",
+      hoverable && "hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 cursor-pointer",
+      className
+    )}
+    {...props}
+  />
 );
 
 export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...props }) => (

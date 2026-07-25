@@ -39,9 +39,6 @@ const fetchAddress = async (lat: number, lng: number, marker: L.Marker, t: (key:
   }
 };
 
-const isOutsideBounds = (lat: number, lng: number, b: Props["cityBounds"]) =>
-  b && (lat < b.minLat || lat > b.maxLat || lng < b.minLng || lng > b.maxLng);
-
 const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, cityBounds }) => {
   const { t } = useTranslation();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -82,7 +79,6 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
         [cityBounds.minLat, cityBounds.minLng],
         [cityBounds.maxLat, cityBounds.maxLng]
       );
-      map.setMaxBounds(bounds);
       map.fitBounds(bounds, { padding: [30, 30], animate: true, duration: 0.5 });
       L.rectangle(bounds, { color: "#8b5cf6", weight: 2, fillOpacity: 0.05 }).addTo(map);
     }
@@ -102,7 +98,6 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
 
     map.on("click", (e: L.LeafletMouseEvent) => {
       const { lat: clickedLat, lng: clickedLng } = e.latlng;
-      if (isOutsideBounds(clickedLat, clickedLng, cityBounds)) return;
       marker.setLatLng([clickedLat, clickedLng]);
       onPickRef.current(clickedLat, clickedLng);
       fetchAddress(clickedLat, clickedLng, marker, t, onAddressFoundRef.current);
@@ -115,10 +110,6 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
 
     marker.on("dragend", () => {
       const pos = marker.getLatLng();
-      if (isOutsideBounds(pos.lat, pos.lng, cityBounds)) {
-        marker.setLatLng([markerCenter[0], markerCenter[1]]);
-        return;
-      }
       onPickRef.current(pos.lat, pos.lng);
       fetchAddress(pos.lat, pos.lng, marker, t, onAddressFoundRef.current);
     });
@@ -142,19 +133,6 @@ const StationMapPicker: React.FC<Props> = ({ lat, lng, onPick, onAddressFound, c
       });
     }
   }, [lat, lng]);
-
-  useEffect(() => {
-    if (!instanceRef.current) return;
-    if (cityBounds) {
-      const bounds = L.latLngBounds(
-        [cityBounds.minLat, cityBounds.minLng],
-        [cityBounds.maxLat, cityBounds.maxLng]
-      );
-      instanceRef.current.setMaxBounds(bounds);
-    } else {
-      instanceRef.current.setMaxBounds(undefined as unknown as L.LatLngBounds);
-    }
-  }, [cityBounds]);
 
   return (
     <div className="relative w-full h-96 rounded-lg border overflow-hidden">

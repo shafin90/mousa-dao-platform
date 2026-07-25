@@ -10,7 +10,7 @@ export const Select: React.FC<SelectProps> = ({ className, options, placeholder,
   return (
     <select
       className={cn(
-        "w-full p-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring",
+        "w-full p-2 border rounded-md bg-background text-sm hover:border-ring/50 transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
         className
       )}
       {...props}

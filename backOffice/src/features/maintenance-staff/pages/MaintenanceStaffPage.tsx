@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Users, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -33,6 +34,7 @@ const emptyForm = {
 
 const MaintenanceStaffPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const [staff, setStaff] = useState<MaintenanceStaffData[]>([]);
   const [facilities, setFacilities] = useState<MaintenanceFacilityData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ const MaintenanceStaffPage: React.FC = () => {
       setStaff(staffData);
       setFacilities(facilityData);
     } catch {
-      toast.error(t("maintenanceStaff.loadFailed"));
+      showError(t("maintenanceStaff.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -85,7 +87,7 @@ const MaintenanceStaffPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      toast.error(t("maintenanceStaff.validationRequired"));
+      showError(t("maintenanceStaff.validationRequired"));
       return;
     }
     setSaving(true);
@@ -108,7 +110,7 @@ const MaintenanceStaffPage: React.FC = () => {
       setForm({ ...emptyForm });
       await load();
     } catch {
-      toast.error(t("maintenanceStaff.saveFailed"));
+      showError(t("maintenanceStaff.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -123,7 +125,7 @@ const MaintenanceStaffPage: React.FC = () => {
       setToDelete(null);
       await load();
     } catch {
-      toast.error(t("maintenanceStaff.deleteFailed"));
+      showError(t("maintenanceStaff.deleteFailed"));
     }
   };
 

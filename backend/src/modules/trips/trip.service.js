@@ -4,7 +4,7 @@ const Route = require('./models/Route');
 const Bus = require('../fleet/models/Bus');
 const Station = require('../stations/models/Station');
 const BusLocation = require('../tracking/models/BusLocation');
-const { delBusLocationCache } = require('../../redis/client');
+const { deleteBusLocation: delBusLocationCache } = require('../../services/redis/busLocation.service');
 
 const createTrip = async (companyId, data) => {
   const bus = await Bus.findOne({ _id: data.busId, companyId });

@@ -50,7 +50,7 @@ const updateUserRole = async (req, res, next) => {
 
 const createUser = async (req, res, next) => {
   try {
-    const user = await userService.createUser(req.user.companyId, req.body);
+    const user = await userService.createUser(req.user.companyId, { ...req.body, createdBy: req.user._id });
     respond(res, 201, user, 'User created');
   } catch (error) { next(error); }
 };

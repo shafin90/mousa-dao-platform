@@ -21,8 +21,8 @@ const createCitySchema = Joi.object({
 });
 
 const updateCitySchema = Joi.object({
-  name: Joi.string().required(),
-  country: Joi.string().required(),
+  name: Joi.string().optional(),
+  country: Joi.string().optional(),
   location: Joi.object({
     lat: Joi.number().optional().allow(null),
     lng: Joi.number().optional().allow(null),

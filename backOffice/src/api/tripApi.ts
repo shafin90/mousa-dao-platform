@@ -44,6 +44,7 @@ export interface TripFilters {
   search?: string;
   fromStation?: string;
   toStation?: string;
+  cityId?: string;
 }
 
 export const tripApi = {

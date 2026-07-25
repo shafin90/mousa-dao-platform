@@ -1,11 +1,16 @@
 const cityService = require('../services/city.service');
-const { respond } = require('../../../utils/response');
+const { respond, respondPaginated } = require('../../../utils/response');
 
 const getAllCities = async (req, res, next) => {
   try {
-    const { country, search } = req.query;
-    const cities = await cityService.getAllCities(req.user.companyId, { country, search });
-    respond(res, 200, cities);
+    const { country, search, isActive, page = 1, limit = 20 } = req.query;
+    const result = await cityService.getAllCitiesPaginated(
+      req.user.companyId,
+      { country, search, isActive },
+      parseInt(page, 10),
+      parseInt(limit, 10),
+    );
+    respondPaginated(res, result.items, result.total, parseInt(page, 10), parseInt(limit, 10));
   } catch (error) { next(error); }
 };
 

@@ -10,8 +10,6 @@ const ErrorCodes = require('../../../errors/errorCodes');
  * @returns {Promise<Object>}
  */
 const createRoute = async (companyId, data, userId) => {
-  const existing = await routeRepository.findWhere({ companyId, fromCity: data.fromCity, toCity: data.toCity });
-  if (existing.length > 0) throw new AppError('A route between these cities already exists', 409, ErrorCodes.ROUTE_ALREADY_EXISTS);
   const route = await routeRepository.create({ ...data, companyId, createdBy: userId });
   return await routeRepository.findById(route._id, companyId);
 };
@@ -22,8 +20,8 @@ const createRoute = async (companyId, data, userId) => {
  * @param {string} companyId
  * @returns {Promise<Array>}
  */
-const getAllRoutes = async (companyId) => {
-  return await routeRepository.findAll(companyId);
+const getAllRoutes = async (companyId, filters = {}) => {
+  return await routeRepository.findAll(companyId, filters);
 };
 
 /**

@@ -68,8 +68,8 @@ export const normalizeStops = (stops?: RouteStop[]): RouteStopInput[] =>
   }));
 
 export const routeApi = {
-  getAll: async (): Promise<RouteData[]> => {
-    const { data } = await apiClient.get<ApiResponse<RouteData[]>>("/routes");
+  getAll: async (params?: { cityId?: string }): Promise<RouteData[]> => {
+    const { data } = await apiClient.get<ApiResponse<RouteData[]>>("/routes", { params });
     return data.data;
   },
   getById: async (id: string): Promise<RouteData> => {

@@ -4,7 +4,7 @@ const analyticsController = require('./controllers/analytics.controller');
 const { authenticate, requireRole } = require('../auth/auth.middleware');
 
 router.use(authenticate);
-router.use(requireRole(['admin']));
+router.use(requireRole(['admin', 'manager']));
 
 router.get('/dashboard', analyticsController.getDashboardOverview);
 router.get('/revenue', analyticsController.getRevenueAnalytics);

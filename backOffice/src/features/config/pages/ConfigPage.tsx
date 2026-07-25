@@ -5,6 +5,7 @@ import { Button } from "@/shared/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Save, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 
 const FEATURE_FLAG_LABELS: Record<string, string> = {
   enableBooking: "config.enableBooking",
@@ -14,6 +15,7 @@ const FEATURE_FLAG_LABELS: Record<string, string> = {
 
 const ConfigPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const { config, loading, update, reset, refresh } = useConfig();
   const [form, setForm] = useState<Record<string, string | number | boolean>>({});
 
@@ -49,7 +51,7 @@ const ConfigPage: React.FC = () => {
         },
       } as Partial<import("@/api/configApi").ConfigData>);
       toast.success(t("config.saved"));
-    } catch { toast.error(t("config.saveFailed")); }
+    } catch { showError(t("config.saveFailed")); }
   };
 
   const handleReset = async () => {
@@ -57,7 +59,7 @@ const ConfigPage: React.FC = () => {
       await reset();
       toast.success(t("config.resetDone"));
       refresh();
-    } catch { toast.error(t("config.resetFailed")); }
+    } catch { showError(t("config.resetFailed")); }
   };
 
   if (loading || !config) {

@@ -1,5 +1,4 @@
 import axios from "axios";
-import { toast } from "sonner";
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api/v1",
@@ -24,8 +23,8 @@ apiClient.interceptors.response.use(
       window.location.href = "/login";
     }
     if (!isLoginRequest) {
-      const message = error.response?.data?.message || error.message || "An error occurred";
-      toast.error(message);
+      const message = error.response?.data?.message || error.message || "An unexpected error occurred";
+      window.dispatchEvent(new CustomEvent("app:error", { detail: message }));
     }
     return Promise.reject(error);
   }

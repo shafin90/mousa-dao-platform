@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   ShoppingCart,
   Image as ImageIcon,
+  LayoutDashboard,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
@@ -31,16 +33,35 @@ import { busApi, type BusData } from "@/api/busApi";
 import { tripApi, type TripData } from "@/api/tripApi";
 import { getActiveBuses, type GpsBus } from "@/features/tracking/api/trackingApi";
 
-const SEATS_PER_ROW = 4;
 const ROW_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-/** Builds the seat grid (rows of seat labels) matching the customer app scheme: row letter + 1..4. */
-const buildSeatRows = (capacity: number): string[][] => {
+const SECTIONS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "vehicle", label: "Vehicle", icon: BusIcon },
+  { id: "driver", label: "Driver", icon: User },
+  { id: "managers", label: "Managers", icon: Users },
+  { id: "tracking", label: "Tracking", icon: MapPin },
+  { id: "compliance", label: "Compliance", icon: ShieldCheck },
+  { id: "photos", label: "Photos", icon: ImageIcon },
+  { id: "seats", label: "Seats", icon: Armchair },
+  { id: "trips", label: "Trips", icon: RouteIcon },
+] as const;
+
+/** Builds the seat grid using left/right section split or falls back to seatsPerRow. */
+const buildSeatRows = (
+  capacity: number,
+  seatRows?: number | null,
+  seatsPerRow?: number | null,
+  leftSeats?: number | null,
+  rightSeats?: number | null,
+): string[][] => {
+  const cols = (leftSeats ?? 0) + (rightSeats ?? 0) || seatsPerRow || 4;
+  const maxRows = seatRows || Math.ceil(capacity / cols);
   const rows: string[][] = [];
   let idx = 0;
-  for (let r = 0; idx < capacity && r < ROW_LETTERS.length; r++) {
+  for (let r = 0; r < maxRows && idx < capacity; r++) {
     const row: string[] = [];
-    for (let c = 1; c <= SEATS_PER_ROW && idx < capacity; c++) {
+    for (let c = 1; c <= cols && idx < capacity; c++) {
       row.push(`${ROW_LETTERS[r]}${c}`);
       idx++;
     }
@@ -116,6 +137,8 @@ const BusDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(!busFromStore);
   const [tripsLoading, setTripsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [editSeatLayout, setEditSeatLayout] = useState(false);
+  const [seatLayoutDraft, setSeatLayoutDraft] = useState({ seatRows: 0, seatsPerRow: 0, leftSeats: 0, rightSeats: 0, capacity: 0 });
 
   useEffect(() => {
     let active = true;
@@ -244,6 +267,79 @@ const BusDetailsPage: React.FC = () => {
     },
   ];
 
+  const [activeSection, setActiveSection] = useState("overview");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+
+  const startEdit = useCallback(() => { setDraft({}); setEditing(true); }, []);
+  const cancelEdit = useCallback(() => { setEditing(false); setDraft({}); }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!bus) return;
+    try {
+      let payload: Record<string, unknown> = {};
+      if (activeSection === "vehicle") {
+        payload = {
+          busNumber: draft.busNumber ?? bus.busNumber,
+          name: draft.name ?? bus.name,
+          make: draft.make ?? bus.make,
+          model: draft.model ?? bus.model,
+          year: draft.year ? Number(draft.year) : bus.year,
+          color: draft.color ?? bus.color,
+          plateNumber: draft.plateNumber ?? bus.plateNumber,
+          vin: draft.vin ?? bus.vin,
+          fuelType: draft.fuelType ?? bus.fuelType,
+          odometer: draft.odometer ? Number(draft.odometer) : bus.odometer,
+          registrationNumber: draft.registrationNumber ?? bus.registrationNumber,
+          capacity: draft.capacity ? Number(draft.capacity) : bus.capacity,
+          type: draft.type ?? bus.type,
+        };
+      } else if (activeSection === "compliance") {
+        payload = {
+          registrationExpiry: draft.registrationExpiry || undefined,
+          fitnessExpiry: draft.fitnessExpiry || undefined,
+          insuranceProvider: draft.insuranceProvider || undefined,
+          insurancePolicyNumber: draft.insurancePolicyNumber || undefined,
+          insuranceIssueDate: draft.insuranceIssueDate || undefined,
+          insuranceExpiry: draft.insuranceExpiry || undefined,
+          lastInspectionDate: draft.lastInspectionDate || undefined,
+          firstServiceDate: draft.firstServiceDate || undefined,
+          matriculationDate: draft.matriculationDate || undefined,
+          purchaseDate: draft.purchaseDate || undefined,
+          purchaseCost: draft.purchaseCost ? Number(draft.purchaseCost) : undefined,
+          homeDepot: draft.homeDepot || undefined,
+        };
+      } else {
+        return;
+      }
+      const updated = await busApi.update(bus._id, payload);
+      setBus(updated);
+      toast.success(t("fleet.updated"));
+      setEditing(false);
+      setDraft({});
+    } catch {
+      toast.error(t("fleet.saveFailed"));
+    }
+  }, [bus, activeSection, draft, t]);
+
+  const handleSaveSeatLayout = useCallback(async () => {
+    if (!bus) return;
+    try {
+      const updated = await busApi.update(bus._id, {
+        seatRows: seatLayoutDraft.seatRows,
+        seatsPerRow: seatLayoutDraft.seatsPerRow,
+        leftSeats: seatLayoutDraft.leftSeats,
+        rightSeats: seatLayoutDraft.rightSeats,
+        capacity: seatLayoutDraft.capacity,
+      });
+      setBus(updated);
+      toast.success(t("fleet.seatLayoutSaved"));
+      setEditSeatLayout(false);
+    } catch {
+      toast.error(t("fleet.saveFailed"));
+    }
+  }, [bus, seatLayoutDraft, t]);
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -269,7 +365,12 @@ const BusDetailsPage: React.FC = () => {
   const driverName = driver?.profile
     ? `${driver.profile.firstName || ""} ${driver.profile.lastName || ""}`.trim()
     : "";
-  const seatRows = buildSeatRows(bus.capacity || 0);
+  const previewCap = editSeatLayout ? seatLayoutDraft.capacity : bus.capacity;
+  const previewRows = editSeatLayout ? seatLayoutDraft.seatRows : bus.seatRows;
+  const previewCols = editSeatLayout ? seatLayoutDraft.seatsPerRow : bus.seatsPerRow;
+  const previewLeft = editSeatLayout ? seatLayoutDraft.leftSeats : bus.leftSeats;
+  const previewRight = editSeatLayout ? seatLayoutDraft.rightSeats : bus.rightSeats;
+  const seatRows = buildSeatRows(previewCap || 0, previewRows, previewCols, previewLeft, previewRight);
   const makeModel = [bus.make, bus.model, bus.year].filter(Boolean).join(" ");
   const hasCompliance = bus.registrationExpiry || bus.insuranceExpiry || bus.fitnessExpiry || bus.insuranceProvider || bus.insuranceIssueDate || bus.lastInspectionDate;
   const hasPurchase = bus.purchaseDate || bus.purchaseCost != null || bus.homeDepot;
@@ -294,32 +395,52 @@ const BusDetailsPage: React.FC = () => {
           <p className="text-sm text-muted-foreground">{makeModel ? `${bus.name} · ${makeModel}` : bus.name}</p>
           <p className="font-mono text-xs text-muted-foreground">{bus._id}</p>
         </div>
-        <Button
-          className="gap-2"
-          onClick={() => {
-            navigate("/fleet", { state: { editBusId: bus._id } });
-            toast.info(t("fleet.editBus"));
-          }}
-        >
-          <Pencil size={16} /> {t("common.edit")}
-        </Button>
+        {editing ? (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={cancelEdit}>{t("common.cancel")}</Button>
+            <Button size="sm" className="gap-2" onClick={saveEdit}><Pencil size={14} /> {t("common.save")}</Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" className="gap-2" onClick={startEdit} disabled={activeSection === "overview" || activeSection === "driver" || activeSection === "managers" || activeSection === "tracking" || activeSection === "photos" || activeSection === "seats" || activeSection === "trips"}>
+            <Pencil size={14} /> {t("common.edit")}
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard icon={<RouteIcon size={18} />} label={t("fleet.totalTrips")} value={`${trips.length}`} hint={`${metrics.upcoming} ${t("fleet.upcomingTrips")}`} />
-        <StatCard
-          icon={<Users size={18} />}
-          label={t("fleet.avgOccupancy")}
-          value={metrics.occupancy != null ? `${metrics.occupancy.toFixed(0)}%` : "—"}
-        />
-        <StatCard
-          icon={<Wallet size={18} />}
-          label={t("fleet.revenueGenerated")}
-          value={`CFA ${metrics.revenue.toFixed(2)}`}
-        />
+      <div className="sticky top-0 z-20 -mx-4 mb-6 flex items-center gap-1 overflow-x-auto border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        {SECTIONS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveSection(id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
+              activeSection === id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon size={14} />
+            {label}
+          </button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {activeSection === "overview" && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard icon={<RouteIcon size={18} />} label={t("fleet.totalTrips")} value={`${trips.length}`} hint={`${metrics.upcoming} ${t("fleet.upcomingTrips")}`} />
+          <StatCard
+            icon={<Users size={18} />}
+            label={t("fleet.avgOccupancy")}
+            value={metrics.occupancy != null ? `${metrics.occupancy.toFixed(0)}%` : "—"}
+          />
+          <StatCard
+            icon={<Wallet size={18} />}
+            label={t("fleet.revenueGenerated")}
+            value={`CFA ${metrics.revenue.toFixed(2)}`}
+          />
+        </div>
+      )}
+
+      {activeSection === "vehicle" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -327,36 +448,58 @@ const BusDetailsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label={t("fleet.busNumber")} value={bus.busNumber} />
-            <InfoRow label={t("fleet.name")} value={bus.name} />
-            <InfoRow label={t("fleet.make")} value={bus.make || t("common.na")} />
-            <InfoRow label={t("fleet.model")} value={bus.model || t("common.na")} />
-            <InfoRow label={t("fleet.year")} value={bus.year ?? t("common.na")} />
-            <InfoRow label={t("fleet.color")} value={bus.color || t("common.na")} />
-            <InfoRow label={t("fleet.plateNumber")} value={bus.plateNumber || t("common.na")} />
-            <InfoRow label={t("fleet.vin")} value={bus.vin || t("common.na")} />
-            <InfoRow label={t("fleet.fuelType")} value={bus.fuelType ? t(`fleet.fuel.${bus.fuelType}`, { defaultValue: bus.fuelType }) : t("common.na")} />
-            <InfoRow label={t("fleet.odometer")} value={bus.odometer != null ? `${bus.odometer} km` : t("common.na")} />
-            <InfoRow label={t("fleet.registrationNumber")} value={bus.registrationNumber || t("common.na")} />
-            <InfoRow label={t("fleet.capacity")} value={bus.capacity} />
-            <InfoRow label={t("fleet.type")} value={<Badge variant="outline">{bus.type}</Badge>} />
-            <div className="pt-2">
-              <p className="mb-1 text-sm text-muted-foreground">{t("fleet.amenities")}</p>
-              {amenities.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {amenities.map((f) => (
-                    <Badge key={f} variant="secondary">
-                      {t(`fleet.amenity.${f}`, { defaultValue: f })}
-                    </Badge>
-                  ))}
+            {editing ? (
+              <>
+                <InfoRow label={t("fleet.busNumber")} value={<input type="text" value={draft.busNumber ?? bus.busNumber} onChange={(e) => setDraft({ ...draft, busNumber: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.name")} value={<input type="text" value={draft.name ?? bus.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.make")} value={<input type="text" value={draft.make ?? bus.make ?? ""} onChange={(e) => setDraft({ ...draft, make: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.model")} value={<input type="text" value={draft.model ?? bus.model ?? ""} onChange={(e) => setDraft({ ...draft, model: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.year")} value={<input type="number" value={draft.year ?? bus.year ?? ""} onChange={(e) => setDraft({ ...draft, year: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.color")} value={<input type="text" value={draft.color ?? bus.color ?? ""} onChange={(e) => setDraft({ ...draft, color: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.plateNumber")} value={<input type="text" value={draft.plateNumber ?? bus.plateNumber ?? ""} onChange={(e) => setDraft({ ...draft, plateNumber: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.vin")} value={<input type="text" value={draft.vin ?? bus.vin ?? ""} onChange={(e) => setDraft({ ...draft, vin: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.fuelType")} value={<input type="text" value={draft.fuelType ?? bus.fuelType ?? ""} onChange={(e) => setDraft({ ...draft, fuelType: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.odometer")} value={<input type="number" value={draft.odometer ?? bus.odometer ?? ""} onChange={(e) => setDraft({ ...draft, odometer: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.registrationNumber")} value={<input type="text" value={draft.registrationNumber ?? bus.registrationNumber ?? ""} onChange={(e) => setDraft({ ...draft, registrationNumber: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.capacity")} value={<input type="number" value={draft.capacity ?? bus.capacity} onChange={(e) => setDraft({ ...draft, capacity: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+                <InfoRow label={t("fleet.type")} value={<input type="text" value={draft.type ?? bus.type} onChange={(e) => setDraft({ ...draft, type: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
+              </>
+            ) : (
+              <>
+                <InfoRow label={t("fleet.busNumber")} value={bus.busNumber} />
+                <InfoRow label={t("fleet.name")} value={bus.name} />
+                <InfoRow label={t("fleet.make")} value={bus.make || t("common.na")} />
+                <InfoRow label={t("fleet.model")} value={bus.model || t("common.na")} />
+                <InfoRow label={t("fleet.year")} value={bus.year ?? t("common.na")} />
+                <InfoRow label={t("fleet.color")} value={bus.color || t("common.na")} />
+                <InfoRow label={t("fleet.plateNumber")} value={bus.plateNumber || t("common.na")} />
+                <InfoRow label={t("fleet.vin")} value={bus.vin || t("common.na")} />
+                <InfoRow label={t("fleet.fuelType")} value={bus.fuelType ? t(`fleet.fuel.${bus.fuelType}`, { defaultValue: bus.fuelType }) : t("common.na")} />
+                <InfoRow label={t("fleet.odometer")} value={bus.odometer != null ? `${bus.odometer} km` : t("common.na")} />
+                <InfoRow label={t("fleet.registrationNumber")} value={bus.registrationNumber || t("common.na")} />
+                <InfoRow label={t("fleet.capacity")} value={bus.capacity} />
+                <InfoRow label={t("fleet.type")} value={<Badge variant="outline">{bus.type}</Badge>} />
+                <div className="pt-2">
+                  <p className="mb-1 text-sm text-muted-foreground">{t("fleet.amenities")}</p>
+                  {amenities.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {amenities.map((f) => (
+                        <Badge key={f} variant="secondary">
+                          {t(`fleet.amenity.${f}`, { defaultValue: f })}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">{t("fleet.noAmenities")}</p>
+                  )}
                 </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">{t("fleet.noAmenities")}</p>
-              )}
-            </div>
+              </>
+            )}
           </CardContent>
         </Card>
+      )}
 
+      {activeSection === "driver" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -383,7 +526,9 @@ const BusDetailsPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      )}
 
+      {activeSection === "managers" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -428,7 +573,9 @@ const BusDetailsPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      )}
 
+      {activeSection === "tracking" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -477,67 +624,91 @@ const BusDetailsPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShieldCheck size={18} className="text-primary" /> {t("fleet.compliance")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {hasCompliance ? (
-              <>
-                <ComplianceRow label={t("fleet.registrationExpiry")} iso={bus.registrationExpiry} />
-                <ComplianceRow label={t("fleet.fitnessExpiry")} iso={bus.fitnessExpiry} />
-                <InfoRow label={t("fleet.insuranceProvider")} value={bus.insuranceProvider || t("common.na")} />
-                <InfoRow label={t("fleet.insurancePolicyNumber")} value={bus.insurancePolicyNumber || t("common.na")} />
-                <InfoRow label={t("fleet.insuranceIssueDate")} value={bus.insuranceIssueDate ? new Date(bus.insuranceIssueDate).toLocaleDateString() : t("common.na")} />
-                <ComplianceRow label={t("fleet.insuranceExpiry")} iso={bus.insuranceExpiry} />
-                <ComplianceRow label={t("fleet.lastInspectionDate")} iso={bus.lastInspectionDate} />
-              </>
-            ) : (
-              <p className="py-6 text-center text-sm text-muted-foreground">{t("fleet.noCompliance")}</p>
-            )}
-          </CardContent>
-        </Card>
+      {activeSection === "compliance" && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck size={18} className="text-primary" /> {t("fleet.compliance")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hasCompliance ? (
+                <>
+                  <ComplianceRow label={t("fleet.registrationExpiry")} iso={bus.registrationExpiry} />
+                  <ComplianceRow label={t("fleet.fitnessExpiry")} iso={bus.fitnessExpiry} />
+                  <InfoRow label={t("fleet.insuranceProvider")} value={bus.insuranceProvider || t("common.na")} />
+                  <InfoRow label={t("fleet.insurancePolicyNumber")} value={bus.insurancePolicyNumber || t("common.na")} />
+                  <InfoRow label={t("fleet.insuranceIssueDate")} value={bus.insuranceIssueDate ? new Date(bus.insuranceIssueDate).toLocaleDateString() : t("common.na")} />
+                  <ComplianceRow label={t("fleet.insuranceExpiry")} iso={bus.insuranceExpiry} />
+                  <ComplianceRow label={t("fleet.lastInspectionDate")} iso={bus.lastInspectionDate} />
+                </>
+              ) : (
+                <p className="py-6 text-center text-sm text-muted-foreground">{t("fleet.noCompliance")}</p>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShoppingCart size={18} className="text-primary" /> {t("fleet.purchaseInfo")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {hasPurchase ? (
-              <>
-                <InfoRow label={t("fleet.purchaseDate")} value={bus.purchaseDate ? new Date(bus.purchaseDate).toLocaleDateString() : t("common.na")} />
-                <InfoRow label={t("fleet.purchaseCost")} value={bus.purchaseCost != null ? `CFA ${bus.purchaseCost.toFixed(2)}` : t("common.na")} />
-                <InfoRow label={t("fleet.homeDepot")} value={bus.homeDepot || t("common.na")} />
-              </>
-            ) : (
-              <p className="py-6 text-center text-sm text-muted-foreground">{t("fleet.noPurchase")}</p>
-            )}
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShoppingCart size={18} className="text-primary" /> {t("fleet.purchaseInfo")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hasPurchase ? (
+                <>
+                  <InfoRow label={t("fleet.purchaseDate")} value={bus.purchaseDate ? new Date(bus.purchaseDate).toLocaleDateString() : t("common.na")} />
+                  <InfoRow label={t("fleet.purchaseCost")} value={bus.purchaseCost != null ? `CFA ${bus.purchaseCost.toFixed(2)}` : t("common.na")} />
+                  <InfoRow label={t("fleet.homeDepot")} value={bus.homeDepot || t("common.na")} />
+                </>
+              ) : (
+                <p className="py-6 text-center text-sm text-muted-foreground">{t("fleet.noPurchase")}</p>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarClock size={18} className="text-primary" /> {t("fleet.serviceInfo")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoRow label={t("fleet.firstServiceDate")} value={bus.firstServiceDate ? new Date(bus.firstServiceDate).toLocaleDateString() : t("common.na")} />
-              <InfoRow label={t("fleet.matriculationDate")} value={bus.matriculationDate ? new Date(bus.matriculationDate).toLocaleDateString() : t("common.na")} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarClock size={18} className="text-primary" /> {t("fleet.serviceInfo")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <InfoRow label={t("fleet.firstServiceDate")} value={bus.firstServiceDate ? new Date(bus.firstServiceDate).toLocaleDateString() : t("common.na")} />
+                <InfoRow label={t("fleet.matriculationDate")} value={bus.matriculationDate ? new Date(bus.matriculationDate).toLocaleDateString() : t("common.na")} />
+              </div>
+            </CardContent>
+          </Card>
 
-      {bus.photos && bus.photos.length > 0 && (
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarClock size={18} className="text-primary" /> {t("fleet.auditInfo")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarClock size={16} className="text-muted-foreground" />
+                <span className="text-muted-foreground">{t("fleet.createdAt")}:</span>
+                <span className="font-medium">{new Date(bus.createdAt).toLocaleString()}</span>
+              </div>
+              {bus.updatedAt && (
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarClock size={16} className="text-muted-foreground" />
+                  <span className="text-muted-foreground">{t("fleet.updatedAt")}:</span>
+                  <span className="font-medium">{new Date(bus.updatedAt).toLocaleString()}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeSection === "photos" && bus.photos && bus.photos.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -561,7 +732,7 @@ const BusDetailsPage: React.FC = () => {
         </Card>
       )}
 
-      {bus.capacity > 0 && (
+      {activeSection === "seats" && bus.capacity > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -569,7 +740,103 @@ const BusDetailsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">{t("fleet.seatCount", { count: bus.capacity })}</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <p className="text-xs text-muted-foreground">{t("fleet.seatCount", { count: bus.capacity })}</p>
+              {!editSeatLayout ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    const cap = bus.capacity || 0;
+                    const left = bus.leftSeats ?? 0;
+                    const right = bus.rightSeats ?? 0;
+                    const cols = (left || right) ? left + right : (bus.seatsPerRow || 4);
+                    const rows = bus.seatRows ?? Math.ceil(cap / cols);
+                    setSeatLayoutDraft({ seatRows: rows, seatsPerRow: cols, leftSeats: left || Math.ceil(cols / 2), rightSeats: right || Math.floor(cols / 2), capacity: cap });
+                    setEditSeatLayout(true);
+                  }}
+                >
+                  <Pencil size={13} /> {t("fleet.organiseSeats")}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground">{t("fleet.rows")}</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={26}
+                      value={seatLayoutDraft.seatRows}
+                      onChange={(e) => {
+                        const rows = Math.max(1, Number(e.target.value));
+                        setSeatLayoutDraft((prev) => {
+                          const total = prev.leftSeats + prev.rightSeats || 1;
+                          return { ...prev, seatRows: rows, seatsPerRow: total, capacity: rows * total };
+                        });
+                      }}
+                      className="w-14 h-7 rounded border bg-background/80 px-1.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground">L</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={seatLayoutDraft.leftSeats}
+                      onChange={(e) => {
+                        const left = Math.max(0, Number(e.target.value));
+                        setSeatLayoutDraft((prev) => {
+                          const total = left + prev.rightSeats || 1;
+                          return { ...prev, leftSeats: left, seatsPerRow: total, capacity: prev.seatRows * total };
+                        });
+                      }}
+                      className="w-12 h-7 rounded border bg-background/80 px-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground">R</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={seatLayoutDraft.rightSeats}
+                      onChange={(e) => {
+                        const right = Math.max(0, Number(e.target.value));
+                        setSeatLayoutDraft((prev) => {
+                          const total = prev.leftSeats + right || 1;
+                          return { ...prev, rightSeats: right, seatsPerRow: total, capacity: prev.seatRows * total };
+                        });
+                      }}
+                      className="w-12 h-7 rounded border bg-background/80 px-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground">{t("fleet.capacity")}</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={seatLayoutDraft.capacity}
+                      onChange={(e) => {
+                        const cap = Math.max(1, Number(e.target.value));
+                        setSeatLayoutDraft((prev) => {
+                          const total = prev.leftSeats + prev.rightSeats || 1;
+                          return { ...prev, capacity: cap, seatsPerRow: total, seatRows: Math.max(1, Math.ceil(cap / total)) };
+                        });
+                      }}
+                      className="w-16 h-7 rounded border bg-background/80 px-1.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <Button size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveSeatLayout}>
+                    <Save size={12} /> {t("common.save")}
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditSeatLayout(false)}>
+                    {t("common.cancel")}
+                  </Button>
+                </div>
+              )}
+            </div>
             <div className="inline-flex flex-col gap-2 overflow-x-auto rounded-lg border bg-muted/20 p-4">
               <p className="text-center text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 {t("trips.front")}
@@ -579,18 +846,21 @@ const BusDetailsPage: React.FC = () => {
                   <span className="w-4 text-center text-xs font-semibold text-muted-foreground">
                     {ROW_LETTERS[ri]}
                   </span>
-                  {row.map((seat, ci) => (
-                    <span
-                      key={seat}
-                      title={seat}
-                      className={cn(
-                        "inline-flex h-9 w-9 items-center justify-center rounded-md border bg-secondary text-[11px] font-medium text-foreground",
-                        ci === 2 && "ml-5"
-                      )}
-                    >
-                      {seat}
-                    </span>
-                  ))}
+                  {row.map((seat, ci) => {
+                    const left = (editSeatLayout ? seatLayoutDraft.leftSeats : bus.leftSeats) ?? Math.ceil((bus.seatsPerRow || 4) / 2);
+                    return (
+                      <span
+                        key={seat}
+                        title={seat}
+                        className={cn(
+                          "inline-flex h-9 w-9 items-center justify-center rounded-md border bg-secondary text-[11px] font-medium text-foreground",
+                          ci === left && "ml-5"
+                        )}
+                      >
+                        {seat}
+                      </span>
+                    );
+                  })}
                 </div>
               ))}
             </div>
@@ -598,39 +868,24 @@ const BusDetailsPage: React.FC = () => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <RouteIcon size={18} className="text-primary" /> {t("fleet.tripHistory")}
-          </CardTitle>
-          <Badge variant="outline">{t("fleet.tripsCount", { count: trips.length })}</Badge>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            columns={tripColumns}
-            data={trips}
-            isLoading={tripsLoading}
-            onRowClick={(tr) => navigate(`/trips/${tr._id}`)}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-          <div className="flex items-center gap-2 text-sm">
-            <CalendarClock size={16} className="text-muted-foreground" />
-            <span className="text-muted-foreground">{t("fleet.createdAt")}:</span>
-            <span className="font-medium">{new Date(bus.createdAt).toLocaleString()}</span>
-          </div>
-          {bus.updatedAt && (
-            <div className="flex items-center gap-2 text-sm">
-              <CalendarClock size={16} className="text-muted-foreground" />
-              <span className="text-muted-foreground">{t("fleet.updatedAt")}:</span>
-              <span className="font-medium">{new Date(bus.updatedAt).toLocaleString()}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {activeSection === "trips" && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <RouteIcon size={18} className="text-primary" /> {t("fleet.tripHistory")}
+            </CardTitle>
+            <Badge variant="outline">{t("fleet.tripsCount", { count: trips.length })}</Badge>
+          </CardHeader>
+          <CardContent>
+            <DataTable
+              columns={tripColumns}
+              data={trips}
+              isLoading={tripsLoading}
+              onRowClick={(tr) => navigate(`/trips/${tr._id}`)}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

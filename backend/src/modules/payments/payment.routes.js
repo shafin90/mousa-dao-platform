@@ -24,7 +24,7 @@ router.use(authenticate);
 
 router.post('/initiate', paymentLimiter, validate(initiatePaymentSchema), paymentController.initiatePayment);
 router.get('/my', paymentController.getUserPayments);
-router.get('/', requireRole(['admin']), paymentController.getAllPayments);
+router.get('/', requireRole(['admin', 'manager']), paymentController.getAllPayments);
 router.get('/:id', paymentController.getPaymentById);
 
 module.exports = router;

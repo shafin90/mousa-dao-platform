@@ -23,12 +23,22 @@ export interface CityData {
 export interface CityFilters {
   country?: string;
   search?: string;
+  isActive?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
 }
 
 export const cityApi = {
-  getAll: async (params?: CityFilters): Promise<CityData[]> => {
-    const { data } = await apiClient.get<ApiResponse<CityData[]>>("/cities", { params });
-    return data.data;
+  getAll: async (params?: CityFilters): Promise<{ data: CityData[]; pagination: PaginationInfo }> => {
+    const { data } = await apiClient.get<ApiResponse<CityData[]> & { pagination?: PaginationInfo }>("/cities", { params });
+    return { data: data.data, pagination: data.pagination || { total: data.data.length, page: 1, limit: data.data.length, pages: 1 } };
   },
   getById: async (id: string): Promise<CityData> => {
     const { data } = await apiClient.get<ApiResponse<CityData>>(`/cities/${id}`);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -28,6 +29,7 @@ const busSelectLabel = (b: BusData): string => {
 
 const MaintenanceRecordsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [buses, setBuses] = useState<BusData[]>([]);
   const [facilities, setFacilities] = useState<MaintenanceFacilityData[]>([]);
@@ -44,7 +46,7 @@ const MaintenanceRecordsPage: React.FC = () => {
       });
       setRecords(data);
     } catch {
-      toast.error(t("maintenanceRecords.loadFailed"));
+      showError(t("maintenanceRecords.loadFailed"));
     } finally {
       setLoading(false);
     }

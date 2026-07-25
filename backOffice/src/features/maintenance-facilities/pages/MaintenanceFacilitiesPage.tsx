@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Wrench, Pencil, Trash2, Eye, Send } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -63,6 +64,7 @@ const busLabel = (b: BusData): string => {
 
 const MaintenanceFacilitiesPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const [facilities, setFacilities] = useState<MaintenanceFacilityData[]>([]);
   const [cities, setCities] = useState<CityData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +91,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
     try {
       const [facilityData, cityData, busData, staffData] = await Promise.all([
         maintenanceFacilityApi.getAll(),
-        cityApi.getAll().catch(() => [] as CityData[]),
+        cityApi.getAll().then((r) => r.data).catch(() => [] as CityData[]),
         busApi.getAll({ limit: 1000 }).catch(() => ({ buses: [] as BusData[], total: 0 })),
         maintenanceStaffApi.getAll().catch(() => [] as MaintenanceStaffData[]),
       ]);
@@ -98,7 +100,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
       setBuses(busData.buses);
       setStaff(staffData);
     } catch {
-      toast.error(t("maintenanceFacilities.loadFailed"));
+      showError(t("maintenanceFacilities.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -138,7 +140,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
     try {
       setRecords(await maintenanceFacilityApi.getMaintenance(row._id));
     } catch {
-      toast.error(t("maintenanceFacilities.recordsFailed"));
+      showError(t("maintenanceFacilities.recordsFailed"));
     } finally {
       setRecordsLoading(false);
     }
@@ -156,11 +158,11 @@ const MaintenanceFacilitiesPage: React.FC = () => {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sendForm.busId) {
-      toast.error(t("maintenanceFacilities.sendBusRequired"));
+      showError(t("maintenanceFacilities.sendBusRequired"));
       return;
     }
     if (!sendForm.description.trim()) {
-      toast.error(t("maintenanceFacilities.sendDescRequired"));
+      showError(t("maintenanceFacilities.sendDescRequired"));
       return;
     }
     setSendSaving(true);
@@ -187,7 +189,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
         }
       }
     } catch {
-      toast.error(t("maintenanceFacilities.sendFailed"));
+      showError(t("maintenanceFacilities.sendFailed"));
     } finally {
       setSendSaving(false);
     }
@@ -196,7 +198,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      toast.error(t("maintenanceFacilities.validationRequired"));
+      showError(t("maintenanceFacilities.validationRequired"));
       return;
     }
     setSaving(true);
@@ -225,7 +227,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
       setForm({ ...emptyForm });
       await load();
     } catch {
-      toast.error(t("maintenanceFacilities.saveFailed"));
+      showError(t("maintenanceFacilities.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -240,7 +242,7 @@ const MaintenanceFacilitiesPage: React.FC = () => {
       setToDelete(null);
       await load();
     } catch {
-      toast.error(t("maintenanceFacilities.deleteFailed"));
+      showError(t("maintenanceFacilities.deleteFailed"));
     }
   };
 

@@ -5,6 +5,7 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 import { RefreshCw, Check, X, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import type { PaymentData, RefundRequestData } from "@/api/paymentApi";
 import { usePayments } from "../hooks/usePayments";
 import { RefundRequestDetailModal } from "../components/RefundRequestDetailModal";
@@ -37,6 +38,7 @@ const refundStatusVariant: Record<string, "success" | "warning" | "destructive" 
 
 const PaymentsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showError } = useErrorModal();
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const {
     payments, paymentsLoading, refunds, refundsLoading,
@@ -59,7 +61,7 @@ const PaymentsPage: React.FC = () => {
       await approveRefund(id).unwrap();
       toast.success("Refund request approved");
     } catch {
-      toast.error("Failed to approve refund request");
+      showError("Failed to approve refund request");
     }
   }, [approveRefund]);
 
@@ -68,7 +70,7 @@ const PaymentsPage: React.FC = () => {
       await rejectRefund(id).unwrap();
       toast.success("Refund request rejected");
     } catch {
-      toast.error("Failed to reject refund request");
+      showError("Failed to reject refund request");
     }
   }, [rejectRefund]);
 

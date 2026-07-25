@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTrips } from "../hooks/useTrips";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 import { Select } from "@/shared/components/ui/Select";
-import { Plus, RefreshCw, Pencil, Trash2, Search, X, AlertTriangle } from "lucide-react";
+import { Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Search, X, AlertTriangle } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
+import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { busApi, type BusData } from "@/api/busApi";
 import { stationApi, type StationData } from "@/api/stationApi";
 import { tripApi, type TripData, type TripInput, type TripFilters } from "@/api/tripApi";
@@ -19,6 +21,7 @@ const TripsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { showError } = useErrorModal();
 
   const [filterBusId, setFilterBusId] = useState("");
   const [filterDate, setFilterDate] = useState("");
@@ -38,7 +41,8 @@ const TripsPage: React.FC = () => {
     return f;
   }, [filterBusId, filterDate, filterStatus, filterPriceMin, filterPriceMax, filterSearch]);
 
-  const { trips, loading, create, update, remove, refresh } = useTrips(filters);
+  const { isAdmin } = useAuth();
+  const { trips, loading, update, refresh } = useTrips(filters);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<TripData | null>(null);
@@ -67,7 +71,7 @@ const TripsPage: React.FC = () => {
   const fetchBuses = async () => {
     setBusesLoading(true);
     try { const data = await busApi.getAll(); setBuses(data.buses || []); }
-    catch { toast.error(t("trips.busesLoadFailed")); }
+    catch { showError(t("trips.busesLoadFailed")); }
     finally { setBusesLoading(false); }
   };
 
@@ -96,9 +100,11 @@ const TripsPage: React.FC = () => {
   };
 
   const hasFilters = filterBusId || filterDate || filterStatus || filterPriceMin || filterPriceMax || filterSearch;
+  const compactHasFilters = filterSearch || filterBusId || filterDate || filterStatus;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingTripId) return;
     try {
       const payload: TripInput = {
         fromStation: form.fromStation,
@@ -110,17 +116,12 @@ const TripsPage: React.FC = () => {
         price: Number(form.price),
         status: form.status,
       }
-      if (editingTripId) {
-        await update(editingTripId, payload);
-        toast.success(t("trips.updated"));
-      } else {
-        await create(payload);
-        toast.success(t("trips.created"));
-      }
+      await update(editingTripId, payload);
+      toast.success(t("trips.updated"));
       setIsModalOpen(false);
       setEditingTripId(null);
       setForm({ fromStation: "", toStation: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" });
-    } catch { toast.error(t("trips.saveFailed")); }
+    } catch { showError(t("trips.saveFailed")); }
   };
 
   const stationOptions = stations.map((s) => ({
@@ -165,115 +166,91 @@ const TripsPage: React.FC = () => {
     { header: t("trips.bus"), accessor: (item: TripData) => item.busId?.busNumber || item.busId?._id || t("common.na") },
     { header: t("trips.seats"), accessor: (item: TripData) => `${item.seatsBooked || 0} / ${item.seatsTotal || 0}` },
     { header: t("trips.price"), accessor: (item: TripData) => `CFA ${item.price || 0}` },
-    { header: t("trips.status"), accessor: (item: TripData) => {
-        const variants: Record<string, "success"|"warning"|"destructive"|"secondary"> = { scheduled: "warning", active: "success", completed: "secondary", cancelled: "destructive" };
-        return <Badge variant={variants[item.status] || "outline"}>{t(`trips.${item.status}`, { defaultValue: item.status?.toUpperCase() })}</Badge>;
-    }},
     {
       header: t("trips.actions"),
       accessor: (item: TripData) => (
         <div className="flex gap-1">
-          <Button variant="outline" size="sm" onClick={(e) => {
-            e.stopPropagation();
-            openEdit(item);
-          }}>
-            <Pencil size={14} />
-          </Button>
-          <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); setTripToDelete(item); setIsDeleteOpen(true); }}>
-            <Trash2 size={14} />
-          </Button>
+          {isAdmin && (
+            <>
+              <Button variant="outline" size="sm" onClick={async (e) => {
+                e.stopPropagation();
+                const newStatus = item.status === "active" ? "cancelled" : item.status === "cancelled" ? "scheduled" : "active";
+                try { await tripApi.updateStatus(item._id, newStatus); toast.success(t("trips.updated")); refresh(); }
+                catch { showError(t("trips.saveFailed")); }
+              }}>
+                {item.status === "active" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+              </Button>
+              <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); setTripToDelete(item); setIsDeleteOpen(true); }}>
+                <Trash2 size={14} />
+              </Button>
+            </>
+          )}
         </div>
       ),
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <div data-tour="trips-header" className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("trips.title")}</h1>
-          <p className="text-muted-foreground mt-1">{t("trips.subtitle")}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button data-tour="trips-refresh" variant="outline" size="sm" className="gap-2" onClick={refresh}><RefreshCw size={16} /> {t("common.refresh")}</Button>
-          {trips.length > 0 && (
-            <Button variant="destructive" size="sm" className="gap-2" onClick={() => setIsDeleteAllOpen(true)}>
-              <Trash2 size={16} /> {t("trips.deleteAll")}
-            </Button>
-          )}
-          <Button data-tour="trips-add" size="sm" className="gap-2" onClick={() => { setEditingTripId(null); setForm({ fromStation: "", toStation: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" }); setIsModalOpen(true); }}><Plus size={16} /> {t("trips.scheduleTrip")}</Button>
-        </div>
-      </div>
-
-      <div className="space-y-3 rounded-xl border bg-card p-4">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            data-tour="trips-search"
-            type="text"
-            placeholder={`${t("common.search")} route / bus...`}
-            value={filterSearch}
-            onChange={(e) => setFilterSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <select
-            data-tour="trips-filter-bus"
-            value={filterBusId}
-            onChange={(e) => setFilterBusId(e.target.value)}
-            className="h-9 min-w-[160px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">{t("trips.selectBus")}</option>
-            {buses.map((b) => (
-              <option key={b._id} value={b._id}>
-                {b.busNumber} - {b.name}
-              </option>
-            ))}
-          </select>
-          <input
-            data-tour="trips-filter-date"
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="h-9 rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <select
-            data-tour="trips-filter-status"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-9 min-w-[130px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">{t("trips.status")}</option>
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>{t(`trips.${s}`)}</option>
-            ))}
-          </select>
-          <div data-tour="trips-filter-price" className="flex gap-2">
-           <input
-             type="number"
-placeholder="Min CFA"
-             value={filterPriceMin}
-             onChange={(e) => setFilterPriceMin(e.target.value)}
-             className="h-9 w-[120px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-           />
-           <input
-             type="number"
-             placeholder="Max CFA"
-             value={filterPriceMax}
-             onChange={(e) => setFilterPriceMax(e.target.value)}
-             className="h-9 w-[100px] rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-           />
+    <div>
+      <div data-tour="trips-table">
+        <div className="flex flex-wrap items-center gap-2 rounded-t-lg border border-b-0 bg-muted/30 px-2.5 py-1.5">
+          <div className="relative flex-1 min-w-[160px] max-w-[220px]">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search route / bus..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              className="w-full h-7 pl-8 pr-7 rounded border bg-background/80 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {filterSearch && (
+              <button onClick={() => setFilterSearch("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground">
+                <X size={12} />
+              </button>
+            )}
           </div>
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <X size={14} className="mr-1" /> {t("common.clear")}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <select
+              value={filterBusId}
+              onChange={(e) => setFilterBusId(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">All Buses</option>
+              {buses.map((b) => (
+                <option key={b._id} value={b._id}>{b.busNumber} - {b.name}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">All Status</option>
+              {statusOptions.map((s) => (
+                <option key={s} value={s}>{t(`trips.${s}`)}</option>
+              ))}
+            </select>
+            <div className="w-px h-5 bg-border" />
+            <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={refresh} title="Refresh"><RefreshCw size={13} /></Button>
+            {isAdmin && (
+              <Button size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => navigate("/trips/new")}>
+                <Plus size={13} /> Add
+              </Button>
+            )}
+            {compactHasFilters && (
+              <button onClick={clearFilters} className="h-7 px-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors">
+                <X size={12} /> Clear
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-
-      <div data-tour="trips-table"><DataTable columns={columns} data={trips} isLoading={loading} onRowClick={(item) => navigate(`/trips/${item._id}`)} /></div>
+        <DataTable className="rounded-t-none border-t-0" columns={columns} data={trips} isLoading={loading} onRowClick={(item) => navigate(`/trips/${item._id}`)} /></div>
 
       <Modal isOpen={isDeleteOpen} onClose={() => { setIsDeleteOpen(false); setTripToDelete(null); }} title={t("trips.deleteTrip")}>
         {tripToDelete && (
@@ -283,7 +260,15 @@ placeholder="Min CFA"
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => { setIsDeleteOpen(false); setTripToDelete(null); }}>{t("common.cancel")}</Button>
-              <Button variant="destructive" onClick={() => { remove(tripToDelete._id); toast.success(t("trips.deleted")); setIsDeleteOpen(false); setTripToDelete(null); }}>{t("common.delete")}</Button>
+              <Button variant="destructive" onClick={async () => {
+                try {
+                  await tripApi.delete(tripToDelete._id);
+                  toast.success(t("trips.deleted"));
+                  setIsDeleteOpen(false);
+                  setTripToDelete(null);
+                  refresh();
+                } catch { showError(t("trips.saveFailed")); }
+              }}>{t("common.delete")}</Button>
             </div>
           </div>
         )}
@@ -304,7 +289,7 @@ placeholder="Min CFA"
                 setIsDeleteAllOpen(false);
                 refresh();
               } catch {
-                toast.error(t("trips.saveFailed"));
+                showError(t("trips.saveFailed"));
               }
             }}>{t("common.delete")}</Button>
           </div>

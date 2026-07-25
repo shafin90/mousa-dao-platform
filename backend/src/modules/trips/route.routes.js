@@ -3,17 +3,17 @@ const router = express.Router();
 const routeController = require('./controllers/route.controller');
 const validate = require('../../middlewares/validate.middleware');
 const { createRouteSchema } = require('./validators/route.validator');
-const { authenticate, requireRole } = require('../auth/auth.middleware');
+const { authenticate, requireRole, logManagerAction } = require('../auth/auth.middleware');
 
 router.use(authenticate);
 
 router.route('/')
   .post(requireRole(['admin']), validate(createRouteSchema), routeController.createRoute)
-  .get(routeController.getAllRoutes);
+  .get(requireRole(['admin', 'manager']), routeController.getAllRoutes);
 
 router.route('/:id')
-  .get(routeController.getRouteById)
-  .patch(requireRole(['admin']), routeController.updateRoute)
+  .get(requireRole(['admin', 'manager']), routeController.getRouteById)
+  .patch(requireRole(['admin', 'manager']), logManagerAction('UPDATE_ROUTE', 'ROUTES'), routeController.updateRoute)
   .delete(requireRole(['admin']), routeController.deleteRoute);
 
 module.exports = router;

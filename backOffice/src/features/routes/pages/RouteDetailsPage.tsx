@@ -16,6 +16,9 @@ import {
   DollarSign,
   Fingerprint,
   Home,
+  LayoutDashboard,
+  Map,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
@@ -28,6 +31,16 @@ import { routeApi, type RouteData } from "@/api/routeApi";
 import { cityApi, type CityData } from "@/api/cityApi";
 import { stationApi, type StationData } from "@/api/stationApi";
 import { tripApi, type TripData } from "@/api/tripApi";
+
+const SECTIONS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "departure", label: "Departure", icon: MapPin },
+  { id: "destination", label: "Destination", icon: MapPin },
+  { id: "pricing", label: "Pricing", icon: DollarSign },
+  { id: "status", label: "Status", icon: ShieldCheck },
+  { id: "stops", label: "Stops", icon: Map },
+  { id: "trips", label: "Trips", icon: Calendar },
+] as const;
 
 const idOf = (value: unknown): string => {
   if (!value) return "";
@@ -104,14 +117,6 @@ function getUserName(
   return `${u.profile.firstName} ${u.profile.lastName}`;
 }
 
-function getStationName(
-  s: string | { _id: string; name: string } | undefined
-): string {
-  if (!s) return "";
-  if (typeof s === "string") return "";
-  return s.name;
-}
-
 const RouteDetailsPage: React.FC = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -125,6 +130,7 @@ const RouteDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(!routeFromStore);
   const [tripsLoading, setTripsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [activeSection, setActiveSection] = useState("overview");
 
   useEffect(() => {
     let active = true;
@@ -132,7 +138,7 @@ const RouteDetailsPage: React.FC = () => {
       try {
         const [routeData, cityData, stationData] = await Promise.all([
           routeApi.getById(id).catch(() => routeFromStore ?? null),
-          cityApi.getAll().catch(() => [] as CityData[]),
+          cityApi.getAll().then((r) => r.data).catch(() => [] as CityData[]),
           stationApi.getAll().catch(() => [] as StationData[]),
         ]);
         if (!active) return;
@@ -175,14 +181,20 @@ const RouteDetailsPage: React.FC = () => {
     [cities, route]
   );
 
-  const fromStationNames = useMemo(
-    () => (route?.fromStations || []).map((s) => getStationName(s)).filter(Boolean).join(", "),
-    [route]
+  const fromStationDetails = useMemo(
+    () => (route?.fromStations || []).map((s) => {
+      const id = idOf(s);
+      return stations.find((st) => st._id === id) || (typeof s === "object" ? { _id: s._id, name: s.name } as StationData : null);
+    }).filter(Boolean) as StationData[],
+    [route, stations]
   );
 
-  const toStationNames = useMemo(
-    () => (route?.toStations || []).map((s) => getStationName(s)).filter(Boolean).join(", "),
-    [route]
+  const toStationDetails = useMemo(
+    () => (route?.toStations || []).map((s) => {
+      const id = idOf(s);
+      return stations.find((st) => st._id === id) || (typeof s === "object" ? { _id: s._id, name: s.name } as StationData : null);
+    }).filter(Boolean) as StationData[],
+    [route, stations]
   );
 
   const metrics = useMemo(() => {
@@ -258,7 +270,6 @@ const RouteDetailsPage: React.FC = () => {
             <span className="text-muted-foreground">→</span>
             <span>{toCity?.name || route.toCity?.name || t("common.na")}</span>
           </h1>
-          <p className="font-mono text-xs text-muted-foreground">{t("routes.routeId")}: {route._id}</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={route.isActive !== false ? "success" : "secondary"}>
@@ -276,34 +287,53 @@ const RouteDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={<Ruler size={18} />}
-          label={t("routes.distance")}
-          value={t("routes.distanceValue", { value: route.distanceKm })}
-        />
-        <StatCard
-          icon={<Clock size={18} />}
-          label={t("routes.estTime")}
-          value={route.estimatedTimeMinutes ? formatDuration(route.estimatedTimeMinutes) : t("common.na")}
-          hint={route.estimatedTimeMinutes ? t("routes.estTimeMinutes") : undefined}
-        />
-        {metrics?.avgSpeed != null && (
-          <StatCard
-            icon={<Gauge size={18} />}
-            label={t("routes.avgSpeed")}
-            value={t("routes.speedValue", { value: metrics.avgSpeed.toFixed(1) })}
-          />
-        )}
-        <StatCard
-          icon={<DollarSign size={18} />}
-          label={t("routes.baseRate")}
-          value={route.baseRate ? `CFA ${route.baseRate}` : "—"}
-        />
+      <div className="sticky top-0 z-20 -mx-4 mb-6 flex items-center gap-1 overflow-x-auto border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        {SECTIONS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveSection(id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
+              activeSection === id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon size={14} />
+            {label}
+          </button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
+      {activeSection === "overview" && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            icon={<Ruler size={18} />}
+            label={t("routes.distance")}
+            value={t("routes.distanceValue", { value: route.distanceKm })}
+          />
+          <StatCard
+            icon={<Clock size={18} />}
+            label={t("routes.estTime")}
+            value={route.estimatedTimeMinutes ? formatDuration(route.estimatedTimeMinutes) : t("common.na")}
+            hint={route.estimatedTimeMinutes ? t("routes.estTimeMinutes") : undefined}
+          />
+          {metrics?.avgSpeed != null && (
+            <StatCard
+              icon={<Gauge size={18} />}
+              label={t("routes.avgSpeed")}
+              value={t("routes.speedValue", { value: metrics.avgSpeed.toFixed(1) })}
+            />
+          )}
+          <StatCard
+            icon={<DollarSign size={18} />}
+            label={t("routes.baseRate")}
+            value={route.baseRate ? `CFA ${route.baseRate}` : "—"}
+          />
+        </div>
+      )}
+
+      {activeSection === "departure" && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -313,10 +343,38 @@ const RouteDetailsPage: React.FC = () => {
             <CardContent className="space-y-1">
               {renderField(t("routes.departureCity"), fromCity?.name || route.fromCity?.name || "—", <MapPin size={14} />)}
               {fromCity?.country && renderField(t("cities.country"), fromCity.country, <MapPin size={14} />)}
-              {renderField(t("routes.fromStations"), fromStationNames || "—", <Home size={14} />)}
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Home size={18} className="text-primary" /> {t("routes.fromStations")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {fromStationDetails.length === 0 ? (
+                <p className="text-sm text-muted-foreground">—</p>
+              ) : (
+                <div className="space-y-3">
+                  {fromStationDetails.map((st) => (
+                    <div key={st._id} className="rounded-lg border p-3 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/stations/${st._id}`)}>
+                      <p className="font-medium text-sm">{st.name}</p>
+                      <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        {st.address1 && <p>{st.address1}</p>}
+                        {st.phone1 && <p>{st.phone1}</p>}
+                        {st.email1 && <p>{st.email1}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
+      {activeSection === "destination" && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -326,25 +384,53 @@ const RouteDetailsPage: React.FC = () => {
             <CardContent className="space-y-1">
               {renderField(t("routes.destinationCity"), toCity?.name || route.toCity?.name || "—", <MapPin size={14} />)}
               {toCity?.country && renderField(t("cities.country"), toCity.country, <MapPin size={14} />)}
-              {renderField(t("routes.toStations"), toStationNames || "—", <Home size={14} />)}
             </CardContent>
           </Card>
-        </div>
-
-        <div className="space-y-6">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <DollarSign size={18} className="text-primary" /> {t("routes.baseRate")}
+                <Home size={18} className="text-primary" /> {t("routes.toStations")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1">
-              {renderField(t("routes.baseRate"), route.baseRate ? `CFA ${route.baseRate}` : "—", <DollarSign size={14} />)}
-              {renderField(t("routes.distance"), t("routes.distanceValue", { value: route.distanceKm }), <Ruler size={14} />)}
-              {renderField(t("routes.estTime"), route.estimatedTimeMinutes ? formatDuration(route.estimatedTimeMinutes) : "—", <Clock size={14} />)}
+            <CardContent>
+              {toStationDetails.length === 0 ? (
+                <p className="text-sm text-muted-foreground">—</p>
+              ) : (
+                <div className="space-y-3">
+                  {toStationDetails.map((st) => (
+                    <div key={st._id} className="rounded-lg border p-3 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/stations/${st._id}`)}>
+                      <p className="font-medium text-sm">{st.name}</p>
+                      <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        {st.address1 && <p>{st.address1}</p>}
+                        {st.phone1 && <p>{st.phone1}</p>}
+                        {st.email1 && <p>{st.email1}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
+        </div>
+      )}
 
+      {activeSection === "pricing" && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <DollarSign size={18} className="text-primary" /> {t("routes.baseRate")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {renderField(t("routes.baseRate"), route.baseRate ? `CFA ${route.baseRate}` : "—", <DollarSign size={14} />)}
+            {renderField(t("routes.distance"), t("routes.distanceValue", { value: route.distanceKm }), <Ruler size={14} />)}
+            {renderField(t("routes.estTime"), route.estimatedTimeMinutes ? formatDuration(route.estimatedTimeMinutes) : "—", <Clock size={14} />)}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeSection === "status" && (
+        <div className="space-y-6">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -376,31 +462,35 @@ const RouteDetailsPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      )}
 
-      <StopsCard stops={route.stops ?? []} cities={cities} stations={stations} />
+      {activeSection === "stops" && (
+        <StopsCard stops={route.stops ?? []} cities={cities} stations={stations} />
+      )}
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base">{t("routes.tripsOnRoute")}</CardTitle>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">
-              {t("routes.totalTrips", { count: trips.length })}
-            </Badge>
-            {metrics && (
-              <Badge variant="secondary">{t("routes.upcomingTrips", { count: metrics.upcoming })}</Badge>
-            )}
-            {metrics?.occupancy != null && (
-              <Badge variant="success">
-                {t("routes.occupancy", { value: metrics.occupancy.toFixed(0) })}
+      {activeSection === "trips" && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between pb-3">
+            <CardTitle className="text-base">{t("routes.tripsOnRoute")}</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">
+                {t("routes.totalTrips", { count: trips.length })}
               </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <DataTable columns={tripColumns} data={trips} isLoading={tripsLoading} />
-        </CardContent>
-      </Card>
+              {metrics && (
+                <Badge variant="secondary">{t("routes.upcomingTrips", { count: metrics.upcoming })}</Badge>
+              )}
+              {metrics?.occupancy != null && (
+                <Badge variant="success">
+                  {t("routes.occupancy", { value: metrics.occupancy.toFixed(0) })}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <DataTable columns={tripColumns} data={trips} isLoading={tripsLoading} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

@@ -6,6 +6,10 @@ export interface BusData {
   busNumber: string;
   name: string;
   capacity: number;
+  seatRows?: number;
+  seatsPerRow?: number;
+  leftSeats?: number;
+  rightSeats?: number;
   type: string;
   assignedDriver?: { _id: string; profile: { firstName: string; lastName: string; phone?: string }; email: string };
   status: string;

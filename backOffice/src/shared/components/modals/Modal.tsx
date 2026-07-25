@@ -29,7 +29,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div 
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity" 
+        className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity cursor-pointer" 
         onClick={onClose} 
       />
       <div className={cn(
@@ -38,7 +38,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       )}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">{title}</h2>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-secondary transition-colors">
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-secondary hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer">
             <X size={20} />
           </button>
         </div>
