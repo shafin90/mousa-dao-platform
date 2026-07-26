@@ -6,7 +6,6 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Select } from "@/shared/components/ui/Select";
-import { Badge } from "@/shared/components/ui/Badge";
 import { Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Search, X } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";

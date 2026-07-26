@@ -151,7 +151,7 @@ const StationCreatePage: React.FC = () => {
     try {
       const created = await stationApi.create({
         name: form.name,
-        cityId: form.cityId,
+        cityId: form.cityId as any,
         address1: form.address1 || undefined,
         address2: form.address2 || undefined,
         phone1: form.phone1 || undefined,

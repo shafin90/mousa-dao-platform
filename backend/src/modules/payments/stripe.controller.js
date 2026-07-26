@@ -57,7 +57,7 @@ const handleWebhook = async (req, res, next) => {
         await booking.save();
 
         await Trip.findByIdAndUpdate(booking.tripId, {
-          $inc: { seatsBooked: 0 },
+          $inc: { seatsBooked: booking.seats.length },
         });
       }
     } catch (err) {

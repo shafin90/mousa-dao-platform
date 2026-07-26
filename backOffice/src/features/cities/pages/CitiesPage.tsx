@@ -26,7 +26,7 @@ const CitiesPage: React.FC = () => {
   const [filterCountry, setFilterCountry] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const filtersRef = useRef({ country: filterCountry, q: search, status: filterStatus });
 
   filtersRef.current = { country: filterCountry, q: search, status: filterStatus };

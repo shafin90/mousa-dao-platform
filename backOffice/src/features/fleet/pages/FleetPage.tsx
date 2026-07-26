@@ -9,13 +9,11 @@ import { Button } from "@/shared/components/ui/Button";
 import { Plus, Trash2, Search, X } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
-import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import type { BusData } from "@/api/busApi";
 
 const FleetPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { showError } = useErrorModal();
   const { isAdmin } = useAuth();
   const { fleet, loading, remove } = useFleet();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);

@@ -212,7 +212,7 @@ const StationDetailsPage: React.FC = () => {
   }, [station]);
 
   useEffect(() => {
-    if (!station || !mapRef.current) return;
+    if (!station || activeSection !== "location" || !mapRef.current) return;
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
@@ -224,7 +224,16 @@ const StationDetailsPage: React.FC = () => {
       attribution: "&copy; OpenStreetMap",
       maxZoom: 18,
     }).addTo(map);
-    const marker = L.marker([lat, lng], { draggable: false }).addTo(map);
+    const marker = L.marker([lat, lng], { draggable: editing }).addTo(map);
+    marker.on("dragend", () => {
+      const pos = marker.getLatLng();
+      setDraft((prev: Record<string, unknown>) => ({ ...prev, lat: String(pos.lat.toFixed(6)), lng: String(pos.lng.toFixed(6)) }));
+    });
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      if (!editing) return;
+      marker.setLatLng(e.latlng);
+      setDraft((prev: Record<string, unknown>) => ({ ...prev, lat: String(e.latlng.lat.toFixed(6)), lng: String(e.latlng.lng.toFixed(6)) }));
+    });
     markerRef.current = marker;
     mapInstanceRef.current = map;
     return () => {
@@ -232,7 +241,7 @@ const StationDetailsPage: React.FC = () => {
       mapInstanceRef.current = null;
       markerRef.current = null;
     };
-  }, [station]);
+  }, [station, activeSection, editing]);
 
   if (loading) {
     return (
@@ -431,13 +440,13 @@ const StationDetailsPage: React.FC = () => {
                   <tbody>
                     {trips.map((trip) => (
                       <tr key={trip._id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/trips/${trip._id}`)}>
-                        <td className="py-2 pr-4">
+                        <td className="py-0 pr-2">
                           {trip.routeId ? `${trip.routeId.fromCity?.name || "—"} → ${trip.routeId.toCity?.name || "—"}` : "—"}
                         </td>
-                        <td className="py-2 pr-4">{trip.date ? new Date(trip.date).toLocaleDateString() : "—"}</td>
-                        <td className="py-2 pr-4">{trip.departureTime || "—"}</td>
-                        <td className="py-2 pr-4">{trip.arrivalTime || "—"}</td>
-                        <td className="py-2 pr-4">{trip.busId?.busNumber || trip.busId?.name || "—"}</td>
+                        <td className="py-0 pr-2">{trip.date ? new Date(trip.date).toLocaleDateString() : "—"}</td>
+                        <td className="py-0 pr-2">{trip.departureTime || "—"}</td>
+                        <td className="py-0 pr-2">{trip.arrivalTime || "—"}</td>
+                        <td className="py-0 pr-2">{trip.busId?.busNumber || trip.busId?.name || "—"}</td>
                         <td className="py-2">
                           <Badge variant={trip.status === "cancelled" ? "destructive" : trip.status === "completed" ? "secondary" : "success"}>{trip.status}</Badge>
                         </td>
@@ -479,11 +488,11 @@ const StationDetailsPage: React.FC = () => {
                   <tbody>
                     {routes.map((route) => (
                       <tr key={route._id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/routes/${route._id}`)}>
-                        <td className="py-2 pr-4">{route.fromCity?.name || "—"}</td>
-                        <td className="py-2 pr-4">{route.toCity?.name || "—"}</td>
-                        <td className="py-2 pr-4">{route.distanceKm ? `${route.distanceKm} km` : "—"}</td>
-                        <td className="py-2 pr-4">{route.estimatedTimeMinutes ? `${route.estimatedTimeMinutes} min` : "—"}</td>
-                        <td className="py-2 pr-4">{(route.fromStations?.length || 0) + (route.toStations?.length || 0)}</td>
+                        <td className="py-0 pr-2">{route.fromCity?.name || "—"}</td>
+                        <td className="py-0 pr-2">{route.toCity?.name || "—"}</td>
+                        <td className="py-0 pr-2">{route.distanceKm ? `${route.distanceKm} km` : "—"}</td>
+                        <td className="py-0 pr-2">{route.estimatedTimeMinutes ? `${route.estimatedTimeMinutes} min` : "—"}</td>
+                        <td className="py-0 pr-2">{(route.fromStations?.length || 0) + (route.toStations?.length || 0)}</td>
                         <td className="py-2">
                           <Badge variant={route.isActive !== false ? "success" : "secondary"}>{route.isActive !== false ? "Active" : "Inactive"}</Badge>
                         </td>
@@ -524,10 +533,10 @@ const StationDetailsPage: React.FC = () => {
                   <tbody>
                     {buses.map((bus) => (
                       <tr key={bus._id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/fleet/${bus._id}`)}>
-                        <td className="py-2 pr-4">{bus.busNumber || "—"}</td>
-                        <td className="py-2 pr-4">{bus.name || "—"}</td>
-                        <td className="py-2 pr-4">{bus.capacity || "—"}</td>
-                        <td className="py-2 pr-4">{bus.type || "—"}</td>
+                        <td className="py-0 pr-2">{bus.busNumber || "—"}</td>
+                        <td className="py-0 pr-2">{bus.name || "—"}</td>
+                        <td className="py-0 pr-2">{bus.capacity || "—"}</td>
+                        <td className="py-0 pr-2">{bus.type || "—"}</td>
                         <td className="py-2">
                           <Badge variant={bus.status === "active" ? "success" : bus.status === "maintenance" ? "warning" : "secondary"}>{bus.status || "—"}</Badge>
                         </td>

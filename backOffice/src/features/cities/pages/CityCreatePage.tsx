@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,6 +13,7 @@ import {
   User as UserIcon,
   MapPinned,
   ShieldCheck,
+  Crosshair,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
@@ -21,6 +22,18 @@ import { Button } from "@/shared/components/ui/Button";
 import { cityApi } from "@/api/cityApi";
 import { userApi } from "@/api/userApi";
 import type { User } from "@/shared/types";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+const markerIcon = L.icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 const COUNTRIES = [
   "C\u00f4te d'Ivoire", "Benin", "Burkina Faso", "Mali", "Togo",
@@ -60,9 +73,70 @@ const CityCreatePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<CityForm>({ ...EMPTY_FORM });
   const [users, setUsers] = useState<User[]>([]);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
     userApi.getAll({ limit: 1000 }).then((res) => setUsers(res.users.filter((u) => u.role !== "customer"))).catch(() => setUsers([]));
+  }, []);
+
+  const countryCenters: Record<string, [number, number]> = {
+    "C\u00f4te d'Ivoire": [6.85, -5.3],
+    Benin: [6.5, 2.6],
+    "Burkina Faso": [12.37, -1.53],
+    Mali: [12.65, -8.0],
+    Togo: [6.13, 1.22],
+    Nigeria: [6.52, 3.38],
+    Ghana: [5.56, -0.2],
+    "Guinee Conakry": [9.53, -13.68],
+    Senegal: [14.69, -17.45],
+    Niger: [13.51, 2.11],
+  };
+
+  const updateMarker = (lat: number, lng: number) => {
+    setForm((prev) => ({ ...prev, lat: String(lat), lng: String(lng) }));
+    if (markerRef.current && mapInstanceRef.current) {
+      markerRef.current.setLatLng([lat, lng]);
+      mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom());
+    }
+  };
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+    const center: [number, number] = form.lat && form.lng
+      ? [Number(form.lat), Number(form.lng)]
+      : [6.85, -5.3];
+    const map = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true }).setView(center, 5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap",
+      maxZoom: 18,
+    }).addTo(map);
+    const marker = L.marker(center, { draggable: true, icon: markerIcon }).addTo(map);
+    marker.on("dragend", () => {
+      const pos = marker.getLatLng();
+      setForm((prev) => ({
+        ...prev,
+        lat: String(parseFloat(pos.lat.toFixed(6))),
+        lng: String(parseFloat(pos.lng.toFixed(6))),
+      }));
+    });
+    map.on("click", (e) => {
+      const pos = e.latlng;
+      marker.setLatLng(pos);
+      setForm((prev) => ({
+        ...prev,
+        lat: String(parseFloat(pos.lat.toFixed(6))),
+        lng: String(parseFloat(pos.lng.toFixed(6))),
+      }));
+    });
+    mapInstanceRef.current = map;
+    markerRef.current = marker;
+    return () => { map.remove(); mapInstanceRef.current = null; markerRef.current = null; };
   }, []);
 
   const renderInput = (
@@ -227,11 +301,32 @@ const CityCreatePage: React.FC = () => {
                   <MapPinned size={18} className="text-primary" /> {t("cities.coordinates")}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  {renderInput(t("cities.latitude"), form.lat, (v) => setForm({ ...form, lat: v }), { type: "number", placeholder: "6.8501", icon: <MapPinned size={14} /> })}
-                  {renderInput(t("cities.longitude"), form.lng, (v) => setForm({ ...form, lng: v }), { type: "number", placeholder: "-5.2986", icon: <MapPinned size={14} /> })}
+                  {renderInput(t("cities.latitude"), form.lat, (v) => { const n = parseFloat(v); if (!isNaN(n)) updateMarker(n, Number(form.lng) || 0); else setForm({ ...form, lat: v }); }, { type: "number", placeholder: "6.8501", icon: <MapPinned size={14} /> })}
+                  {renderInput(t("cities.longitude"), form.lng, (v) => { const n = parseFloat(v); if (!isNaN(n)) updateMarker(Number(form.lat) || 0, n); else setForm({ ...form, lng: v }); }, { type: "number", placeholder: "-5.2986", icon: <MapPinned size={14} /> })}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const center = countryCenters[form.country];
+                    if (center && mapInstanceRef.current) {
+                      mapInstanceRef.current.setView(center, 7);
+                      if (markerRef.current) {
+                        markerRef.current.setLatLng(center);
+                        setForm((prev) => ({
+                          ...prev,
+                          lat: String(center[0]),
+                          lng: String(center[1]),
+                        }));
+                      }
+                    }
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Crosshair size={12} /> Center on country
+                </button>
+                <div ref={mapRef} className="h-64 w-full rounded-lg border z-0" />
               </CardContent>
             </Card>
 

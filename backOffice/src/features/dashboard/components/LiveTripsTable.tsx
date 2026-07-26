@@ -21,7 +21,7 @@ export const LiveTripsTable: React.FC<Props> = ({ data, loading, onRowClick }) =
     return (
       <div className="space-y-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+          <div key={i} className="h-6 bg-muted rounded animate-pulse" />
         ))}
       </div>
     );
@@ -46,10 +46,10 @@ export const LiveTripsTable: React.FC<Props> = ({ data, loading, onRowClick }) =
         <tbody>
           {data.map((trip) => (
             <tr key={trip._id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => onRowClick?.(trip)}>
-              <td className="py-2.5 pr-4">{trip.route}</td>
-              <td className="py-2.5 pr-4 text-muted-foreground">{trip.bus}</td>
-              <td className="py-2.5 pr-4 font-mono text-xs">{trip.departureTime}</td>
-              <td className="py-2.5 pr-4">
+              <td className="py-0 pr-3">{trip.route}</td>
+              <td className="py-0 pr-3 text-muted-foreground">{trip.bus}</td>
+              <td className="py-0 pr-3 font-mono text-xs">{trip.departureTime}</td>
+              <td className="py-0 pr-3">
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
@@ -60,7 +60,7 @@ export const LiveTripsTable: React.FC<Props> = ({ data, loading, onRowClick }) =
                   <span className="text-xs font-medium w-10 text-right">{trip.occupancyRate}%</span>
                 </div>
               </td>
-              <td className="py-2.5">
+              <td className="py-0">
                 <Badge variant={STATUS_VARIANT[trip.status] || "outline"} className="capitalize">
                   {trip.status}
                 </Badge>

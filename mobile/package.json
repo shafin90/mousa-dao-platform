@@ -21,6 +21,7 @@
     "expo-linking": "~57.0.3",
     "expo-router": "~57.0.7",
     "expo-secure-store": "~57.0.1",
+    "expo-sqlite": "^57.0.1",
     "expo-status-bar": "~57.0.0",
     "firebase": "^11.5.0",
     "react": "19.2.3",

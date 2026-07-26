@@ -9,7 +9,6 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { Modal } from "@/shared/components/modals/Modal";
 import { Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import type { StationData } from "@/api/stationApi";
 import { cityApi, type CityData } from "@/api/cityApi";
 
@@ -25,7 +24,6 @@ const idOf = (value: unknown): string => {
 const StationsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { showError } = useErrorModal();
   const { isAdmin } = useAuth();
   const { stations, loading, remove } = useStations();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -85,7 +83,7 @@ const StationsPage: React.FC = () => {
     },
   ];
 
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const filteredStations = stations.filter((s) => {
     if (filterStatus === "active" && s.isActive === false) return false;

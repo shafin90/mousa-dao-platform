@@ -55,11 +55,6 @@ const TRIP_STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ] as const;
 
-const COUNTRIES = [
-  "Côte d'Ivoire", "Benin", "Burkina Faso", "Mali", "Togo",
-  "Nigeria", "Ghana", "Guinee Conakry", "Senegal", "Niger",
-] as const;
-
 const SECTIONS = [
   { id: "general", label: "General", icon: LayoutDashboard },
   { id: "address", label: "Address", icon: MapPin },
@@ -260,6 +255,13 @@ const CityDetailsPage: React.FC = () => {
         location: { lat: parseFloat(pos.lat.toFixed(6)), lng: parseFloat(pos.lng.toFixed(6)) },
       }));
     });
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      marker.setLatLng(e.latlng);
+      setForm((prev) => ({
+        ...prev,
+        location: { lat: parseFloat(e.latlng.lat.toFixed(6)), lng: parseFloat(e.latlng.lng.toFixed(6)) },
+      }));
+    });
     markerRef.current = marker;
     mapInstanceRef.current = map;
     return () => {
@@ -315,7 +317,12 @@ const CityDetailsPage: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const getId = (v: unknown) => (v && typeof v === "object" && "_id" in v) ? (v as { _id: string })._id : v;
+      const getId = (v: unknown): string | undefined => {
+        if (!v) return undefined;
+        if (typeof v === "object" && "_id" in v) return (v as { _id: string })._id;
+        if (typeof v === "string") return v;
+        return undefined;
+      };
       const payload = {
         name: form.name,
         country: form.country,
@@ -591,9 +598,9 @@ const CityDetailsPage: React.FC = () => {
                 </>
               ) : (
                 <div className="space-y-1">
-                  {renderField(t("cities.cityName"), city.name, <Building2 size={14} />)}
-                  {renderField(t("cities.address1"), city.address1 || "—", <MapPin size={14} />)}
-                  {renderField(t("cities.address2"), city.address2 || "—", <MapPin size={14} />)}
+                  {renderField(t("cities.cityName"), city!.name, <Building2 size={14} />)}
+                  {renderField(t("cities.address1"), city!.address1 || "—", <MapPin size={14} />)}
+                  {renderField(t("cities.address2"), city!.address2 || "—", <MapPin size={14} />)}
                 </div>
               )}
             </CardContent>
@@ -617,10 +624,10 @@ const CityDetailsPage: React.FC = () => {
                 </>
               ) : (
                 <div className="space-y-1">
-                  {renderField(t("cities.phone1"), city.phone1 || "—", <Phone size={14} />)}
-                  {renderField(t("cities.phone2"), city.phone2 || "—", <Phone size={14} />)}
-                  {renderField(t("cities.email1"), city.email1 || "—", <Mail size={14} />)}
-                  {renderField(t("cities.email2"), city.email2 || "—", <Mail size={14} />)}
+                  {renderField(t("cities.phone1"), city!.phone1 || "—", <Phone size={14} />)}
+                  {renderField(t("cities.phone2"), city!.phone2 || "—", <Phone size={14} />)}
+                  {renderField(t("cities.email1"), city!.email1 || "—", <Mail size={14} />)}
+                  {renderField(t("cities.email2"), city!.email2 || "—", <Mail size={14} />)}
                 </div>
               )}
             </CardContent>
@@ -662,8 +669,8 @@ const CityDetailsPage: React.FC = () => {
                 </>
               ) : (
                 <div className="space-y-1">
-                  {renderField(t("cities.manager1"), getManagerName(city.manager1) || "—", <UserIcon size={14} />)}
-                  {renderField(t("cities.manager2"), getManagerName(city.manager2) || "—", <UserIcon size={14} />)}
+                  {renderField(t("cities.manager1"), getManagerName(city!.manager1) || "—", <UserIcon size={14} />)}
+                  {renderField(t("cities.manager2"), getManagerName(city!.manager2) || "—", <UserIcon size={14} />)}
                 </div>
               )}
             </CardContent>
@@ -700,8 +707,8 @@ const CityDetailsPage: React.FC = () => {
                 <div className="space-y-1">
                   {renderField(
                     t("cities.coordinates"),
-                    city.location?.lat != null
-                      ? `${city.location.lat.toFixed(6)}, ${city.location.lng.toFixed(6)}`
+                    city!.location?.lat != null
+                      ? `${city!.location.lat.toFixed(6)}, ${city!.location.lng.toFixed(6)}`
                       : "—",
                     <MapPinned size={14} />
                   )}
@@ -737,8 +744,8 @@ const CityDetailsPage: React.FC = () => {
                 <div className="space-y-1">
                   {renderField(
                     t("cities.status"),
-                    <Badge variant={city.isActive !== false ? "success" : "secondary"}>
-                      {city.isActive !== false ? t("common.active") : t("common.inactive")}
+                    <Badge variant={city!.isActive !== false ? "success" : "secondary"}>
+                      {city!.isActive !== false ? t("common.active") : t("common.inactive")}
                     </Badge>,
                     <ShieldCheck size={14} />
                   )}
@@ -772,9 +779,9 @@ const CityDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              {renderField(t("cities.createdAt"), city.createdAt ? new Date(city.createdAt).toLocaleString() : "—", <Clock size={14} />)}
+              {renderField(t("cities.createdAt"), city!.createdAt ? new Date(city!.createdAt).toLocaleString() : "—", <Clock size={14} />)}
               {renderField(t("cities.createdBy"), createdByDisplay, <UserIcon size={14} />)}
-              {city.updatedAt && renderField(t("cities.updatedAt"), new Date(city.updatedAt).toLocaleString(), <Clock size={14} />)}
+              {city!.updatedAt && renderField(t("cities.updatedAt"), new Date(city!.updatedAt).toLocaleString(), <Clock size={14} />)}
             </CardContent>
           </Card>
           )}

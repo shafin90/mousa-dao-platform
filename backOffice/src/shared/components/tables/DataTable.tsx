@@ -85,7 +85,7 @@ export function DataTable<T>({
     return (
       <div className="w-full space-y-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-12 w-full animate-pulse rounded-lg bg-secondary" />
+          <div key={i} className="h-6 w-full animate-pulse rounded-lg bg-secondary" />
         ))}
       </div>
     );
@@ -100,7 +100,7 @@ export function DataTable<T>({
               <th
                 key={idx}
                 className={cn(
-                  "h-8 px-3 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider border-r last:border-r-0",
+                  "h-5 px-1.5 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider border-r last:border-r-0",
                   column.className
                 )}
               >
@@ -123,7 +123,7 @@ export function DataTable<T>({
                   )}
                 >
                   {columns.map((column, colIdx) => (
-                    <td key={colIdx} className={cn("px-3 py-1.5 align-middle border-r last:border-r-0", column.className)}>
+                    <td key={colIdx} className={cn("px-1.5 py-0 align-middle border-r last:border-r-0", column.className)}>
                       {typeof column.accessor === "function"
                         ? column.accessor(item)
                         : (item[column.accessor] as React.ReactNode)}
@@ -150,7 +150,7 @@ export function DataTable<T>({
           )}
         </tbody>
       </table>
-      <div className="flex items-center justify-between border-t px-3 py-2">
+      <div className="flex items-center justify-between border-t px-2 py-1">
         <div className="flex items-center gap-2">
           {exportable && data.length > 0 && (
             <button

@@ -233,7 +233,7 @@ const MaintenanceSchedulePage: React.FC = () => {
     if (filterStatus && r.status !== filterStatus) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!busLabelOf(r.busId).toLowerCase().includes(q) && !r.title.toLowerCase().includes(q)) return false;
+      if (!busLabelOf(r.busId).toLowerCase().includes(q) && !(r.title ?? '').toLowerCase().includes(q)) return false;
     }
     return true;
   });

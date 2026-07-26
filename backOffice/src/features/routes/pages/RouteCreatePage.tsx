@@ -28,12 +28,11 @@ interface RouteForm {
   toStations: string[];
   distanceKm: string;
   estimatedTimeMinutes: string;
-  baseRate: string;
   isActive: boolean;
   stops: RouteStopInput[];
 }
 
-const emptyForm: RouteForm = { fromCity: "", toCity: "", fromStations: [], toStations: [], distanceKm: "", estimatedTimeMinutes: "", baseRate: "", isActive: true, stops: [] };
+const emptyForm: RouteForm = { fromCity: "", toCity: "", fromStations: [], toStations: [], distanceKm: "", estimatedTimeMinutes: "", isActive: true, stops: [] };
 
 const RouteCreatePage: React.FC = () => {
   const { t } = useTranslation();
@@ -96,7 +95,6 @@ const RouteCreatePage: React.FC = () => {
         toStations: form.toStations.filter(Boolean),
         distanceKm: Number(form.distanceKm),
         estimatedTimeMinutes: Number(form.estimatedTimeMinutes) || undefined,
-        baseRate: form.baseRate ? Number(form.baseRate) : undefined,
         isActive: form.isActive,
         stops: form.stops.filter((s) => s.cityId),
       };
@@ -180,10 +178,6 @@ const RouteCreatePage: React.FC = () => {
                     <label className="text-sm font-medium text-muted-foreground">{t("routes.estTimeMinutes")}</label>
                     <input type="number" value={form.estimatedTimeMinutes} onChange={(e) => setForm({ ...form, estimatedTimeMinutes: e.target.value })} placeholder={t("routes.estTimePlaceholder")} className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-muted-foreground">{t("routes.baseRate")}</label>
-                  <input type="number" value={form.baseRate} onChange={(e) => setForm({ ...form, baseRate: e.target.value })} placeholder={t("routes.baseRatePlaceholder")} className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
               </CardContent>
             </Card>

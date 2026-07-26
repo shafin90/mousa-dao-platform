@@ -27,7 +27,7 @@ export const RecentBookings: React.FC<Props> = ({ data, loading, onRowClick }) =
     return (
       <div className="space-y-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+          <div key={i} className="h-6 bg-muted rounded animate-pulse" />
         ))}
       </div>
     );
@@ -53,16 +53,16 @@ export const RecentBookings: React.FC<Props> = ({ data, loading, onRowClick }) =
         <tbody>
           {data.map((b) => (
             <tr key={b._id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => onRowClick?.(b)}>
-              <td className="py-2.5 pr-4">{b.customer}</td>
-              <td className="py-2.5 pr-4 text-muted-foreground text-xs">{b.route}</td>
-              <td className="py-2.5 pr-4">{b.seats}</td>
-              <td className="py-2.5 pr-4 font-medium">CFA {(b.totalAmount || 0).toLocaleString()}</td>
-              <td className="py-2.5 pr-4">
+              <td className="py-0 pr-3">{b.customer}</td>
+              <td className="py-0 pr-3 text-muted-foreground text-xs">{b.route}</td>
+              <td className="py-0 pr-3">{b.seats}</td>
+              <td className="py-0 pr-3 font-medium">CFA {(b.totalAmount || 0).toLocaleString()}</td>
+              <td className="py-0 pr-3">
                 <Badge variant={PAYMENT_VARIANT[b.paymentStatus] || "outline"} className="capitalize text-xs">
                   {b.paymentStatus}
                 </Badge>
               </td>
-              <td className="py-2.5">
+              <td className="py-0">
                 <Badge variant={STATUS_VARIANT[b.status] || "outline"} className="capitalize text-xs">
                   {b.status}
                 </Badge>

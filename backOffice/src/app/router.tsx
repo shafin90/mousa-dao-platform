@@ -17,6 +17,8 @@ const FleetCreatePage = lazy(() => import("@/features/fleet/pages/FleetCreatePag
 const BusDetailsPage = lazy(() => import("@/features/fleet/pages/BusDetailsPage"));
 const UsersPage = lazy(() => import("@/features/users/pages/UsersPage"));
 const EmployeesPage = lazy(() => import("@/features/users/pages/EmployeesPage"));
+const EmployeeCreatePage = lazy(() => import("@/features/users/pages/EmployeeCreatePage"));
+const EmployeeDetailsPage = lazy(() => import("@/features/users/pages/EmployeeDetailsPage"));
 const PassengerDetailsPage = lazy(() => import("@/features/users/pages/PassengerDetailsPage"));
 const AnalyticsPage = lazy(() => import("@/features/analytics/pages/AnalyticsPage"));
 const RoutesPage = lazy(() => import("@/features/routes/pages/RoutesPage"));
@@ -113,8 +115,12 @@ export const router = createBrowserRouter([
         element: <SuspenseWrapper><EmployeesPage /></SuspenseWrapper>,
       },
       {
+        path: "employees/new",
+        element: <SuspenseWrapper><EmployeeCreatePage /></SuspenseWrapper>,
+      },
+      {
         path: "employees/:id",
-        element: <SuspenseWrapper><PassengerDetailsPage /></SuspenseWrapper>,
+        element: <SuspenseWrapper><EmployeeDetailsPage /></SuspenseWrapper>,
       },
       {
         path: "analytics",

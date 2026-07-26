@@ -7,7 +7,6 @@ import {
   Mail,
   Phone,
   ShieldCheck,
-  Clock,
   LayoutDashboard,
   CalendarClock,
 } from "lucide-react";

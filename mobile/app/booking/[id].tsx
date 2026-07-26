@@ -21,12 +21,16 @@ import {
   getStatusLabel,
 } from '../../src/utils/format';
 import { Ionicons } from '@expo/vector-icons';
+import { createPaymentIntent } from '../../src/api/payments';
+import { useStripe } from '../../src/services/stripe';
 
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   useEffect(() => {
     loadBooking();
@@ -73,9 +77,54 @@ export default function BookingDetailScreen() {
     );
   };
 
+  const handlePay = async () => {
+    setPaying(true);
+    try {
+      const { clientSecret } = await createPaymentIntent({
+        bookingId: id,
+      });
+
+      const { error: sheetError } = await initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'Mousa Transport',
+        style: 'alwaysLight',
+        defaultBillingDetails: {
+          name: 'Customer',
+        },
+      });
+
+      if (sheetError) {
+        Alert.alert('Error', sheetError.message);
+        return;
+      }
+
+      const { error: presentError } = await presentPaymentSheet();
+
+      if (presentError) {
+        if (presentError.code === 'Canceled') {
+          Alert.alert('Payment Cancelled', 'You can try again whenever you want.');
+        } else {
+          Alert.alert('Payment Error', presentError.message);
+        }
+        return;
+      }
+
+      Alert.alert('Payment Successful', 'Your booking has been confirmed.');
+      loadBooking();
+    } catch (err: any) {
+      Alert.alert(
+        'Error',
+        err?.response?.data?.message || 'An error occurred during payment'
+      );
+    } finally {
+      setPaying(false);
+    }
+  };
+
   if (loading || !booking) return <LoadingScreen message="Loading..." />;
 
   const canCancel = ['pending', 'confirmed'].includes(booking.status);
+  const canPay = booking.status === 'pending' && booking.paymentStatus === 'unpaid';
   const statusColor = getStatusColor(booking.status);
   const paymentColor = getStatusColor(booking.paymentStatus);
 
@@ -171,6 +220,16 @@ export default function BookingDetailScreen() {
           </Text>
         </View>
       </View>
+
+      {canPay && (
+        <Button
+          title="Pay Now"
+          onPress={handlePay}
+          loading={paying}
+          size="lg"
+          style={styles.payButton}
+        />
+      )}
 
       {canCancel && (
         <Button
@@ -302,5 +361,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginTop: spacing.sm,
+  },
+  payButton: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
 });

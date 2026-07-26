@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTrips } from "../hooks/useTrips";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { DataTable } from "@/shared/components/tables/DataTable";
-import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 import { Select } from "@/shared/components/ui/Select";
 import { Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Search, X, AlertTriangle } from "lucide-react";
@@ -99,7 +98,6 @@ const TripsPage: React.FC = () => {
     setFilterSearch("");
   };
 
-  const hasFilters = filterBusId || filterDate || filterStatus || filterPriceMin || filterPriceMax || filterSearch;
   const compactHasFilters = filterSearch || filterBusId || filterDate || filterStatus;
 
   const handleCreate = async (e: React.FormEvent) => {

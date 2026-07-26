@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
-import { Settings, ShieldCheck, DollarSign, Clock, Percent, ToggleLeft, Wrench, Globe } from "lucide-react";
+import { Settings, DollarSign, Clock, Percent, ToggleLeft, Wrench, Globe } from "lucide-react";
 import { LanguageSwitcher } from "@/shared/components/ui/LanguageSwitcher";
 
 const SettingsPage: React.FC = () => {

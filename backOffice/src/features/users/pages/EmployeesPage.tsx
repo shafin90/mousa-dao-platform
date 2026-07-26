@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useUsers } from "../hooks/useUsers";
 import { DataTable } from "@/shared/components/tables/DataTable";
-import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/modals/Modal";
 import { Plus, RefreshCw, Trash2, Search, X } from "lucide-react";
@@ -18,15 +17,6 @@ const EMPLOYEE_ROLES = ["admin", "staff", "driver"];
 const EMPTY_FORM = {
   firstName: "", lastName: "", email: "", phone: "", phone2: "", email2: "",
   password: "", role: "staff", dateOfBirth: "", employmentStatus: "active",
-};
-
-const statusVariant = (s?: string) => {
-  switch (s) {
-    case "active": return "success" as const;
-    case "on_leave": return "warning" as const;
-    case "inactive": case "terminated": return "destructive" as const;
-    default: return "outline" as const;
-  }
 };
 
 const EmployeesPage: React.FC = () => {
@@ -52,12 +42,6 @@ const EmployeesPage: React.FC = () => {
     const name = `${u.profile?.firstName} ${u.profile?.lastName}`.toLowerCase();
     return name.includes(q) || u.email.toLowerCase().includes(q) || u.phone.toLowerCase().includes(q);
   });
-
-  const openCreate = () => {
-    setEditingUser(null);
-    setForm(EMPTY_FORM);
-    setIsFormOpen(true);
-  };
 
   const closeForm = () => {
     setIsFormOpen(false);
@@ -173,7 +157,7 @@ const EmployeesPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="w-px h-5 bg-border" />
             <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={refresh} title="Refresh"><RefreshCw size={13} /></Button>
-            <Button size="sm" className="h-7 px-2 text-xs gap-1" onClick={openCreate}>
+            <Button size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => navigate("/employees/new")}>
               <Plus size={13} /> Add
             </Button>
           </div>

@@ -814,19 +814,9 @@ const BusDetailsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <label className="text-xs text-muted-foreground">{t("fleet.capacity")}</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={seatLayoutDraft.capacity}
-                      onChange={(e) => {
-                        const cap = Math.max(1, Number(e.target.value));
-                        setSeatLayoutDraft((prev) => {
-                          const total = prev.leftSeats + prev.rightSeats || 1;
-                          return { ...prev, capacity: cap, seatsPerRow: total, seatRows: Math.max(1, Math.ceil(cap / total)) };
-                        });
-                      }}
-                      className="w-16 h-7 rounded border bg-background/80 px-1.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
+                    <span className="w-16 h-7 flex items-center justify-center rounded border bg-muted/40 px-1.5 text-xs text-center text-muted-foreground font-medium">
+                      {seatLayoutDraft.capacity}
+                    </span>
                   </div>
                   <Button size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveSeatLayout}>
                     <Save size={12} /> {t("common.save")}

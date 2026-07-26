@@ -5,18 +5,12 @@ import { useUsers } from "../hooks/useUsers";
 import { DataTable } from "@/shared/components/tables/DataTable";
 
 import { Button } from "@/shared/components/ui/Button";
-import { Modal } from "@/shared/components/modals/Modal";
 import { RefreshCw, Search, X } from "lucide-react";
-import { toast } from "sonner";
-import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import type { User } from "@/shared/types";
-
-const EMPTY_FORM = { firstName: "", lastName: "", email: "", phone: "", password: "" };
 
 const UsersPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { showError } = useErrorModal();
   const { users, loading, refresh } = useUsers();
   const [search, setSearch] = useState("");
 

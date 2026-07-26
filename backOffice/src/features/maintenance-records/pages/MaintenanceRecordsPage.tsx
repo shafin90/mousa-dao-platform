@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, ClipboardList } from "lucide-react";
-import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";

@@ -5,12 +5,13 @@ import { fetchUsers, createUser as createUserAction, updateUser as updateUserAct
 export const useUsers = () => {
   const dispatch = useAppDispatch();
   const { items = [], loading, error } = useAppSelector((state) => state.users) || {};
-  useEffect(() => { if (items.length === 0) dispatch(fetchUsers()); }, [dispatch, items.length]);
+  const fetchParams = { limit: 999 };
+  useEffect(() => { dispatch(fetchUsers(fetchParams)); }, [dispatch]);
   const create = useCallback((payload: { firstName: string; lastName: string; email: string; phone: string; password: string; role: string }) => dispatch(createUserAction(payload)), [dispatch]);
   const update = useCallback((id: string, payload: Partial<{ firstName: string; lastName: string; email: string; phone: string; password: string; role: string }>) => dispatch(updateUserAction({ id, payload })), [dispatch]);
   const remove = useCallback((id: string) => dispatch(deleteUserAction(id)), [dispatch]);
   const updateStatus = useCallback((id: string, isActive: boolean) => dispatch(updateStatusAction({ id, isActive })), [dispatch]);
   const updateRole = useCallback((id: string, role: string) => dispatch(updateRoleAction({ id, role })), [dispatch]);
-  const refresh = useCallback(() => dispatch(fetchUsers()), [dispatch]);
+  const refresh = useCallback(() => dispatch(fetchUsers(fetchParams)), [dispatch]);
   return { users: items, loading, error, create, update, remove, updateStatus, updateRole, refresh };
 };
