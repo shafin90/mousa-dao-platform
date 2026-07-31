@@ -36,7 +36,6 @@ const CityCreatePage = lazy(() => import("@/features/cities/pages/CityCreatePage
 const CityEditPage = lazy(() => import("@/features/cities/pages/CityEditPage"));
 const CityDetailsPage = lazy(() => import("@/features/cities/pages/CityDetailsPage"));
 const TutorialPage = lazy(() => import("@/features/onboarding/pages/TutorialPage"));
-const NotificationsPage = lazy(() => import("@/features/notifications/pages/NotificationsPage"));
 const SettingsPage = lazy(() => import("@/features/settings/pages/SettingsPage"));
 const ActivityLogPage = lazy(() => import("@/features/audit-logs/pages/AuditLogsPage"));
 const SupportPage = lazy(() => import("@/features/support/pages/SupportPage"));
@@ -188,10 +187,6 @@ export const router = createBrowserRouter([
       {
         path: "cities/:id",
         element: <SuspenseWrapper><CityDetailsPage /></SuspenseWrapper>,
-      },
-      {
-        path: "notifications",
-        element: <SuspenseWrapper><NotificationsPage /></SuspenseWrapper>,
       },
       {
         path: "settings",

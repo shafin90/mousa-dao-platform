@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { useAppSelector } from "@/app/store";
-import { GraduationCap, LayoutDashboard, Calendar, Map, Route, Users, UserCog, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Building2, MessageCircle, Bell, Settings, ClipboardList } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Calendar, Map, Route, Users, UserCog, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Building2, MessageCircle, Settings, ClipboardList } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
@@ -40,7 +40,6 @@ const NavKeys: NavItem[] = [
   { icon: UserCog, key: "employees", href: "/employees", roles: ["admin"] },
   { icon: ClipboardList, key: "activityLog", href: "/activity-log", roles: ["admin"] },
   { icon: MessageCircle, key: "support", href: "/support", roles: ["admin", "staff", "manager"] },
-  { icon: Bell, key: "notifications", href: "/notifications", roles: ["admin", "staff", "manager"] },
   { icon: BarChart3, key: "analytics", href: "/analytics", roles: ["admin", "manager"] },
   { icon: Settings, key: "configuration", href: "/settings", roles: ["admin"] },
   { icon: GraduationCap, key: "tutorial", href: "/tutorial", roles: ["admin", "staff", "manager"] },

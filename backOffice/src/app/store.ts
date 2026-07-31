@@ -11,7 +11,6 @@ import userReducer from "@/features/users/store/userSlice";
 import routeReducer from "@/features/routes/store/routeSlice";
 import ticketReducer from "@/features/tickets/store/ticketSlice";
 import auditLogReducer from "@/features/audit-logs/store/auditLogSlice";
-import notificationReducer from "@/features/notifications/store/notificationSlice";
 import configReducer from "@/features/config/store/configSlice";
 import analyticsReducer from "@/features/analytics/store/analyticsSlice";
 import stationReducer from "@/features/stations/store/stationSlice";
@@ -27,7 +26,6 @@ export const store = configureStore({
     routes: routeReducer,
     tickets: ticketReducer,
     auditLogs: auditLogReducer,
-    notifications: notificationReducer,
     config: configReducer,
     analytics: analyticsReducer,
     stations: stationReducer,
