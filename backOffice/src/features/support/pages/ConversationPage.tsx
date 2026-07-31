@@ -5,7 +5,7 @@ import { io, type Socket } from "socket.io-client";
 import { Card, CardContent } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
-import { ArrowLeft, Send, Phone, MessageCircle } from "lucide-react";
+import { ArrowLeft, Send, MessageCircle } from "lucide-react";
 import apiClient from "@/shared/services/apiClient";
 
 type ChatMessage = {
