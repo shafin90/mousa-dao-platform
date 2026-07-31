@@ -113,7 +113,7 @@ const calculateDistance = async (fromId, toId, companyId) => {
   let toCity = await cityRepository.findById(toId, companyId);
   if (!fromCity || !toCity) throw new AppError('City not found', 404, ErrorCodes.NOT_FOUND);
 
-  const allStations = await stationRepository.findAll(companyId);
+  const { items: allStations } = await stationRepository.findAll(companyId);
   const fromIdStr = String(fromId);
   const toIdStr = String(toId);
   const fromStation = allStations.find((s) => {

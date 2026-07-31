@@ -24,6 +24,7 @@ const PassengerDetailsPage = lazy(() => import("@/features/users/pages/Passenger
 const AnalyticsPage = lazy(() => import("@/features/analytics/pages/AnalyticsPage"));
 const RoutesPage = lazy(() => import("@/features/routes/pages/RoutesPage"));
 const RouteCreatePage = lazy(() => import("@/features/routes/pages/RouteCreatePage"));
+const RouteEditPage = lazy(() => import("@/features/routes/pages/RouteEditPage"));
 const RouteDetailsPage = lazy(() => import("@/features/routes/pages/RouteDetailsPage"));
 const StationsPage = lazy(() => import("@/features/stations/pages/StationsPage"));
 const StationCreatePage = lazy(() => import("@/features/stations/pages/StationCreatePage"));
@@ -140,6 +141,10 @@ export const router = createBrowserRouter([
       {
         path: "routes/new",
         element: <SuspenseWrapper><RouteCreatePage /></SuspenseWrapper>,
+      },
+      {
+        path: "routes/:id/edit",
+        element: <SuspenseWrapper><RouteEditPage /></SuspenseWrapper>,
       },
       {
         path: "routes/:id",

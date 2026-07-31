@@ -20,7 +20,6 @@ import {
   Map,
   Calendar,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -275,15 +274,14 @@ const RouteDetailsPage: React.FC = () => {
           <Badge variant={route.isActive !== false ? "success" : "secondary"}>
             {route.isActive !== false ? t("routes.active") : t("routes.inactive")}
           </Badge>
-          <Button
-            className="gap-2"
-            onClick={() => {
-              navigate("/routes", { state: { editRouteId: route._id } });
-              toast.info(t("routes.editFromList"));
-            }}
-          >
-            <Pencil size={16} /> {t("common.edit")}
-          </Button>
+          {activeSection === "overview" && (
+            <Button
+              className="gap-2"
+              onClick={() => navigate(`/routes/${route._id}/edit`)}
+            >
+              <Pencil size={16} /> {t("common.edit")}
+            </Button>
+          )}
         </div>
       </div>
 
