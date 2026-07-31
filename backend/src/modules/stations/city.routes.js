@@ -8,9 +8,9 @@ const { createCitySchema, updateCitySchema } = require('./validators/city.valida
 router.use(authenticate);
 
 router.get('/distance', requireRole(['admin', 'manager']), cityController.getCityDistance);
-router.get('/', requireRole(['admin', 'manager']), cityController.getAllCities);
+router.get('/', requireRole(['admin', 'manager', 'customer']), cityController.getAllCities);
 router.post('/', requireRole(['admin']), validate(createCitySchema), cityController.createCity);
-router.get('/:id', requireRole(['admin', 'manager']), cityController.getCityById);
+router.get('/:id', requireRole(['admin', 'manager', 'customer']), cityController.getCityById);
 router.post('/:id/geocode', requireRole(['admin']), cityController.geocodeCity);
 router.patch('/:id', requireRole(['admin', 'manager']), logManagerAction('UPDATE_CITY', 'CITIES'), validate(updateCitySchema), cityController.updateCity);
 router.delete('/:id', requireRole(['admin']), cityController.deleteCity);

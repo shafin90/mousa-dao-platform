@@ -1,4 +1,4 @@
-const Audit = require('./audit.model');
+﻿const Audit = require('./audit.model');
 
 const log = async ({ companyId, userId, action, module, description, metadata, status, req }) => {
   try {

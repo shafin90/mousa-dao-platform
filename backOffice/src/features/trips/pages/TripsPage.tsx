@@ -152,7 +152,7 @@ const TripsPage: React.FC = () => {
       header: t("trips.tripNo"),
       className: "w-16",
       accessor: (item: TripData) => (
-        <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-primary/10 px-2 text-xs font-semibold text-primary">
+        <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-sm bg-primary/10 px-2 text-xs font-semibold text-primary">
           {serialByTripId.get(item._id) ?? "-"}
         </span>
       ),
@@ -170,16 +170,16 @@ const TripsPage: React.FC = () => {
         <div className="flex gap-1">
           {isAdmin && (
             <>
-              <Button variant="outline" size="sm" onClick={async (e) => {
+              <Button variant="outline" size="sm" className="h-6 w-6 p-0" onClick={async (e) => {
                 e.stopPropagation();
                 const newStatus = item.status === "active" ? "cancelled" : item.status === "cancelled" ? "scheduled" : "active";
                 try { await tripApi.updateStatus(item._id, newStatus); toast.success(t("trips.updated")); refresh(); }
                 catch { showError(t("trips.saveFailed")); }
               }}>
-                {item.status === "active" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                {item.status === "active" ? <ToggleRight size={12} /> : <ToggleLeft size={12} />}
               </Button>
-              <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); setTripToDelete(item); setIsDeleteOpen(true); }}>
-                <Trash2 size={14} />
+              <Button variant="destructive" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setTripToDelete(item); setIsDeleteOpen(true); }}>
+                <Trash2 size={12} />
               </Button>
             </>
           )}

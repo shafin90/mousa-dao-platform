@@ -31,4 +31,19 @@ const reject = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { getAll, getById, approve, reject };
+const getMyRefunds = async (req, res, next) => {
+  try {
+    const refunds = await require('../services/refundRequest.service').getByUser(req.user._id, req.user.companyId);
+    respond(res, 200, refunds);
+  } catch (error) { next(error); }
+};
+
+const requestRefund = async (req, res, next) => {
+  try {
+    const { bookingId, amount, reason } = req.body;
+    const refund = await require('../services/refundRequest.service').create({ companyId: req.user.companyId, userId: req.user._id, bookingId, amount, reason });
+    respond(res, 201, refund, 'Refund request submitted');
+  } catch (error) { next(error); }
+};
+
+module.exports = { getAll, getById, approve, reject, getMyRefunds, requestRefund };

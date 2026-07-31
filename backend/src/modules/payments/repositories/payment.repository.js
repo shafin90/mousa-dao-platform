@@ -23,6 +23,16 @@ const findByTxRef = async (txRef, companyId) => {
 };
 
 /**
+ * Finds a payment by transaction reference (any company).
+ *
+ * @param {string} txRef
+ * @returns {Promise<Object|null>}
+ */
+const findByTxRefAny = async (txRef) => {
+  return await Payment.findOne({ tx_ref: txRef });
+};
+
+/**
  * Creates a payment record.
  *
  * @param {Object} data
@@ -90,4 +100,4 @@ const countByStatus = async (companyId, status) => {
   return await Payment.countDocuments({ companyId, status });
 };
 
-module.exports = { findById, findByTxRef, create, updateProcessing, findMany, findByUser, countByStatus };
+module.exports = { findById, findByTxRef, findByTxRefAny, create, updateProcessing, findMany, findByUser, countByStatus };

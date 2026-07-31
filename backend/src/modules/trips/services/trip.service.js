@@ -9,7 +9,7 @@ const ErrorCodes = require("../../../errors/errorCodes");
 const mongoose = require("mongoose");
 
 const defaultPopulate = [
-  { path: "busId", select: "busNumber name capacity type" },
+  { path: "busId", select: "busNumber name capacity type photos" },
   {
     path: "routeId",
     populate: [
@@ -73,7 +73,7 @@ const createTrip = async (companyId, data, createdBy) => {
   return await tripRepository.findById(trip._id, companyId, defaultPopulate);
 };
 
-const buildTripFilter = async (companyId, filters) => {
+const buildTripFilter = (companyId, filters) => {
   const filter = { companyId };
 
   if (filters.date) {
@@ -96,57 +96,218 @@ const buildTripFilter = async (companyId, filters) => {
     if (filters.priceMax) filter.price.$lte = Number(filters.priceMax);
   }
 
+  return filter;
+};
+
+const buildAggregationPipeline = async (companyId, filters) => {
+  const pipeline = [
+    { $match: { companyId: new mongoose.Types.ObjectId(companyId) } },
+  ];
+
+  if (filters.date) {
+    const d = new Date(filters.date);
+    if (!isNaN(d.getTime())) {
+      const start = new Date(d.setHours(0, 0, 0, 0));
+      const end = new Date(d.setHours(23, 59, 59, 999));
+      pipeline.push({ $match: { date: { $gte: start, $lte: end } } });
+    }
+  }
+
+  if (filters.routeId && mongoose.Types.ObjectId.isValid(filters.routeId)) {
+    pipeline.push({ $match: { routeId: new mongoose.Types.ObjectId(filters.routeId) } });
+  }
+  if (filters.busId && mongoose.Types.ObjectId.isValid(filters.busId)) {
+    pipeline.push({ $match: { busId: new mongoose.Types.ObjectId(filters.busId) } });
+  }
+  if (filters.status) {
+    pipeline.push({ $match: { status: filters.status } });
+  }
+  if (filters.priceMin || filters.priceMax) {
+    const priceMatch = {};
+    if (filters.priceMin) priceMatch.$gte = Number(filters.priceMin);
+    if (filters.priceMax) priceMatch.$lte = Number(filters.priceMax);
+    pipeline.push({ $match: { price: priceMatch } });
+  }
+
+  const orConditions = [];
+
+  if (filters.country) {
+    const countryCities = await mongoose.model('City').find({ companyId, country: filters.country }).select('_id');
+    const countryCityIds = countryCities.map((c) => c._id);
+    if (countryCityIds.length) {
+      orConditions.push({ routeId: { $in: (await routeRepository.findWhere({ companyId, $or: [{ fromCity: { $in: countryCityIds } }, { toCity: { $in: countryCityIds } }] })).map((r) => r._id) } });
+    }
+  }
+
+  if (filters.fromCountry) {
+    const fromCities = await mongoose.model('City').find({ companyId, country: filters.fromCountry }).select('_id');
+    const fromCityIds = fromCities.map((c) => c._id);
+    if (fromCityIds.length) {
+      orConditions.push({ routeId: { $in: (await routeRepository.findWhere({ companyId, fromCity: { $in: fromCityIds } })).map((r) => r._id) } });
+    }
+  }
+
+  if (filters.toCountry) {
+    const toCities = await mongoose.model('City').find({ companyId, country: filters.toCountry }).select('_id');
+    const toCityIds = toCities.map((c) => c._id);
+    if (toCityIds.length) {
+      orConditions.push({ routeId: { $in: (await routeRepository.findWhere({ companyId, toCity: { $in: toCityIds } })).map((r) => r._id) } });
+    }
+  }
+
   if (filters.cityId && mongoose.Types.ObjectId.isValid(filters.cityId)) {
     const cityId = new mongoose.Types.ObjectId(filters.cityId);
-    const cityStations = await stationRepository.findAll(companyId, { cityId });
-    const stationIds = cityStations.map((s) => s._id);
-    const cityRouteIds = await routeRepository.findWhere({ companyId, $or: [{ fromCity: cityId }, { toCity: cityId }, { 'stops.cityId': cityId }] });
-    const orClauses = [];
-    if (stationIds.length) orClauses.push({ fromStation: { $in: stationIds } }, { toStation: { $in: stationIds } });
-    if (cityRouteIds.length) orClauses.push({ routeId: { $in: cityRouteIds.map((r) => r._id) } });
-    if (orClauses.length) filter.$or = orClauses;
+    pipeline.push(
+      { $lookup: { from: 'stations', localField: 'fromStation', foreignField: '_id', as: 'fromStationData' } },
+      { $lookup: { from: 'stations', localField: 'toStation', foreignField: '_id', as: 'toStationData' } },
+      { $lookup: { from: 'routes', localField: 'routeId', foreignField: '_id', as: 'routeData' } },
+      {
+        $match: {
+          $or: [
+            { 'fromStationData.cityId': cityId },
+            { 'toStationData.cityId': cityId },
+            { 'routeData.fromCity': cityId },
+            { 'routeData.toCity': cityId },
+            { 'routeData.stops.cityId': cityId },
+          ],
+        },
+      },
+    );
   }
 
   if (filters.fromStation || filters.toStation) {
-    const routeQ = { companyId };
-    if (filters.fromStation && mongoose.Types.ObjectId.isValid(filters.fromStation)) {
-      const station = await stationRepository.findById(filters.fromStation);
-      if (station) routeQ.fromCity = new mongoose.Types.ObjectId(station.cityId?._id || station.cityId);
-    }
-    if (filters.toStation && mongoose.Types.ObjectId.isValid(filters.toStation)) {
-      const station = await stationRepository.findById(filters.toStation);
-      if (station) routeQ.toCity = new mongoose.Types.ObjectId(station.cityId?._id || station.cityId);
-    }
-    if (Object.keys(routeQ).length > 1) {
-      const routes = await routeRepository.findWhere(routeQ);
-      filter.routeId = { $in: routes.map((r) => r._id) };
+    const resolveStation = async (value) => {
+      if (!value) return null;
+      if (mongoose.Types.ObjectId.isValid(value)) {
+        return stationRepository.findById(value, companyId);
+      }
+      const regex = new RegExp(value, 'i');
+      const [stations, cities] = await Promise.all([
+        stationRepository.search(companyId, regex),
+        mongoose.model('City').find({ companyId, name: regex }).select('_id'),
+      ]);
+      const cityIds = [
+        ...new Set([
+          ...stations.map((s) => String(s.cityId?._id || s.cityId)).filter(Boolean),
+          ...cities.map((c) => String(c._id)),
+        ]),
+      ];
+      return { cityIds };
+    };
+
+    const [fromRes, toRes] = await Promise.all([
+      resolveStation(filters.fromStation),
+      resolveStation(filters.toStation),
+    ]);
+
+    const cityOr = [];
+    if (fromRes?.cityIds) cityOr.push({ fromCity: { $in: fromRes.cityIds } });
+    else if (fromRes) cityOr.push({ fromCity: fromRes.cityId?._id || fromRes.cityId });
+    if (toRes?.cityIds) cityOr.push({ toCity: { $in: toRes.cityIds } });
+    else if (toRes) cityOr.push({ toCity: toRes.cityId?._id || toRes.cityId });
+
+    if (cityOr.length) {
+      const routes = await routeRepository.findWhere({ companyId, $or: cityOr });
+      if (routes.length) {
+        orConditions.push({ routeId: { $in: routes.map((r) => r._id) } });
+      }
     }
   }
 
   if (filters.search) {
-    const regex = new RegExp(filters.search, "i");
+    const regex = new RegExp(filters.search, 'i');
     const [matchingBuses, matchingStations] = await Promise.all([
       busRepository.search(companyId, regex),
       stationRepository.search(companyId, regex),
     ]);
-    const orClauses = [];
-    if (matchingBuses.length) orClauses.push({ busId: { $in: matchingBuses.map((b) => b._id) } });
+    const searchOr = [];
+    if (matchingBuses.length) searchOr.push({ busId: { $in: matchingBuses.map((b) => b._id) } });
     if (matchingStations.length) {
       const cityIds = [...new Set(matchingStations.map((s) => String(s.cityId?._id || s.cityId)).filter(Boolean))];
       if (cityIds.length) {
         const matchingRouteIds = await routeRepository.findWhere({ companyId, $or: [{ fromCity: { $in: cityIds } }, { toCity: { $in: cityIds } }] });
-        if (matchingRouteIds.length) orClauses.push({ routeId: { $in: matchingRouteIds.map((r) => r._id) } });
+        if (matchingRouteIds.length) searchOr.push({ routeId: { $in: matchingRouteIds.map((r) => r._id) } });
       }
     }
-    if (orClauses.length) filter.$or = orClauses;
+    if (searchOr.length) orConditions.push(...searchOr);
   }
 
-  return filter;
+  if (orConditions.length) {
+    pipeline.push({ $match: { $or: orConditions } });
+  }
+
+  if (filters.sortBy) {
+    const sortField = filters.sortBy === 'duration' ? 'routeId.estimatedTimeMinutes' : filters.sortBy;
+    const sortOrder = filters.sortOrder === 'desc' ? -1 : 1;
+    pipeline.push({ $sort: { [sortField]: sortOrder } });
+  } else {
+    pipeline.push({ $sort: { date: 1, departureTime: 1 } });
+  }
+
+  return pipeline;
 };
 
-const getAllTrips = async (companyId, filters) => {
-  const filter = await buildTripFilter(companyId, filters);
-  return await tripRepository.findMany(filter, defaultPopulate);
+const getAllTrips = async (companyId, filters, page = 1, limit = 20) => {
+  const needsComplexFilter = filters.cityId || filters.fromStation || filters.toStation || filters.search;
+
+  if (needsComplexFilter) {
+    const pipeline = await buildAggregationPipeline(companyId, filters);
+    const Trip = require('../models/Trip');
+    const facet = await Trip.aggregate([
+      ...pipeline,
+      {
+        $facet: {
+          items: [
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            { $lookup: { from: 'buses', localField: 'busId', foreignField: '_id', as: 'busId' } },
+            { $unwind: { path: '$busId', preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
+                from: 'routes',
+                localField: 'routeId',
+                foreignField: '_id',
+                as: 'routeId',
+              },
+            },
+            { $unwind: { path: '$routeId', preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: 'stations', localField: 'fromStation', foreignField: '_id', as: 'fromStation' } },
+            { $unwind: { path: '$fromStation', preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: 'stations', localField: 'toStation', foreignField: '_id', as: 'toStation' } },
+            { $unwind: { path: '$toStation', preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', as: 'createdBy' } },
+            { $unwind: { path: '$createdBy', preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                'busId.busNumber': 1, 'busId.name': 1, 'busId.capacity': 1, 'busId.type': 1, 'busId.photos': 1,
+                'routeId.fromCity': 1, 'routeId.toCity': 1, 'routeId.distanceKm': 1, 'routeId.estimatedTimeMinutes': 1,
+                'fromStation.name': 1, 'toStation.name': 1,
+                'createdBy.firstName': 1, 'createdBy.lastName': 1, 'createdBy.email': 1,
+                companyId: 1, date: 1, departureTime: 1, arrivalTime: 1, price: 1,
+                seatsTotal: 1, seatsBooked: 1, status: 1, delayMinutes: 1,
+                actualDepartureTime: 1, actualArrivalTime: 1,
+                createdAt: 1, updatedAt: 1,
+              },
+            },
+          ],
+          total: [{ $count: 'count' }],
+        },
+      },
+    ]);
+    const items = facet[0]?.items || [];
+    const total = facet[0]?.total[0]?.count || 0;
+    return { items, total, page, limit };
+  }
+
+  const filter = buildTripFilter(companyId, filters);
+  const sort = {};
+  if (filters.sortBy) {
+    sort[filters.sortBy === 'duration' ? 'routeId.estimatedTimeMinutes' : filters.sortBy] = filters.sortOrder === 'desc' ? -1 : 1;
+  } else {
+    sort.date = 1;
+    sort.departureTime = 1;
+  }
+  return await tripRepository.findMany(filter, { page, limit, populate: defaultPopulate, sort });
 };
 
 const getTripById = async (id, companyId) => {

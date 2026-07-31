@@ -1,6 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Booking = require('../bookings/models/Booking');
-const Trip = require('../trips/models/Trip');
+const bookingService = require('../bookings/services/booking.service');
+const paymentService = require('../payments/services/payment.service');
 const { respond } = require('../../utils/response');
 
 const createPaymentIntent = async (req, res, next) => {
@@ -14,7 +15,7 @@ const createPaymentIntent = async (req, res, next) => {
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(booking.totalAmount * 100),
-      currency: 'xof',
+      currency: 'bdt',
       metadata: {
         bookingId: booking._id.toString(),
         companyId: companyId.toString(),
@@ -24,6 +25,34 @@ const createPaymentIntent = async (req, res, next) => {
 
     respond(res, 200, {
       clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createBookingPayment = async (req, res, next) => {
+  try {
+    const { tripId, seats, passengers } = req.body;
+    const userId = req.user._id;
+    const companyId = req.user.companyId;
+
+    const booking = await bookingService.processBooking(userId, companyId, { tripId, seats, passengers: passengers || [] });
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(booking.totalAmount * 100),
+      currency: 'bdt',
+      metadata: {
+        bookingId: booking._id.toString(),
+        companyId: companyId.toString(),
+        userId: userId.toString(),
+      },
+    });
+
+    respond(res, 200, {
+      clientSecret: paymentIntent.client_secret,
+      bookingId: booking._id,
       paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
@@ -50,15 +79,12 @@ const handleWebhook = async (req, res, next) => {
     const { bookingId, companyId } = paymentIntent.metadata;
 
     try {
-      const booking = await Booking.findOne({ _id: bookingId, companyId });
-      if (booking && booking.paymentStatus !== 'paid') {
-        booking.paymentStatus = 'paid';
-        booking.status = 'confirmed';
-        await booking.save();
-
-        await Trip.findByIdAndUpdate(booking.tripId, {
-          $inc: { seatsBooked: booking.seats.length },
-        });
+      if (bookingId && companyId) {
+        await paymentService.processStripePaymentSuccess(
+          bookingId,
+          companyId,
+          paymentIntent.id,
+        );
       }
     } catch (err) {
       console.error('Stripe webhook processing error:', err);
@@ -67,13 +93,11 @@ const handleWebhook = async (req, res, next) => {
 
   if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
-    const { bookingId, companyId } = paymentIntent.metadata;
+    const { bookingId, companyId, userId } = paymentIntent.metadata;
 
     try {
-      const booking = await Booking.findOne({ _id: bookingId, companyId });
-      if (booking) {
-        booking.paymentStatus = 'unpaid';
-        await booking.save();
+      if (bookingId && companyId && userId) {
+        await paymentService.processStripePaymentFailed(bookingId, companyId, userId);
       }
     } catch (err) {
       console.error('Stripe webhook failure handling error:', err);
@@ -83,4 +107,4 @@ const handleWebhook = async (req, res, next) => {
   res.json({ received: true });
 };
 
-module.exports = { createPaymentIntent, handleWebhook };
+module.exports = { createPaymentIntent, createBookingPayment, handleWebhook };

@@ -34,6 +34,8 @@ const TutorialPage = lazy(() => import("@/features/onboarding/pages/TutorialPage
 const NotificationsPage = lazy(() => import("@/features/notifications/pages/NotificationsPage"));
 const SettingsPage = lazy(() => import("@/features/settings/pages/SettingsPage"));
 const ActivityLogPage = lazy(() => import("@/features/audit-logs/pages/AuditLogsPage"));
+const SupportPage = lazy(() => import("@/features/support/pages/SupportPage"));
+const ConversationPage = lazy(() => import("@/features/support/pages/ConversationPage"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -177,6 +179,14 @@ export const router = createBrowserRouter([
       {
         path: "activity-log",
         element: <SuspenseWrapper><ActivityLogPage /></SuspenseWrapper>,
+      },
+      {
+        path: "support",
+        element: <SuspenseWrapper><SupportPage /></SuspenseWrapper>,
+      },
+      {
+        path: "support/:id",
+        element: <SuspenseWrapper><ConversationPage /></SuspenseWrapper>,
       },
     ],
   },

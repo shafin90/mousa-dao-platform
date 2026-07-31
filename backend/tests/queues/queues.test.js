@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { startPaymentConsumer } = require('../../src/consumers/payment.consumer');
 const { getMockChannel } = require('../helpers/queue.helper');
 const { PAYMENT_QUEUE, PAYMENT_DLQ } = require('../../src/queue/queues');
@@ -9,12 +10,14 @@ describe('RabbitMQ Queues & Retry Consumer Tests', () => {
   let customer;
   let trip;
   let booking;
+  let companyId;
 
   beforeEach(async () => {
-    customer = await createTestUser();
-    const data = await setupTestRouteAndTrip();
+    companyId = new mongoose.Types.ObjectId();
+    customer = await createTestUser({}, 'customer', companyId);
+    const data = await setupTestRouteAndTrip(40, companyId);
     trip = data.trip;
-    booking = await createTestBooking(customer.user._id, trip._id);
+    booking = await createTestBooking(customer.user._id, trip._id, ['1', '2'], companyId);
 
     await startPaymentConsumer();
   });
@@ -40,6 +43,7 @@ describe('RabbitMQ Queues & Retry Consumer Tests', () => {
       tx_ref: 'tx-ref-retry-1',
       bookingId: booking._id.toString(),
       userId: customer.user._id.toString(),
+      companyId: companyId.toString(),
       method: 'unsupported-method'
     };
 
@@ -68,6 +72,7 @@ describe('RabbitMQ Queues & Retry Consumer Tests', () => {
       tx_ref: 'tx-ref-dlq-1',
       bookingId: booking._id.toString(),
       userId: customer.user._id.toString(),
+      companyId: companyId.toString(),
       method: 'unsupported-method',
       retryCount: 3 // next retry would be 4, triggering DLQ
     };

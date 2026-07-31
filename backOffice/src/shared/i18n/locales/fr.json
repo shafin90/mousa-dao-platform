@@ -26,6 +26,7 @@
     "tickets": "Billets",
     "auditLogs": "Journaux d'Audit",
     "notifications": "Notifications",
+      "support": "Support",
     "configuration": "Configuration",
     "tutorial": "Tutoriel",
     "activityLog": "Journal d'Activité"
@@ -1217,6 +1218,20 @@
     "complete": {
       "title": "Tutoriel Terminé !",
       "content": "Vous avez couvert les Voyages, Lignes, Villes et Stations. Vous pouvez redémarrer ce tutoriel depuis la barre latérale."
+    }
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Conversations avec les clients",
+    "open": "ouvertes",
+    "noConversations": "Aucune conversation pour le moment",
+    "noMessages": "Aucun message",
+    "online": "En ligne",
+    "typePlaceholder": "Écrivez un message...",
+    "loading": "Chargement...",
+    "status": {
+      "open": "Ouvert",
+      "closed": "Fermé"
     }
   }
 }

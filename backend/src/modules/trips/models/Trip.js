@@ -19,6 +19,9 @@ const tripSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
-
+tripSchema.index({ companyId: 1, date: 1 });
+tripSchema.index({ companyId: 1, status: 1 });
+tripSchema.index({ companyId: 1, routeId: 1 });
+tripSchema.index({ companyId: 1, busId: 1 });
 
 module.exports = mongoose.model('Trip', tripSchema);

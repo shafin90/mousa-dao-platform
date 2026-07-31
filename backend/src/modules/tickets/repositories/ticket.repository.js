@@ -23,6 +23,33 @@ const findByBooking = async (bookingId, companyId) => {
 };
 
 /**
+ * Finds a ticket by booking ID within company, with trip populated.
+ *
+ * @param {string} bookingId
+ * @param {string} companyId
+ * @returns {Promise<Object|null>}
+ */
+const findByBookingPopulated = async (bookingId, companyId) => {
+  return await Ticket.findOne({ bookingId, companyId })
+    .populate({
+      path: 'tripId',
+      populate: [
+        { path: 'busId', select: 'busNumber name capacity type' },
+        {
+          path: 'routeId',
+          populate: [
+            { path: 'fromCity', select: 'name' },
+            { path: 'toCity', select: 'name' },
+          ],
+        },
+        { path: 'fromStation', select: 'name' },
+        { path: 'toStation', select: 'name' },
+      ],
+    })
+    .populate({ path: 'bookingId', select: 'bookingCode seats' });
+};
+
+/**
  * Creates a ticket record.
  *
  * @param {Object} data
@@ -79,4 +106,4 @@ const findAndMarkUsed = async (companyId, query) => {
   );
 };
 
-module.exports = { findById, findByBooking, create, findMany, findByUser, findAndMarkUsed };
+module.exports = { findById, findByBooking, findByBookingPopulated, create, findMany, findByUser, findAndMarkUsed };

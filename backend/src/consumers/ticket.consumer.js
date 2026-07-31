@@ -38,7 +38,13 @@ const startTicketConsumer = async () => {
       const booking = await bookingRepository.findById(bookingId, companyId);
       if (!booking) throw new Error(`Booking not found: ${bookingId}`);
 
-      const ticket = await ticketService.createTicket(booking);
+      const passengers = (booking.passengers || []).map((p) => ({
+        seat: p.seat,
+        name: p.name,
+        phone: p.phone,
+      }));
+
+      const ticket = await ticketService.createTicket(booking, passengers);
       await markEventAsProcessed(companyId, eventId);
 
       await publishToQueue(queues.NOTIFICATION_QUEUE, {

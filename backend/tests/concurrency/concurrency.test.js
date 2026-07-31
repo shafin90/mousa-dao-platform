@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../../src/app');
 const Booking = require('../../src/modules/bookings/models/Booking');
@@ -9,17 +10,20 @@ const { startBookingConsumer } = require('../../src/consumers/booking.consumer')
 
 describe('Concurrency & Race Condition Tests', () => {
   let trip;
+  let companyId;
   const userTokens = [];
 
   beforeEach(async () => {
+    companyId = new mongoose.Types.ObjectId();
+
     // Generate trip with 5 capacity
-    const data = await setupTestRouteAndTrip(5);
+    const data = await setupTestRouteAndTrip(5, companyId);
     trip = data.trip;
 
     // Create 20 users (keep below rate-limit threshold for test reliability)
     userTokens.length = 0;
     for (let i = 0; i < 20; i++) {
-      const { token } = await createTestUser();
+      const { token } = await createTestUser({}, 'customer', companyId);
       userTokens.push(token);
     }
 

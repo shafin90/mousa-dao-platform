@@ -1,9 +1,20 @@
 const busService = require('../services/bus.service');
+const { getSeatLayout } = require('../services/seat.service');
+const bookingRepository = require('../../bookings/repositories/booking.repository');
+const tripRepository = require('../../trips/repositories/trip.repository');
 const { respond, respondPaginated } = require('../../../utils/response');
+const { notifyAllCustomers } = require('../../notifications/services/notification.service');
 
 const createBus = async (req, res, next) => {
   try {
     const bus = await busService.createBus(req.user.companyId, req.body);
+    notifyAllCustomers({
+      companyId: req.user.companyId,
+      type: 'fleet_update',
+      title: 'Nouveau bus',
+      message: `Un nouveau bus "${bus.name}" a été ajouté à la flotte`,
+      data: { busId: bus._id },
+    }).catch(() => {});
     respond(res, 201, bus, 'Bus created');
   } catch (error) { next(error); }
 };
@@ -69,4 +80,25 @@ const deleteBus = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { createBus, getAllBuses, getBusById, updateBus, updateBusStatus, assignDriver, addMaintenanceLog, getMaintenanceLogs, deleteBus };
+const getBusSeatLayout = async (req, res, next) => {
+  try {
+    const bus = await busService.getBusById(req.params.id, req.user.companyId);
+    if (!bus) return respond(res, 404, null, 'Bus not found');
+
+    const trips = await tripRepository.findMany({ busId: bus._id, companyId: req.user.companyId }, { page: 1, limit: 1000 });
+    const tripIds = trips.items.map((t) => t._id);
+
+    let bookedSeats = [];
+    if (tripIds.length) {
+      const bookings = await bookingRepository.findMany({ tripId: { $in: tripIds }, companyId: req.user.companyId, status: { $ne: 'cancelled' } }, 1, 10000);
+      for (const booking of bookings.bookings) {
+        bookedSeats = bookedSeats.concat(booking.seats);
+      }
+    }
+
+    const layout = getSeatLayout(bus, bookedSeats);
+    respond(res, 200, { bus: { _id: bus._id, busNumber: bus.name, capacity: bus.capacity }, layout });
+  } catch (error) { next(error); }
+};
+
+module.exports = { createBus, getAllBuses, getBusById, updateBus, updateBusStatus, assignDriver, addMaintenanceLog, getMaintenanceLogs, deleteBus, getBusSeatLayout };

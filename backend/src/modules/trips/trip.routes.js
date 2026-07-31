@@ -9,11 +9,11 @@ router.use(authenticate);
 
 router.route('/')
   .post(requireRole(['admin', 'staff']), validate(createTripSchema), tripController.createTrip)
-  .get(requireRole(['admin', 'staff', 'manager']), tripController.getAllTrips)
+  .get(requireRole(['admin', 'staff', 'manager', 'customer']), tripController.getAllTrips)
   .delete(requireRole(['admin']), tripController.deleteAllTrips);
 
 router.route('/:id')
-  .get(requireRole(['admin', 'staff', 'manager']), tripController.getTripById)
+  .get(requireRole(['admin', 'staff', 'manager', 'customer']), tripController.getTripById)
   .patch(requireRole(['admin', 'staff', 'manager']), logManagerAction('UPDATE_TRIP', 'TRIPS'), tripController.updateTrip)
   .delete(requireRole(['admin']), tripController.deleteTrip);
 

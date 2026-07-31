@@ -57,7 +57,7 @@ const findMany = async (filters, page = 1, limit = 10) => {
       path: 'tripId',
       select: 'routeId busId departureTime arrivalTime date price seatsTotal seatsBooked status',
       populate: [
-        { path: 'routeId', populate: [{ path: 'fromStation', select: 'name location' }, { path: 'toStation', select: 'name location' }] },
+        { path: 'routeId', populate: [{ path: 'fromCity', select: 'name' }, { path: 'toCity', select: 'name' }, { path: 'fromStations', select: 'name location' }, { path: 'toStations', select: 'name location' }] },
         { path: 'busId', select: 'busNumber name capacity type' },
       ],
     });
@@ -81,7 +81,7 @@ const findByTripExcludingCancelled = async (tripId, companyId, session) => {
 };
 
 /**
- * Atomically confirms a booking (pending + unpaid → confirmed + paid).
+ * Atomically completes a booking (pending + unpaid → completed + paid).
  *
  * @param {string} id
  * @param {string} companyId
@@ -93,7 +93,7 @@ const confirmPayment = async (id, companyId, session) => {
   if (session) opts.session = session;
   return await Booking.findOneAndUpdate(
     { _id: id, companyId, status: 'pending', paymentStatus: 'unpaid' },
-    { $set: { status: 'confirmed', paymentStatus: 'paid' } },
+    { $set: { status: 'completed', paymentStatus: 'paid' } },
     opts
   );
 };

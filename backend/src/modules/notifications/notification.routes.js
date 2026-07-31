@@ -1,13 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const notificationController = require('./controllers/notification.controller');
-const { authenticate, requireRole } = require('../auth/auth.middleware');
+const { Router } = require('express');
+const { authenticate } = require('../auth/auth.middleware');
+const ctrl = require('./notification.controller');
+
+const router = Router();
 
 router.use(authenticate);
-
-router.get('/', requireRole(['admin', 'manager']), notificationController.getAllNotifications);
-router.get('/my', notificationController.getMyNotifications);
-router.patch('/read-all', notificationController.markAllAsRead);
-router.patch('/:id/read', notificationController.markAsRead);
+router.get('/', ctrl.getMyNotifications);
+router.post('/read-all', ctrl.markAllRead);
+router.post('/:id/read', ctrl.markRead);
 
 module.exports = router;

@@ -20,7 +20,18 @@ const userSchema = new mongoose.Schema({
     lastLogin: Date,
     failedLoginAttempts: { type: Number, default: 0 },
     isLocked: { type: Boolean, default: false }
-  }
+  },
+  fcmTokens: { type: [String], default: [] },
+  emergencyContact: {
+    name: String,
+    phone: String,
+    relation: String,
+  },
+  preferences: {
+    language: { type: String, enum: ['en', 'fr'], default: 'en' },
+    notificationsEnabled: { type: Boolean, default: true },
+    darkMode: { type: Boolean, default: false },
+  },
 }, { timestamps: true });
 
 userSchema.index({ companyId: 1, email: 1 }, { unique: true });

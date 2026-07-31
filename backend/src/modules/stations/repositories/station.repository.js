@@ -14,17 +14,23 @@ const findById = async (id, companyId) => {
 };
 
 /**
- * Lists all stations for a company.
+ * Lists all stations for a company with pagination.
  *
  * @param {string} companyId
- * @returns {Promise<Array>}
+ * @param {Object} [filters={}]
+ * @param {number} [page=1]
+ * @param {number} [limit=50]
+ * @returns {Promise<{items: Array, total: number}>}
  */
-const findAll = async (companyId, filters = {}) => {
+const findAll = async (companyId, filters = {}, page = 1, limit = 50) => {
   const query = { companyId };
   if (filters.cityId) query.cityId = filters.cityId;
-  return await Station.find(query)
-    .populate('cityId', 'name country')
-    .populate('manager1 manager2 createdBy', 'profile.firstName profile.lastName email');
+  const skip = (page - 1) * limit;
+  const [items, total] = await Promise.all([
+    Station.find(query).populate('cityId', 'name country').populate('manager1 manager2 createdBy', 'profile.firstName profile.lastName email').skip(skip).limit(limit),
+    Station.countDocuments(query),
+  ]);
+  return { items, total };
 };
 
 /**

@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const passengerInfoSchema = new mongoose.Schema({
+  seat: { type: String, required: true },
+  name: { type: String, required: true },
+  phone: { type: String, default: '' },
+}, { _id: false });
+
 const ticketSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true, unique: true },
@@ -8,7 +14,8 @@ const ticketSchema = new mongoose.Schema({
   ticketNumber: { type: String, required: true },
   qrCode: { type: String, required: true },
   status: { type: String, enum: ['valid', 'used', 'expired'], default: 'valid' },
-  scannedAt: { type: Date }
+  scannedAt: { type: Date },
+  passengers: { type: [passengerInfoSchema], default: [] },
 }, { timestamps: true });
 
 ticketSchema.index({ companyId: 1, ticketNumber: 1 }, { unique: true });

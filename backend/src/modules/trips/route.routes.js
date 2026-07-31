@@ -9,10 +9,10 @@ router.use(authenticate);
 
 router.route('/')
   .post(requireRole(['admin']), validate(createRouteSchema), routeController.createRoute)
-  .get(requireRole(['admin', 'manager']), routeController.getAllRoutes);
+  .get(requireRole(['admin', 'manager', 'customer']), routeController.getAllRoutes);
 
 router.route('/:id')
-  .get(requireRole(['admin', 'manager']), routeController.getRouteById)
+  .get(requireRole(['admin', 'manager', 'customer']), routeController.getRouteById)
   .patch(requireRole(['admin', 'manager']), logManagerAction('UPDATE_ROUTE', 'ROUTES'), routeController.updateRoute)
   .delete(requireRole(['admin']), routeController.deleteRoute);
 

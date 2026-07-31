@@ -13,14 +13,16 @@ describe('Payments Module Tests', () => {
   let user;
   let trip;
   let booking;
+  let companyId;
 
   beforeEach(async () => {
-    const customer = await createTestUser({}, 'customer');
-    customerToken = customer.token;
-    user = customer.user;
-
     const data = await setupTestRouteAndTrip(40);
     trip = data.trip;
+    companyId = data.companyId;
+
+    const customer = await createTestUser({}, 'customer', data.companyId);
+    customerToken = customer.token;
+    user = customer.user;
 
     booking = await createTestBooking(user._id, trip._id, ['1A']);
   });
@@ -40,7 +42,7 @@ describe('Payments Module Tests', () => {
       expect(res.status).toBe(202);
       expect(res.body.success).toBe(true);
       expect(res.body.data.tx_ref).toBeDefined();
-      expect(res.body.data.eventId).toBeDefined();
+      expect(res.body.eventId).toBeDefined();
 
       const queuesList = channel.queues.get(PAYMENT_QUEUE) || [];
       expect(queuesList.length).toBe(1);
@@ -68,6 +70,7 @@ describe('Payments Module Tests', () => {
   describe('GET /api/v1/payments/my', () => {
     it('should retrieve payment history for the user', async () => {
       await Payment.create({
+        companyId,
         bookingId: booking._id,
         userId: user._id,
         method: 'flutterwave',

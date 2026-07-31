@@ -1,8 +1,9 @@
+const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../../src/app');
 const Ticket = require('../../src/modules/tickets/models/Ticket');
 const Booking = require('../../src/modules/bookings/models/Booking');
-const ticketService = require('../../src/modules/tickets/ticket.service');
+const ticketService = require('../../src/modules/tickets/services/ticket.service');
 const { createTestUser } = require('../helpers/auth.helper');
 const { setupTestRouteAndTrip, createTestBooking } = require('../helpers/booking.helper');
 
@@ -14,17 +15,17 @@ describe('Tickets Module Tests', () => {
   let booking;
 
   beforeEach(async () => {
-    const admin = await createTestUser({}, 'admin');
-    adminToken = admin.token;
-
-    const customer = await createTestUser({}, 'customer');
-    customerToken = customer.token;
-    user = customer.user;
-
     const data = await setupTestRouteAndTrip(40);
     trip = data.trip;
 
-    booking = await createTestBooking(user._id, trip._id, ['1A']);
+    const admin = await createTestUser({}, 'admin', data.companyId);
+    adminToken = admin.token;
+
+    const customer = await createTestUser({}, 'customer', data.companyId);
+    customerToken = customer.token;
+    user = customer.user;
+
+    booking = await createTestBooking(user._id, trip._id, ['1A'], data.companyId);
   });
 
   describe('Ticket Creation Logic', () => {

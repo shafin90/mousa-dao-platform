@@ -1,10 +1,28 @@
+const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../../src/app');
 const User = require('../../src/modules/users/models/User');
+const Tenant = require('../../src/modules/tenants/models/Tenant');
 const jwt = require('jsonwebtoken');
 const { createTestUser } = require('../helpers/auth.helper');
 
+const createTestTenant = async () => {
+  return await Tenant.create({
+    name: 'Test Company',
+    email: `tenant-${Date.now()}@example.com`,
+    phone: '+1234567890',
+    status: 'active',
+  });
+};
+
 describe('Authentication & RBAC Tests', () => {
+  let tenantId;
+
+  beforeEach(async () => {
+    const tenant = await createTestTenant();
+    tenantId = tenant._id;
+  });
+
   describe('POST /api/v1/auth/register', () => {
     it('should register a new user successfully with valid data', async () => {
       const payload = {
@@ -12,7 +30,8 @@ describe('Authentication & RBAC Tests', () => {
         email: `john-${Date.now()}@example.com`,
         phone: `+1555${Math.floor(100000 + Math.random() * 900000)}`,
         password: 'password123',
-        role: 'customer'
+        role: 'customer',
+        companyId: tenantId.toString(),
       };
 
       const res = await request(app)
@@ -31,7 +50,8 @@ describe('Authentication & RBAC Tests', () => {
         name: 'Invalid User',
         email: 'invalid-email',
         phone: '+1555000000',
-        password: 'password123'
+        password: 'password123',
+        companyId: tenantId.toString(),
       };
 
       const res = await request(app)
@@ -46,6 +66,7 @@ describe('Authentication & RBAC Tests', () => {
       const email = `existing-${Date.now()}@example.com`;
       await User.create({
         email,
+        companyId: tenantId,
         phone: `+1555${Math.floor(100000 + Math.random() * 900000)}`,
         password: 'hashedpassword',
         profile: { firstName: 'Exist', lastName: 'User' }
@@ -55,14 +76,15 @@ describe('Authentication & RBAC Tests', () => {
         name: 'Duplicate Email',
         email,
         phone: `+1555${Math.floor(100000 + Math.random() * 900000)}`,
-        password: 'password123'
+        password: 'password123',
+        companyId: tenantId.toString(),
       };
 
       const res = await request(app)
         .post('/api/v1/auth/register')
         .send(payload);
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(409);
       expect(res.body.success).toBe(false);
     });
   });
@@ -74,8 +96,10 @@ describe('Authentication & RBAC Tests', () => {
       const bcrypt = require('bcryptjs');
       const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
+      const compId = new mongoose.Types.ObjectId();
       await User.create({
         email,
+        companyId: compId,
         phone: `+1555${Math.floor(100000 + Math.random() * 900000)}`,
         password: hashedPassword,
         profile: { firstName: 'Login', lastName: 'User' }
@@ -97,6 +121,7 @@ describe('Authentication & RBAC Tests', () => {
 
       await User.create({
         email,
+        companyId: new mongoose.Types.ObjectId(),
         phone: `+1555${Math.floor(100000 + Math.random() * 900000)}`,
         password: hashedPassword,
         profile: { firstName: 'Login', lastName: 'User' }

@@ -9,8 +9,10 @@ router.use(authenticate);
 
 router.post('/', validate(createBookingSchema), bookingController.createBooking);
 router.get('/my', bookingController.getUserBookings);
+router.get('/cancellation-policy', bookingController.getCancellationPolicy);
 router.get('/', requireRole(['admin', 'manager']), bookingController.getAllBookings);
 router.get('/:id', bookingController.getBookingById);
+router.get('/:id/refundable-amount', bookingController.getRefundableAmount);
 router.patch('/:id/cancel', bookingController.cancelBooking);
 
 module.exports = router;

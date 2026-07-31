@@ -23,6 +23,7 @@ router.post('/webhook', (req, res, next) => {
 router.use(authenticate);
 
 router.post('/initiate', paymentLimiter, validate(initiatePaymentSchema), paymentController.initiatePayment);
+router.post('/retry', paymentLimiter, paymentController.retryPayment);
 router.get('/my', paymentController.getUserPayments);
 router.get('/', requireRole(['admin', 'manager']), paymentController.getAllPayments);
 router.get('/:id', paymentController.getPaymentById);

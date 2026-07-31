@@ -9,13 +9,14 @@ router.use(authenticate);
 
 router.route('/')
   .post(requireRole(['admin']), validate(createBusSchema), busController.createBus)
-  .get(requireRole(['admin', 'manager']), busController.getAllBuses);
+  .get(requireRole(['admin', 'manager', 'customer']), busController.getAllBuses);
 
 router.route('/:id')
-  .get(requireRole(['admin', 'manager']), busController.getBusById)
+  .get(requireRole(['admin', 'manager', 'customer']), busController.getBusById)
   .patch(requireRole(['admin', 'manager']), logManagerAction('UPDATE_BUS', 'FLEET'), busController.updateBus)
   .delete(requireRole(['admin']), busController.deleteBus);
 
+router.get('/:id/seats', requireRole(['admin', 'manager', 'customer']), busController.getBusSeatLayout);
 router.patch('/:id/status', requireRole(['admin']), validate(updateBusStatusSchema), busController.updateBusStatus);
 router.patch('/:id/assign-driver', requireRole(['admin']), validate(assignDriverSchema), busController.assignDriver);
 router.route('/:id/maintenance')

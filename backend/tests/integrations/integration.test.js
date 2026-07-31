@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../../src/app');
 const Booking = require('../../src/modules/bookings/models/Booking');
@@ -36,19 +37,22 @@ describe('End-to-End System Integration Test', () => {
   let customerToken;
   let customerUser;
   let trip;
+  let companyId;
   const webhookSecret = process.env.FLW_WEBHOOK_SECRET || 'test-webhook-secret';
 
   beforeEach(async () => {
+    companyId = new mongoose.Types.ObjectId();
+
     // 1. Setup Auth
-    const admin = await createTestUser({}, 'admin');
+    const admin = await createTestUser({}, 'admin', companyId);
     adminToken = admin.token;
 
-    const customer = await createTestUser({}, 'customer');
+    const customer = await createTestUser({}, 'customer', companyId);
     customerToken = customer.token;
     customerUser = customer.user;
 
     // 2. Setup Route & Trip
-    const data = await setupTestRouteAndTrip(40);
+    const data = await setupTestRouteAndTrip(40, companyId);
     trip = data.trip;
 
     // 3. Start all RabbitMQ Consumers (in-memory mock)

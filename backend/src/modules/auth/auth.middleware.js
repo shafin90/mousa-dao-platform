@@ -3,6 +3,7 @@ const userRepository = require('../users/repositories/user.repository');
 const AppError = require('../../errors/AppError');
 const ErrorCodes = require('../../errors/errorCodes');
 const Audit = require('../audit/audit.model');
+const { isTokenBlacklisted } = require('./services/auth.token.service');
 
 /**
  * Authenticates a request by verifying the JWT in the Authorization header.
@@ -32,6 +33,10 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
+    if (await isTokenBlacklisted(token)) {
+      throw new AppError('Token has been revoked', 401, ErrorCodes.INVALID_TOKEN);
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await userRepository.findByIdAny(decoded.id);
@@ -99,4 +104,40 @@ const logManagerAction = (action, module) => {
   };
 };
 
-module.exports = { authenticate, requireRole, requireTenantContext, logManagerAction };
+/**
+ * Authenticates a download request by verifying the JWT.
+ * Accepts token from Authorization header or query parameter.
+ *
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Function} next - Express next
+ */
+const downloadAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization
+      ? req.headers.authorization.split(' ')[1]
+      : req.query.token;
+
+    if (!token) {
+      throw new AppError('Authentication required', 401, ErrorCodes.AUTH_REQUIRED);
+    }
+
+    if (await isTokenBlacklisted(token)) {
+      throw new AppError('Token has been revoked', 401, ErrorCodes.INVALID_TOKEN);
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await userRepository.findByIdAny(decoded.id);
+    if (!user) throw new AppError('Invalid user', 401, ErrorCodes.USER_NOT_FOUND);
+
+    req.user = user;
+    req.user.companyId = decoded.companyId;
+    next();
+  } catch (error) {
+    if (error instanceof AppError) return next(error);
+    next(new AppError('Invalid token', 401, ErrorCodes.INVALID_TOKEN));
+  }
+};
+
+module.exports = { authenticate, downloadAuth, requireRole, requireTenantContext, logManagerAction };

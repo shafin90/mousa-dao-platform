@@ -3,13 +3,16 @@ const AppError = require('../../../errors/AppError');
 const ErrorCodes = require('../../../errors/errorCodes');
 
 /**
- * Lists all stations for a company.
+ * Lists all stations for a company with pagination.
  *
  * @param {string} companyId
- * @returns {Promise<Array>}
+ * @param {Object} [filters={}]
+ * @param {number} [page=1]
+ * @param {number} [limit=50]
+ * @returns {Promise<{items: Array, total: number}>}
  */
-const getAllStations = async (companyId, filters = {}) => {
-  return await stationRepository.findAll(companyId, filters);
+const getAllStations = async (companyId, filters = {}, page = 1, limit = 50) => {
+  return await stationRepository.findAll(companyId, filters, page, limit);
 };
 
 /**

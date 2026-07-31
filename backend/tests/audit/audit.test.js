@@ -8,9 +8,11 @@ const mongoose = require('mongoose');
 describe('Audit Log Module Tests', () => {
   let adminToken;
   let user;
+  let companyId;
 
   beforeEach(async () => {
-    const admin = await createTestUser({}, 'admin');
+    companyId = new mongoose.Types.ObjectId();
+    const admin = await createTestUser({}, 'admin', companyId);
     adminToken = admin.token;
     user = admin.user;
   });
@@ -18,6 +20,7 @@ describe('Audit Log Module Tests', () => {
   describe('Audit Service logAction', () => {
     it('should successfully create an audit log entry', async () => {
       const log = await auditService.logAction({
+        companyId,
         userId: user._id,
         action: 'TEST_ACTION',
         module: 'TEST_MODULE',
@@ -38,6 +41,7 @@ describe('Audit Log Module Tests', () => {
   describe('GET /api/v1/audit', () => {
     it('should allow admin to retrieve audit logs', async () => {
       await auditService.logAction({
+        companyId,
         userId: user._id,
         action: 'FETCH_AUDIT_TEST',
         module: 'AUDIT',
@@ -51,11 +55,11 @@ describe('Audit Log Module Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.logs).toBeDefined();
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
 
     it('should deny non-admin from retrieving audit logs', async () => {
-      const customer = await createTestUser({}, 'customer');
+      const customer = await createTestUser({}, 'customer', companyId);
 
       const res = await request(app)
         .get('/api/v1/audit')

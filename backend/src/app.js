@@ -7,12 +7,23 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
+const swaggerMobileSpec = require('./config/swagger.mobile');
 const errorHandler = require('./middlewares/error.middleware');
+const sanitize = require('./middlewares/sanitize.middleware');
 
 const app = express();
 
-app.use(helmet());
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : process.env.NODE_ENV === 'production'
+    ? []
+    : '*';
+
+app.use(helmet({ crossOriginOpenerPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(cors({
+  origin: allowedOrigins.length ? allowedOrigins : '*',
+  credentials: true,
+}));
 app.use(compression());
 app.use(morgan('dev'));
 
@@ -21,6 +32,7 @@ const stripeRoutes = require('./modules/payments/stripe.routes');
 app.use('/api/v1/stripe/webhook', stripeRoutes.webhookRouter);
 
 app.use(express.json());
+app.use(sanitize);
 
 // Serve uploaded files (bus photos, etc.). CORP header lets the frontend
 // (served from a different origin/port) load these images via <img>.
@@ -32,6 +44,7 @@ app.use(
 );
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs-mobile', swaggerUi.serve, swaggerUi.setup(swaggerMobileSpec));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -49,6 +62,7 @@ app.use('/api/v1/trips', require('./modules/trips/trip.routes'));
 app.use('/api/v1/bookings', require('./modules/bookings/booking.routes'));
 app.use('/api/v1/payments', require('./modules/payments/payment.routes'));
 app.use('/api/v1/refund-requests', require('./modules/payments/refundRequest.routes'));
+app.use('/api/v1/refunds', require('./modules/payments/customerRefund.routes'));
 app.use('/api/v1/tickets', require('./modules/tickets/ticket.routes'));
 app.use('/api/v1/buses', require('./modules/fleet/bus.routes'));
 app.use('/api/v1/maintenance-facilities', require('./modules/fleet/maintenanceFacility.routes'));
@@ -67,6 +81,15 @@ app.use('/api/v1/stations', require('./modules/stations/station.routes'));
 app.use('/api/v1/cities', require('./modules/stations/city.routes'));
 app.use('/api/v1/tracking', require('./modules/tracking/tracking.routes'));
 app.use('/api/v1/tenants', require('./modules/tenants/tenant.routes'));
+
+app.use('/api/v1/passengers', require('./modules/passengers/passenger.routes'));
+app.use('/api/v1/payment-methods', require('./modules/payments/paymentMethod.routes'));
+
+// Device registration (FCM tokens)
+app.use('/api/v1/devices', require('./modules/devices/device.routes'));
+
+// Chat / support
+app.use('/api/v1/chat', require('./modules/chat/chat.routes'));
 
 // Firebase auth (mobile app)
 app.use('/api/v1/auth', require('./modules/auth/firebase.routes'));

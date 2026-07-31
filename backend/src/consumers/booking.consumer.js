@@ -20,9 +20,10 @@ const startBookingConsumer = async () => {
       if (await isEventProcessed(event.companyId, event.eventId)) {
         return channel.ack(msg);
       }
-      const { booking } = await bookingService.createBooking(event.userId, event.companyId, {
+      const booking = await bookingService.processBooking(event.userId, event.companyId, {
         tripId: event.tripId,
         seats: event.seats,
+        passengers: event.passengers || [],
       });
       await markEventAsProcessed(event.companyId, event.eventId);
       await publishToQueue(TICKET_QUEUE, {

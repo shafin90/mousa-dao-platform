@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../../src/app');
 const Booking = require('../../src/modules/bookings/models/Booking');
@@ -11,14 +12,16 @@ describe('Bookings Module Tests', () => {
   let customerToken;
   let user;
   let trip;
+  let companyId;
 
   beforeEach(async () => {
-    const customer = await createTestUser({}, 'customer');
-    customerToken = customer.token;
-    user = customer.user;
-
     const data = await setupTestRouteAndTrip(40);
     trip = data.trip;
+    companyId = data.companyId;
+
+    const customer = await createTestUser({}, 'customer', companyId);
+    customerToken = customer.token;
+    user = customer.user;
 
     await startBookingConsumer();
   });
@@ -60,6 +63,7 @@ describe('Bookings Module Tests', () => {
       await Booking.create({
         userId: user._id,
         tripId: trip._id,
+        companyId,
         seats: ['1', '2'],
         totalAmount: 100,
         status: 'pending'
@@ -121,6 +125,7 @@ describe('Bookings Module Tests', () => {
       const booking = await Booking.create({
         userId: user._id,
         tripId: trip._id,
+        companyId,
         seats: ['1', '2'],
         totalAmount: 100,
         status: 'pending'

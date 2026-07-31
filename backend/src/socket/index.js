@@ -1,6 +1,7 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const { handleGpsUpdate } = require('../modules/tracking/socket/gps.socket.handler');
+const { registerChatHandlers } = require('../modules/chat/chat.socket');
 
 let io = null;
 
@@ -42,6 +43,7 @@ const initSocket = (httpServer) => {
       socket.companyId = decoded.companyId;
       socket.role = decoded.role;
       socket.join(`company:${decoded.companyId}`);
+      socket.join(`user:${decoded.id}`);
       next();
     } catch {
       next(new Error('Invalid token'));
@@ -64,6 +66,8 @@ const initSocket = (httpServer) => {
     socket.on('gps:unsubscribe-trip', (tripId) => {
       if (tripId) socket.leave(`trip:${tripId}`);
     });
+
+    registerChatHandlers(io, socket);
   });
 
   return io;

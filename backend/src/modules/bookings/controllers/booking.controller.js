@@ -7,8 +7,8 @@ const { respond, respondPaginated } = require('../../../utils/response');
  */
 const createBooking = async (req, res, next) => {
   try {
-    const result = await bookingService.createBooking(req.user._id, req.user.companyId, req.body);
-    respond(res, 202, result, 'Booking request queued');
+    const { eventId } = await bookingService.createBooking(req.user._id, req.user.companyId, req.body);
+    res.status(202).json({ success: true, message: 'Booking request queued', eventId, data: null });
   } catch (error) {
     next(error);
   }
@@ -20,7 +20,7 @@ const createBooking = async (req, res, next) => {
  */
 const getUserBookings = async (req, res, next) => {
   try {
-    const bookings = await bookingService.getUserBookings(req.user._id, req.user.companyId);
+    const bookings = await bookingService.getUserBookings(req.user._id, req.user.companyId, req.query);
     respond(res, 200, bookings);
   } catch (error) {
     next(error);
@@ -68,4 +68,24 @@ const cancelBooking = async (req, res, next) => {
   }
 };
 
-module.exports = { createBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking };
+const getCancellationPolicy = async (req, res, next) => {
+  try {
+    const policy = require('../services/cancellation.service').getCancellationPolicy();
+    respond(res, 200, policy);
+  } catch (error) { next(error); }
+};
+
+const getRefundableAmount = async (req, res, next) => {
+  try {
+    const booking = await require('../services/booking.service').getBookingById(req.params.id, req.user._id, req.user.companyId, req.user.role === 'admin');
+    if (!booking) return respond(res, 404, null, 'Booking not found');
+    const tripRepository = require('../../trips/repositories/trip.repository');
+    const trip = await tripRepository.findById(booking.tripId, req.user.companyId);
+    if (!trip) return respond(res, 404, null, 'Trip not found');
+    const cancellationService = require('../services/cancellation.service');
+    const result = cancellationService.calculateRefundableAmount(booking, trip.date, trip.departureTime);
+    respond(res, 200, result);
+  } catch (error) { next(error); }
+};
+
+module.exports = { createBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking, getCancellationPolicy, getRefundableAmount };

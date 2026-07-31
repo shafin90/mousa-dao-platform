@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const passengerInfoSchema = new mongoose.Schema({
+  seat: { type: String, required: true },
+  name: { type: String, required: true },
+  phone: { type: String, default: '' },
+}, { _id: false });
+
 const bookingSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -7,8 +13,9 @@ const bookingSchema = new mongoose.Schema({
   seats: [{ type: String }],
   bookingCode: { type: String },
   totalAmount: { type: Number, required: true },
-  status: { type: String, enum: ['pending', 'confirmed', 'cancelled'], default: 'pending' },
-  paymentStatus: { type: String, enum: ['unpaid', 'paid', 'refunded'], default: 'unpaid' }
+  status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' },
+  paymentStatus: { type: String, enum: ['unpaid', 'paid', 'refunded'], default: 'unpaid' },
+  passengers: { type: [passengerInfoSchema], default: [] },
 }, { timestamps: true });
 
 bookingSchema.index({ companyId: 1, bookingCode: 1 }, { unique: true });

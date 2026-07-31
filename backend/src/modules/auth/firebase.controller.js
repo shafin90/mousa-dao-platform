@@ -25,7 +25,9 @@ const firebaseLogin = async (req, res, next) => {
       companyId: FALLBACK_COMPANY_ID,
     });
 
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       const [firstName = '', ...lastParts] = (name || phone).split(' ');
       const lastName = lastParts.join(' ') || '';
 
@@ -55,6 +57,7 @@ const firebaseLogin = async (req, res, next) => {
         profile: user.profile,
       },
       token,
+      isNewUser,
     });
   } catch (error) {
     next(error);

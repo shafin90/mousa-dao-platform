@@ -341,15 +341,17 @@ const TripDetailsPage: React.FC = () => {
           </p>
           <p className="font-mono text-xs text-muted-foreground">{trip._id}</p>
         </div>
-        <Button
-          className="gap-2"
-          onClick={() => {
-            navigate("/trips", { state: { editTripId: trip._id } });
-            toast.info(t("trips.editFromList"));
-          }}
-        >
-          <Pencil size={16} /> {t("common.edit")}
-        </Button>
+        {activeSection !== "overview" && (
+          <Button
+            className="gap-2"
+            onClick={() => {
+              navigate("/trips", { state: { editTripId: trip._id } });
+              toast.info(t("trips.editFromList"));
+            }}
+          >
+            <Pencil size={16} /> {t("common.edit")}
+          </Button>
+        )}
       </div>
 
       <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 overflow-x-auto border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">

@@ -80,4 +80,12 @@ const reject = async (id, companyId, adminId, adminNote) => {
   return await getById(refund._id, companyId);
 };
 
-module.exports = { getAll, getById, approve, reject };
+const getByUser = async (userId, companyId) => {
+  return await RefundRequest.find({ userId, companyId }).sort({ createdAt: -1 }).populate(populateRefund);
+};
+
+const create = async (data) => {
+  return await RefundRequest.create(data);
+};
+
+module.exports = { getAll, getById, approve, reject, getByUser, create };

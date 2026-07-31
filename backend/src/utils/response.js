@@ -50,7 +50,8 @@ const respondAccepted = (res, eventId, extra = {}) => {
   return res.status(202).json({
     success: true,
     message: 'Request accepted and queued for processing',
-    data: { eventId, ...extra },
+    eventId,
+    data: extra,
   });
 };
 

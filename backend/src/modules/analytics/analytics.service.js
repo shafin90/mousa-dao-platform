@@ -1,4 +1,4 @@
-const Booking = require('../bookings/models/Booking');
+﻿const Booking = require('../bookings/models/Booking');
 const Trip = require('../trips/models/Trip');
 const Payment = require('../payments/models/Payment');
 const User = require('../users/models/User');
@@ -248,7 +248,7 @@ const getLiveTrips = async (companyId) => {
 
   return trips.map(t => ({
     _id: t._id,
-    route: `${t.fromStation?.name || ''} → ${t.toStation?.name || ''}`,
+    route: `${t.fromStation?.name || ''} ΓåÆ ${t.toStation?.name || ''}`,
     bus: t.busId ? `${t.busId.busNumber} - ${t.busId.name}` : 'N/A',
     departureTime: t.departureTime,
     date: t.date,
@@ -277,7 +277,7 @@ const getRecentBookings = async (companyId) => {
   return bookings.map(b => ({
     _id: b._id,
     customer: b.userId ? `${b.userId.profile?.firstName || ''} ${b.userId.profile?.lastName || ''}`.trim() || b.userId.email : 'N/A',
-    route: b.tripId ? `${b.tripId.fromStation?.name || ''} → ${b.tripId.toStation?.name || ''}` : 'N/A',
+    route: b.tripId ? `${b.tripId.fromStation?.name || ''} ΓåÆ ${b.tripId.toStation?.name || ''}` : 'N/A',
     seats: b.seats?.length || 0,
     totalAmount: b.totalAmount,
     paymentStatus: b.paymentStatus,

@@ -32,6 +32,16 @@ const findByEmail = async (email) => {
 };
 
 /**
+ * Finds a user by phone (used in login).
+ *
+ * @param {string} phone
+ * @returns {Promise<Object|null>}
+ */
+const findByPhone = async (phone) => {
+  return await User.findOne({ phone });
+};
+
+/**
  * Creates a new user.
  *
  * @param {Object} data
@@ -89,4 +99,75 @@ const deleteOne = async (id, companyId) => {
   return await User.findOneAndDelete({ _id: id, companyId });
 };
 
-module.exports = { findById, findByIdAny, findByEmail, create, updateOne, findMany, deleteOne };
+/**
+ * Finds a user by ID without excluding password.
+ *
+ * @param {string} id
+ * @returns {Promise<Object|null>}
+ */
+const findByIdWithPassword = async (id) => {
+  return await User.findById(id);
+};
+
+/**
+ * Finds a user by a hashed reset-password token with an unexpired window.
+ *
+ * @param {string} hashedToken
+ * @returns {Promise<Object|null>}
+ */
+const findByResetToken = async (hashedToken) => {
+  return await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+};
+
+/**
+ * Sets the reset-password token and expiry on a user document.
+ * Uses strict: false because resetPasswordToken/resetPasswordExpires
+ * are not declared in the schema.
+ *
+ * @param {string} id
+ * @param {string} hashedToken
+ * @param {number} expires - epoch ms
+ * @returns {Promise<Object|null>}
+ */
+const setResetToken = async (id, hashedToken, expires) => {
+  return await User.findOneAndUpdate(
+    { _id: id },
+    { $set: { resetPasswordToken: hashedToken, resetPasswordExpires: expires } },
+    { strict: false },
+  );
+};
+
+/**
+ * Clears the reset-password fields and sets a new password.
+ *
+ * @param {string} id
+ * @param {string} hashedPassword
+ * @returns {Promise<Object|null>}
+ */
+const clearResetTokenAndUpdatePassword = async (id, hashedPassword) => {
+  return await User.findOneAndUpdate(
+    { _id: id },
+    {
+      $set: { password: hashedPassword },
+      $unset: { resetPasswordToken: '', resetPasswordExpires: '' },
+    },
+    { strict: false },
+  );
+};
+
+module.exports = {
+  findById,
+  findByIdAny,
+  findByIdWithPassword,
+  findByResetToken,
+  setResetToken,
+  clearResetTokenAndUpdatePassword,
+  findByEmail,
+  create,
+  updateOne,
+  findMany,
+  deleteOne,
+};

@@ -1,41 +1,22 @@
 const Notification = require('./models/Notification');
+const User = require('../users/models/User');
+const { sendPushToUser } = require('./notification.dispatch');
 
-const getUserNotifications = async (userId, companyId) => {
-  return await Notification.find({ userId, companyId }).sort({ createdAt: -1 });
-};
-
-const getAllNotifications = async (companyId, filters, page = 1, limit = 10) => {
-  const query = { companyId };
-  if (filters.type) query.type = filters.type;
-  if (filters.userId) query.userId = filters.userId;
-  if (filters.isRead !== undefined) query.isRead = filters.isRead === 'true';
-
-  const notifications = await Notification.find(query)
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .populate('userId', 'name email');
-
-  const total = await Notification.countDocuments(query);
-  return { notifications, total };
-};
-
-const markAsRead = async (id, userId, companyId) => {
-  const notification = await Notification.findOneAndUpdate(
-    { _id: id, userId, companyId },
-    { $set: { isRead: true } },
-    { new: true }
-  );
-  if (!notification) throw new Error('Notification not found');
+const createNotification = async ({ companyId, userId, type, title, message, data = {} }) => {
+  const notification = await Notification.create({ companyId, userId, type, title, message, data });
   return notification;
 };
 
-const markAllAsRead = async (userId, companyId) => {
-  const result = await Notification.updateMany(
-    { userId, companyId, isRead: false },
-    { $set: { isRead: true } }
-  );
-  return { modifiedCount: result.modifiedCount };
+const notifyAllCustomers = async ({ companyId, type, title, message, data = {} }) => {
+  const customers = await User.find({ companyId, role: 'customer' }).select('_id fcmTokens preferences');
+  const notifications = customers.map((c) => ({
+    companyId, userId: c._id, type, title, message, data,
+  }));
+  const created = await Notification.insertMany(notifications);
+  for (const customer of customers) {
+    await sendPushToUser(customer, { title, body: message, data }).catch(() => {});
+  }
+  return created;
 };
 
-module.exports = { getUserNotifications, getAllNotifications, markAsRead, markAllAsRead };
+module.exports = { createNotification, notifyAllCustomers };

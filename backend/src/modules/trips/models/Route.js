@@ -22,6 +22,7 @@ const routeSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
-
+routeSchema.index({ companyId: 1, fromCity: 1 });
+routeSchema.index({ companyId: 1, toCity: 1 });
 
 module.exports = mongoose.model('Route', routeSchema);

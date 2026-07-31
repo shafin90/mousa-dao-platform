@@ -26,7 +26,8 @@
     "tickets": "Tickets",
     "auditLogs": "Audit Logs",
     "activityLog": "Activity Log",
-    "notifications": "Notifications",
+    "support": "Support",
+      "notifications": "Notifications",
     "configuration": "Configuration",
     "tracking": "Live Tracking",
     "tutorial": "Tutorial",
@@ -1226,6 +1227,20 @@
     "complete": {
       "title": "Tutorial Complete!",
       "content": "You've covered Trips, Routes, Cities, and Stations. You can restart this tutorial anytime from the sidebar."
+    }
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Customer conversations",
+    "open": "open",
+    "noConversations": "No conversations yet",
+    "noMessages": "No messages",
+    "online": "Online",
+    "typePlaceholder": "Type a message...",
+    "loading": "Loading...",
+    "status": {
+      "open": "Open",
+      "closed": "Closed"
     }
   }
 }

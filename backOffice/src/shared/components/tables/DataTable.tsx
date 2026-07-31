@@ -50,6 +50,10 @@ interface DataTableProps<T> {
   currentPage?: number;
   /** Server-side pagination: called when user clicks a page */
   onPageChange?: (page: number) => void;
+  /** Extra classes applied to body rows */
+  rowClassName?: string;
+  /** Extra classes applied to body cells */
+  cellClassName?: string;
 }
 
 export function DataTable<T>({
@@ -65,6 +69,8 @@ export function DataTable<T>({
   totalPages: serverTotalPages,
   currentPage: serverPage,
   onPageChange,
+  rowClassName,
+  cellClassName,
 }: DataTableProps<T>) {
   const { t } = useTranslation();
   const isServerPaginated = serverTotalPages != null && serverPage != null && onPageChange != null;
@@ -119,11 +125,12 @@ export function DataTable<T>({
                   onClick={() => onRowClick?.(item)}
                   className={cn(
                     "transition-all duration-150 hover:bg-secondary/50 even:bg-muted/20",
-                    onRowClick && "cursor-pointer"
+                    onRowClick && "cursor-pointer",
+                    rowClassName
                   )}
                 >
                   {columns.map((column, colIdx) => (
-                    <td key={colIdx} className={cn("px-1.5 py-0 align-middle border-r last:border-r-0", column.className)}>
+                    <td key={colIdx} className={cn("px-1.5 py-2.5 whitespace-nowrap align-middle border-r last:border-r-0", column.className, cellClassName)}>
                       {typeof column.accessor === "function"
                         ? column.accessor(item)
                         : (item[column.accessor] as React.ReactNode)}

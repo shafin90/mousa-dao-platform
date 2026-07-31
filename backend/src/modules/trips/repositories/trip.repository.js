@@ -51,16 +51,25 @@ const incrementSeats = async (tripId, delta, session) => {
 };
 
 /**
- * Finds trips with optional filters and population.
+ * Finds trips with optional filters, pagination and population.
  *
  * @param {Object} filters
- * @param {Array} populate
- * @returns {Promise<Array>}
+ * @param {Object} [options]
+ * @param {number} [options.page=1]
+ * @param {number} [options.limit=20]
+ * @param {Array} [options.populate=[]]
+ * @returns {Promise<{items: Array, total: number}>}
  */
-const findMany = async (filters, populate = []) => {
-  let query = Trip.find(filters);
-  populate.forEach((p) => { query = query.populate(p); });
-  return await query;
+const findMany = async (filters, options = {}) => {
+  const { page = 1, limit = 20, populate = [], sort = { date: 1, departureTime: 1 } } = options;
+  const skip = (page - 1) * limit;
+
+  const [items, total] = await Promise.all([
+    Trip.find(filters).populate(populate).sort(sort).skip(skip).limit(limit),
+    Trip.countDocuments(filters),
+  ]);
+
+  return { items, total };
 };
 
 /**

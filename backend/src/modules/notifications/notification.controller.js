@@ -1,40 +1,47 @@
-const notificationService = require('./notification.service');
+const Notification = require('./models/Notification');
+const { respond, respondPaginated } = require('../../utils/response');
 
-const getMyNotifications = async (req, res) => {
+exports.getMyNotifications = async (req, res, next) => {
   try {
-    const notifications = await notificationService.getUserNotifications(req.user._id, req.user.companyId);
-    res.json({ success: true, data: notifications });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const [notifications, total] = await Promise.all([
+      Notification.find({ userId: req.user._id, companyId: req.user.companyId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Notification.countDocuments({ userId: req.user._id, companyId: req.user.companyId }),
+    ]);
+
+    respondPaginated(res, notifications, total, page, limit);
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-const getAllNotifications = async (req, res) => {
+exports.markAllRead = async (req, res, next) => {
   try {
-    const { page, limit, ...filters } = req.query;
-    const data = await notificationService.getAllNotifications(req.user.companyId, filters, parseInt(page) || 1, parseInt(limit) || 10);
-    res.json({ success: true, data });
+    await Notification.updateMany(
+      { userId: req.user._id, companyId: req.user.companyId, read: false },
+      { $set: { read: true, isRead: true } },
+    );
+    respond(res, 200, { success: true });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-const markAsRead = async (req, res) => {
+exports.markRead = async (req, res, next) => {
   try {
-    const notification = await notificationService.markAsRead(req.params.id, req.user._id, req.user.companyId);
-    res.json({ success: true, message: 'Notification marked as read', data: notification });
+    await Notification.updateOne(
+      { _id: req.params.id, userId: req.user._id, companyId: req.user.companyId },
+      { $set: { read: true, isRead: true } },
+    );
+    respond(res, 200, { success: true });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    next(error);
   }
 };
-
-const markAllAsRead = async (req, res) => {
-  try {
-    const result = await notificationService.markAllAsRead(req.user._id, req.user.companyId);
-    res.json({ success: true, message: 'All notifications marked as read', data: result });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
-};
-
-module.exports = { getMyNotifications, getAllNotifications, markAsRead, markAllAsRead };

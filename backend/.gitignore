@@ -10,6 +10,7 @@ coverage/
 !.env.example
 *.pem
 *.key
+firebase-service-account.json
 
 # Logs
 logs/

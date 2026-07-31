@@ -22,7 +22,7 @@ const { v4: uuidv4 } = require('uuid');
  * SIDE EFFECTS:
  * - Publishes to booking.queue
  */
-const publishBookingEvent = async ({ userId, companyId, tripId, seats }) => {
+const publishBookingEvent = async ({ userId, companyId, tripId, seats, passengers }) => {
   const eventId = uuidv4();
   await publishToQueue(queues.BOOKING_QUEUE, {
     eventType: 'CREATE_BOOKING',
@@ -31,6 +31,7 @@ const publishBookingEvent = async ({ userId, companyId, tripId, seats }) => {
     userId,
     tripId,
     seats,
+    passengers: passengers || [],
     timestamp: new Date(),
   });
   return eventId;

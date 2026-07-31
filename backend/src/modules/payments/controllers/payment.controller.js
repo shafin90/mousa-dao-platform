@@ -90,7 +90,7 @@ const handleWebhook = async (req, res, next) => {
     const transactionId = String(payload.data?.id || '');
     if (!txRef || !transactionId) return respond(res, 400, null, 'Missing transaction details');
 
-    const payment = await paymentService.getPaymentByTxRef(txRef);
+    const payment = await paymentService.getPaymentByTxRefAny(txRef);
     const companyId = payment?.companyId || null;
 
     await auditRepository.create({
@@ -119,4 +119,14 @@ const handleWebhook = async (req, res, next) => {
   }
 };
 
-module.exports = { initiatePayment, getUserPayments, getAllPayments, getPaymentById, handleWebhook };
+const retryPayment = async (req, res, next) => {
+  try {
+    const { bookingId } = req.body;
+    const result = await paymentService.retryPayment(bookingId, req.user._id, req.user.companyId);
+    respondAccepted(res, result.eventId, { tx_ref: result.tx_ref });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { initiatePayment, retryPayment, getUserPayments, getAllPayments, getPaymentById, handleWebhook };
