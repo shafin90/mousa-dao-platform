@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useRoutes } from "../hooks/useRoutes";
@@ -10,6 +10,7 @@ import { Pencil, Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Search, X } f
 import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { routeApi, type RouteData } from "@/api/routeApi";
+import { cityApi, type CityData } from "@/api/cityApi";
 
 const RoutesPage: React.FC = () => {
   const { t } = useTranslation();
@@ -21,6 +22,18 @@ const RoutesPage: React.FC = () => {
   const [routeToDelete, setRouteToDelete] = useState<RouteData | null>(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("active");
+  const [filterFromCity, setFilterFromCity] = useState("");
+  const [filterToCity, setFilterToCity] = useState("");
+  const [cities, setCities] = useState<CityData[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    cityApi.getAll({ limit: 500 })
+      .then(({ data }) => { if (!cancelled) setCities(data); })
+      .catch(() => { if (!cancelled) showError(t("routes.saveFailed")); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const columns = [
     { header: t("routes.from"), accessor: (item: RouteData) => item.fromCity?.name || item.fromCity?._id || t("common.na") },
@@ -62,6 +75,8 @@ const RoutesPage: React.FC = () => {
   const filteredRoutes = routes.filter((r) => {
     if (filterStatus === "active" && r.isActive === false) return false;
     if (filterStatus === "inactive" && r.isActive !== false) return false;
+    if (filterFromCity && r.fromCity?._id !== filterFromCity) return false;
+    if (filterToCity && r.toCity?._id !== filterToCity) return false;
     if (search) {
       const q = search.toLowerCase();
       if (!r.fromCity?.name?.toLowerCase().includes(q) && !r.toCity?.name?.toLowerCase().includes(q)) return false;
@@ -69,7 +84,7 @@ const RoutesPage: React.FC = () => {
     return true;
   });
 
-  const hasFilters = search || filterStatus !== "active";
+  const hasFilters = search || filterStatus !== "active" || !!filterFromCity || !!filterToCity;
 
   return (
     <div>
@@ -92,6 +107,28 @@ const RoutesPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <select
+              value={filterFromCity}
+              onChange={(e) => setFilterFromCity(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              title="From City"
+            >
+              <option value="">From City</option>
+              {cities.map((c) => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              value={filterToCity}
+              onChange={(e) => setFilterToCity(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              title="To City"
+            >
+              <option value="">To City</option>
+              {cities.map((c) => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+            <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -108,7 +145,7 @@ const RoutesPage: React.FC = () => {
               </Button>
             )}
             {hasFilters && (
-              <button onClick={() => { setSearch(""); setFilterStatus("active"); }} className="h-7 px-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors">
+              <button onClick={() => { setSearch(""); setFilterStatus("active"); setFilterFromCity(""); setFilterToCity(""); }} className="h-7 px-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors">
                 <X size={12} /> Clear
               </button>
             )}
