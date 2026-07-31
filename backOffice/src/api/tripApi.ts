@@ -45,6 +45,9 @@ export interface TripFilters {
   fromStation?: string;
   toStation?: string;
   cityId?: string;
+  fromCountry?: string;
+  toCountry?: string;
+  departureTime?: string;
 }
 
 export const tripApi = {

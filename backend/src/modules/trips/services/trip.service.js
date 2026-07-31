@@ -89,6 +89,10 @@ const buildTripFilter = (companyId, filters) => {
   if (filters.routeId && mongoose.Types.ObjectId.isValid(filters.routeId)) filter.routeId = new mongoose.Types.ObjectId(filters.routeId);
   if (filters.busId && mongoose.Types.ObjectId.isValid(filters.busId)) filter.busId = new mongoose.Types.ObjectId(filters.busId);
   if (filters.status) filter.status = filters.status;
+  if (filters.departureTime) {
+    const timeStr = String(filters.departureTime).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.departureTime = { $regex: `^${timeStr}` };
+  }
 
   if (filters.priceMin || filters.priceMax) {
     filter.price = {};
@@ -122,6 +126,10 @@ const buildAggregationPipeline = async (companyId, filters) => {
   if (filters.status) {
     pipeline.push({ $match: { status: filters.status } });
   }
+  if (filters.departureTime) {
+    const timeStr = String(filters.departureTime).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    pipeline.push({ $match: { departureTime: { $regex: `^${timeStr}` } } });
+  }
   if (filters.priceMin || filters.priceMax) {
     const priceMatch = {};
     if (filters.priceMin) priceMatch.$gte = Number(filters.priceMin);
@@ -134,25 +142,28 @@ const buildAggregationPipeline = async (companyId, filters) => {
   if (filters.country) {
     const countryCities = await mongoose.model('City').find({ companyId, country: filters.country }).select('_id');
     const countryCityIds = countryCities.map((c) => c._id);
-    if (countryCityIds.length) {
-      orConditions.push({ routeId: { $in: (await routeRepository.findWhere({ companyId, $or: [{ fromCity: { $in: countryCityIds } }, { toCity: { $in: countryCityIds } }] })).map((r) => r._id) } });
-    }
+    const routes = countryCityIds.length
+      ? await routeRepository.findWhere({ companyId, $or: [{ fromCity: { $in: countryCityIds } }, { toCity: { $in: countryCityIds } }] })
+      : [];
+    pipeline.push({ $match: { routeId: { $in: routes.map((r) => r._id) } } });
   }
 
   if (filters.fromCountry) {
     const fromCities = await mongoose.model('City').find({ companyId, country: filters.fromCountry }).select('_id');
     const fromCityIds = fromCities.map((c) => c._id);
-    if (fromCityIds.length) {
-      orConditions.push({ routeId: { $in: (await routeRepository.findWhere({ companyId, fromCity: { $in: fromCityIds } })).map((r) => r._id) } });
-    }
+    const routes = fromCityIds.length
+      ? await routeRepository.findWhere({ companyId, fromCity: { $in: fromCityIds } })
+      : [];
+    pipeline.push({ $match: { routeId: { $in: routes.map((r) => r._id) } } });
   }
 
   if (filters.toCountry) {
     const toCities = await mongoose.model('City').find({ companyId, country: filters.toCountry }).select('_id');
     const toCityIds = toCities.map((c) => c._id);
-    if (toCityIds.length) {
-      orConditions.push({ routeId: { $in: (await routeRepository.findWhere({ companyId, toCity: { $in: toCityIds } })).map((r) => r._id) } });
-    }
+    const routes = toCityIds.length
+      ? await routeRepository.findWhere({ companyId, toCity: { $in: toCityIds } })
+      : [];
+    pipeline.push({ $match: { routeId: { $in: routes.map((r) => r._id) } } });
   }
 
   if (filters.cityId && mongoose.Types.ObjectId.isValid(filters.cityId)) {
@@ -248,7 +259,7 @@ const buildAggregationPipeline = async (companyId, filters) => {
 };
 
 const getAllTrips = async (companyId, filters, page = 1, limit = 20) => {
-  const needsComplexFilter = filters.cityId || filters.fromStation || filters.toStation || filters.search;
+  const needsComplexFilter = filters.cityId || filters.fromStation || filters.toStation || filters.search || filters.country || filters.fromCountry || filters.toCountry;
 
   if (needsComplexFilter) {
     const pipeline = await buildAggregationPipeline(companyId, filters);

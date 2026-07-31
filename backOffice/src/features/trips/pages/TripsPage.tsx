@@ -10,6 +10,7 @@ import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { busApi, type BusData } from "@/api/busApi";
+import { cityApi } from "@/api/cityApi";
 import { tripApi, type TripData, type TripFilters } from "@/api/tripApi";
 
 const statusOptions = ["scheduled", "active", "completed", "cancelled"];
@@ -25,6 +26,9 @@ const TripsPage: React.FC = () => {
   const [filterPriceMin, setFilterPriceMin] = useState("");
   const [filterPriceMax, setFilterPriceMax] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
+  const [filterFromCountry, setFilterFromCountry] = useState("");
+  const [filterToCountry, setFilterToCountry] = useState("");
+  const [filterTime, setFilterTime] = useState("");
 
   const filters = useMemo<TripFilters>(() => {
     const f: TripFilters = {};
@@ -34,8 +38,11 @@ const TripsPage: React.FC = () => {
     if (filterPriceMin) f.priceMin = Number(filterPriceMin);
     if (filterPriceMax) f.priceMax = Number(filterPriceMax);
     if (filterSearch) f.search = filterSearch;
+    if (filterFromCountry) f.fromCountry = filterFromCountry;
+    if (filterToCountry) f.toCountry = filterToCountry;
+    if (filterTime) f.departureTime = filterTime;
     return f;
-  }, [filterBusId, filterDate, filterStatus, filterPriceMin, filterPriceMax, filterSearch]);
+  }, [filterBusId, filterDate, filterStatus, filterPriceMin, filterPriceMax, filterSearch, filterFromCountry, filterToCountry, filterTime]);
 
   const { isAdmin } = useAuth();
   const { trips, loading, refresh } = useTrips(filters);
@@ -53,6 +60,21 @@ const TripsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [countries, setCountries] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    cityApi.getAll({ limit: 500 })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setCountries([...new Set(data.map((c) => c.country).filter(Boolean))].sort());
+        }
+      })
+      .catch(() => { if (!cancelled) showError(t("trips.busesLoadFailed")); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const clearFilters = () => {
     setFilterBusId("");
     setFilterDate("");
@@ -60,9 +82,12 @@ const TripsPage: React.FC = () => {
     setFilterPriceMin("");
     setFilterPriceMax("");
     setFilterSearch("");
+    setFilterFromCountry("");
+    setFilterToCountry("");
+    setFilterTime("");
   };
 
-  const compactHasFilters = filterSearch || filterBusId || filterDate || filterStatus;
+  const compactHasFilters = filterSearch || filterBusId || filterDate || filterStatus || filterFromCountry || filterToCountry || filterTime;
 
   const serialByTripId = useMemo(() => {
     const byDate: Record<string, TripData[]> = {};
@@ -146,6 +171,35 @@ const TripsPage: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <select
+              value={filterFromCountry}
+              onChange={(e) => setFilterFromCountry(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              title="From Country"
+            >
+              <option value="">From Country</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <select
+              value={filterToCountry}
+              onChange={(e) => setFilterToCountry(e.target.value)}
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              title="To Country"
+            >
+              <option value="">To Country</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <input
+              type="time"
+              value={filterTime}
+              onChange={(e) => setFilterTime(e.target.value)}
+              title="Departure Time"
+              className="h-7 rounded border bg-background/80 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
             <select
               value={filterBusId}
               onChange={(e) => setFilterBusId(e.target.value)}
