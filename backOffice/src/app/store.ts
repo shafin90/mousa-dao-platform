@@ -12,7 +12,6 @@ import routeReducer from "@/features/routes/store/routeSlice";
 import ticketReducer from "@/features/tickets/store/ticketSlice";
 import auditLogReducer from "@/features/audit-logs/store/auditLogSlice";
 import configReducer from "@/features/config/store/configSlice";
-import analyticsReducer from "@/features/analytics/store/analyticsSlice";
 import stationReducer from "@/features/stations/store/stationSlice";
 
 export const store = configureStore({
@@ -27,7 +26,6 @@ export const store = configureStore({
     tickets: ticketReducer,
     auditLogs: auditLogReducer,
     config: configReducer,
-    analytics: analyticsReducer,
     stations: stationReducer,
   },
   middleware: (getDefaultMiddleware) =>
