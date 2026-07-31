@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -7,7 +7,6 @@ import {
   Globe,
   MapPin,
   Search,
-  Save,
   Edit3,
   X,
   Phone,
@@ -24,22 +23,14 @@ import {
   Navigation,
   Bus,
 } from "lucide-react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { toast } from "sonner";
-import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { DataTable } from "@/shared/components/tables/DataTable";
-import { Select } from "@/shared/components/ui/Select";
-import { Modal } from "@/shared/components/modals/Modal";
 import { cityApi, type CityData } from "@/api/cityApi";
 import { stationApi, type StationData } from "@/api/stationApi";
 import { routeApi, type RouteData } from "@/api/routeApi";
 import { tripApi, type TripData, type TripFilters } from "@/api/tripApi";
-import { userApi } from "@/api/userApi";
-import type { User } from "@/shared/types";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Statuses" },
@@ -67,26 +58,16 @@ const SECTIONS = [
   { id: "stations", label: "Stations", icon: TrainTrack },
 ] as const;
 
-function getManagerId(m: string | { _id: string } | undefined): string {
-  if (!m) return "";
-  return typeof m === "string" ? m : m._id;
-}
-
 function getManagerName(m: string | { _id: string; profile: { firstName: string; lastName: string } } | undefined): string {
   if (!m) return "";
   if (typeof m === "string") return "";
   return `${m.profile.firstName} ${m.profile.lastName}`;
 }
 
-function getUserName(u: User): string {
-  return `${u.profile.firstName} ${u.profile.lastName}`;
-}
-
 const CityDetailsPage: React.FC = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { showError } = useErrorModal();
 
   const [city, setCity] = useState<CityData | null>(null);
   const [stations, setStations] = useState<StationData[]>([]);
@@ -96,13 +77,7 @@ const CityDetailsPage: React.FC = () => {
   const [stationsLoading, setStationsLoading] = useState(true);
   const [routesLoading, setRoutesLoading] = useState(false);
   const [tripsLoading, setTripsLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-
-  const [form, setForm] = useState<Partial<CityData>>({});
-  const [confirmClose, setConfirmClose] = useState(false);
   const [activeSection, setActiveSection] = useState("general");
 
   const [stationSearch, setStationSearch] = useState("");
@@ -146,12 +121,6 @@ const CityDetailsPage: React.FC = () => {
     return true;
   });
 
-  const isDirty = editing && JSON.stringify(form) !== JSON.stringify(city);
-
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
-
   useEffect(() => {
     let active = true;
     (async () => {
@@ -160,7 +129,6 @@ const CityDetailsPage: React.FC = () => {
         if (!active) return;
         if (!cityData) { setNotFound(true); return; }
         setCity(cityData);
-        setForm({ ...cityData });
       } catch {
         if (active) setNotFound(true);
       } finally {
@@ -169,19 +137,6 @@ const CityDetailsPage: React.FC = () => {
     })();
     return () => { active = false; };
   }, [id]);
-
-  const loadUsers = useCallback(async () => {
-    try {
-      const result = await userApi.getAll({ limit: 100 });
-      setUsers(result.users.filter((u) => u.role !== "customer"));
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    if (editing || activeSection === "management" || activeSection === "status") {
-      loadUsers();
-    }
-  }, [editing, activeSection, loadUsers]);
 
   useEffect(() => {
     if (activeSection !== "stations") return;
@@ -234,43 +189,6 @@ const CityDetailsPage: React.FC = () => {
     return () => { active = false; };
   }, [id, activeSection]);
 
-  useEffect(() => {
-    if (!editing || activeSection !== "location" || !mapRef.current) return;
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-      mapInstanceRef.current = null;
-    }
-    const lat = form.location?.lat ?? 6.8501;
-    const lng = form.location?.lng ?? -5.2986;
-    const map = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true }).setView([lat, lng], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap",
-      maxZoom: 18,
-    }).addTo(map);
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-    marker.on("dragend", () => {
-      const pos = marker.getLatLng();
-      setForm((prev) => ({
-        ...prev,
-        location: { lat: parseFloat(pos.lat.toFixed(6)), lng: parseFloat(pos.lng.toFixed(6)) },
-      }));
-    });
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      marker.setLatLng(e.latlng);
-      setForm((prev) => ({
-        ...prev,
-        location: { lat: parseFloat(e.latlng.lat.toFixed(6)), lng: parseFloat(e.latlng.lng.toFixed(6)) },
-      }));
-    });
-    markerRef.current = marker;
-    mapInstanceRef.current = map;
-    return () => {
-      map.remove();
-      mapInstanceRef.current = null;
-      markerRef.current = null;
-    };
-  }, [editing, activeSection]);
-
   const stationColumns = [
     { header: t("stations.stationName"), accessor: (s: StationData) => <span className="font-medium">{s.name}</span> },
     {
@@ -314,72 +232,6 @@ const CityDetailsPage: React.FC = () => {
     },
   ];
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const getId = (v: unknown): string | undefined => {
-        if (!v) return undefined;
-        if (typeof v === "object" && "_id" in v) return (v as { _id: string })._id;
-        if (typeof v === "string") return v;
-        return undefined;
-      };
-      const payload = {
-        name: form.name,
-        country: form.country,
-        location: form.location,
-        address1: form.address1,
-        address2: form.address2,
-        phone1: form.phone1,
-        phone2: form.phone2,
-        email1: form.email1,
-        email2: form.email2,
-        manager1: getId(form.manager1),
-        manager2: getId(form.manager2),
-        isActive: form.isActive,
-      } satisfies Partial<CityData>;
-      const updated = await cityApi.update(id, payload);
-      setCity(updated);
-      setForm({ ...updated });
-      setEditing(false);
-      toast.success(t("cities.updated"));
-    } catch (e: unknown) {
-      const msg = (e && typeof e === "object" && "response" in e)
-        ? ((e as { response: { data: { message: string } } }).response?.data?.message ?? t("cities.saveFailed"))
-        : t("cities.saveFailed");
-      showError(msg);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    if (JSON.stringify(form) !== JSON.stringify(city)) {
-      setConfirmClose(true);
-      return;
-    }
-    setForm({ ...city! });
-    setEditing(false);
-  };
-
-  const confirmDiscard = () => {
-    setForm({ ...city! });
-    setEditing(false);
-    setConfirmClose(false);
-  };
-
-  const setLocation = (lat: number, lng: number) => {
-    setForm((prev) => ({
-      ...prev,
-      location: { lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) },
-    }));
-    if (markerRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
-    }
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom());
-    }
-  };
-
   const renderField = (
     label: string,
     value: React.ReactNode,
@@ -391,28 +243,6 @@ const CityDetailsPage: React.FC = () => {
         {label}
       </span>
       <span className="text-right font-medium">{value}</span>
-    </div>
-  );
-
-  const renderInput = (
-    label: string,
-    value: string | undefined,
-    onChange: (v: string) => void,
-    opts: { type?: string; placeholder?: string; required?: boolean; disabled?: boolean; icon?: React.ReactNode } = {}
-  ) => (
-    <div className="space-y-1.5">
-      <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-        {opts.icon && <span className="shrink-0">{opts.icon}</span>}
-        {label}{opts.required && <span className="text-destructive">*</span>}
-      </label>
-      <input
-        type={opts.type || "text"}
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={opts.placeholder}
-        disabled={opts.disabled}
-        className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-      />
     </div>
   );
 
@@ -435,11 +265,6 @@ const CityDetailsPage: React.FC = () => {
     return `${city.createdBy.profile.firstName} ${city.createdBy.profile.lastName}`;
   })();
 
-  const managerOptions = users.map((u) => ({
-    value: u._id,
-    label: getUserName(u),
-  }));
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -453,33 +278,17 @@ const CityDetailsPage: React.FC = () => {
             <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
               <Building2 size={22} className="text-primary" />
               <span>{city?.name}</span>
-              {!editing && (
-                <Badge variant={city?.isActive !== false ? "success" : "secondary"}>
-                  {city?.isActive !== false ? t("common.active") : t("common.inactive")}
-                </Badge>
-              )}
+              <Badge variant={city?.isActive !== false ? "success" : "secondary"}>
+                {city?.isActive !== false ? t("common.active") : t("common.inactive")}
+              </Badge>
             </h1>
           )}
           <p className="font-mono text-xs text-muted-foreground">{city?._id ?? "—"}</p>
         </div>
         <div className="flex items-center gap-2">
-          {isDirty && (
-            <span className="flex items-center gap-1.5 text-xs text-amber-500 font-medium">
-              <span className="h-2 w-2 rounded-full bg-amber-500" /> Unsaved changes
-            </span>
-          )}
-          {editing ? (
-            <>
-              <Button variant="outline" size="sm" className="gap-2" onClick={handleCancel}>
-                <X size={16} /> {t("common.cancel")}
-              </Button>
-              <Button size="sm" className="gap-2" onClick={handleSave} disabled={saving}>
-                <Save size={16} /> {saving ? t("common.saving") : t("common.save")}
-              </Button>
-            </>
-          ) : (
-            <Button size="sm" className="gap-2" onClick={() => setEditing(true)}>
-              <Edit3 size={16} /> {t("cities.editCity")}
+          {activeSection === "general" && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/cities/${city?._id}/edit`)}>
+              <Edit3 size={16} /> {t("common.edit")}
             </Button>
           )}
         </div>
@@ -590,19 +399,11 @@ const CityDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {editing ? (
-                <>
-                  {renderInput(t("cities.cityName"), form.name ?? "", (v) => setForm({ ...form, name: v }), { required: true, icon: <Building2 size={14} /> })}
-                  {renderInput(t("cities.address1"), form.address1 ?? "", (v) => setForm({ ...form, address1: v }), { icon: <MapPin size={14} /> })}
-                  {renderInput(t("cities.address2"), form.address2 ?? "", (v) => setForm({ ...form, address2: v }), { icon: <MapPin size={14} /> })}
-                </>
-              ) : (
-                <div className="space-y-1">
-                  {renderField(t("cities.cityName"), city!.name, <Building2 size={14} />)}
-                  {renderField(t("cities.address1"), city!.address1 || "—", <MapPin size={14} />)}
-                  {renderField(t("cities.address2"), city!.address2 || "—", <MapPin size={14} />)}
-                </div>
-              )}
+              <div className="space-y-1">
+                {renderField(t("cities.cityName"), city!.name, <Building2 size={14} />)}
+                {renderField(t("cities.address1"), city!.address1 || "—", <MapPin size={14} />)}
+                {renderField(t("cities.address2"), city!.address2 || "—", <MapPin size={14} />)}
+              </div>
             </CardContent>
           </Card>
           )}
@@ -615,21 +416,12 @@ const CityDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {editing ? (
-                <>
-                  {renderInput(t("cities.phone1"), form.phone1 ?? "", (v) => setForm({ ...form, phone1: v }), { type: "tel", icon: <Phone size={14} /> })}
-                  {renderInput(t("cities.phone2"), form.phone2 ?? "", (v) => setForm({ ...form, phone2: v }), { type: "tel", icon: <Phone size={14} /> })}
-                  {renderInput(t("cities.email1"), form.email1 ?? "", (v) => setForm({ ...form, email1: v }), { type: "email", icon: <Mail size={14} /> })}
-                  {renderInput(t("cities.email2"), form.email2 ?? "", (v) => setForm({ ...form, email2: v }), { type: "email", icon: <Mail size={14} /> })}
-                </>
-              ) : (
-                <div className="space-y-1">
-                  {renderField(t("cities.phone1"), city!.phone1 || "—", <Phone size={14} />)}
-                  {renderField(t("cities.phone2"), city!.phone2 || "—", <Phone size={14} />)}
-                  {renderField(t("cities.email1"), city!.email1 || "—", <Mail size={14} />)}
-                  {renderField(t("cities.email2"), city!.email2 || "—", <Mail size={14} />)}
-                </div>
-              )}
+              <div className="space-y-1">
+                {renderField(t("cities.phone1"), city!.phone1 || "—", <Phone size={14} />)}
+                {renderField(t("cities.phone2"), city!.phone2 || "—", <Phone size={14} />)}
+                {renderField(t("cities.email1"), city!.email1 || "—", <Mail size={14} />)}
+                {renderField(t("cities.email2"), city!.email2 || "—", <Mail size={14} />)}
+              </div>
             </CardContent>
           </Card>
           )}
@@ -642,37 +434,10 @@ const CityDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {editing ? (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                      <UserIcon size={14} /> {t("cities.manager1")}
-                    </label>
-                    <Select
-                      value={getManagerId(form.manager1)}
-                      onChange={(e) => setForm({ ...form, manager1: e.target.value || undefined })}
-                      options={managerOptions}
-                      placeholder={t("cities.selectManager")}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                      <UserIcon size={14} /> {t("cities.manager2")}
-                    </label>
-                    <Select
-                      value={getManagerId(form.manager2)}
-                      onChange={(e) => setForm({ ...form, manager2: e.target.value || undefined })}
-                      options={managerOptions}
-                      placeholder={t("cities.selectManager")}
-                    />
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-1">
-                  {renderField(t("cities.manager1"), getManagerName(city!.manager1) || "—", <UserIcon size={14} />)}
-                  {renderField(t("cities.manager2"), getManagerName(city!.manager2) || "—", <UserIcon size={14} />)}
-                </div>
-              )}
+              <div className="space-y-1">
+                {renderField(t("cities.manager1"), getManagerName(city!.manager1) || "—", <UserIcon size={14} />)}
+                {renderField(t("cities.manager2"), getManagerName(city!.manager2) || "—", <UserIcon size={14} />)}
+              </div>
             </CardContent>
           </Card>
           )}
@@ -685,35 +450,15 @@ const CityDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {editing ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    {renderInput(
-                      t("cities.latitude"),
-                      form.location?.lat?.toString() ?? "",
-                      (v) => setLocation(parseFloat(v) || 0, form.location?.lng ?? 0),
-                      { type: "number", placeholder: "6.8501" }
-                    )}
-                    {renderInput(
-                      t("cities.longitude"),
-                      form.location?.lng?.toString() ?? "",
-                      (v) => setLocation(form.location?.lat ?? 0, parseFloat(v) || 0),
-                      { type: "number", placeholder: "-5.2986" }
-                    )}
-                  </div>
-                  <div ref={mapRef} className="h-64 w-full rounded-lg border z-0" />
-                </>
-              ) : (
-                <div className="space-y-1">
-                  {renderField(
-                    t("cities.coordinates"),
-                    city!.location?.lat != null
-                      ? `${city!.location.lat.toFixed(6)}, ${city!.location.lng.toFixed(6)}`
-                      : "—",
-                    <MapPinned size={14} />
-                  )}
-                </div>
-              )}
+              <div className="space-y-1">
+                {renderField(
+                  t("cities.coordinates"),
+                  city!.location?.lat != null
+                    ? `${city!.location.lat.toFixed(6)}, ${city!.location.lng.toFixed(6)}`
+                    : "—",
+                  <MapPinned size={14} />
+                )}
+              </div>
             </CardContent>
           </Card>
           )}
@@ -726,31 +471,15 @@ const CityDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {editing ? (
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                    <ShieldCheck size={14} /> {t("cities.status")}
-                  </label>
-                  <Select
-                    value={form.isActive !== false ? "active" : "inactive"}
-                    onChange={(e) => setForm({ ...form, isActive: e.target.value === "active" })}
-                    options={[
-                      { value: "active", label: t("common.active") },
-                      { value: "inactive", label: t("common.inactive") },
-                    ]}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {renderField(
-                    t("cities.status"),
-                    <Badge variant={city!.isActive !== false ? "success" : "secondary"}>
-                      {city!.isActive !== false ? t("common.active") : t("common.inactive")}
-                    </Badge>,
-                    <ShieldCheck size={14} />
-                  )}
-                </div>
-              )}
+              <div className="space-y-1">
+                {renderField(
+                  t("cities.status"),
+                  <Badge variant={city!.isActive !== false ? "success" : "secondary"}>
+                    {city!.isActive !== false ? t("common.active") : t("common.inactive")}
+                  </Badge>,
+                  <ShieldCheck size={14} />
+                )}
+              </div>
             </CardContent>
           </Card>
           )}
@@ -891,16 +620,6 @@ const CityDetailsPage: React.FC = () => {
       </Card>
       )}
       </>)}
-
-      <Modal isOpen={confirmClose} onClose={() => setConfirmClose(false)} title={t("cities.unsavedChanges")}>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">{t("cities.discardConfirm")}</p>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setConfirmClose(false)}>{t("common.cancel")}</Button>
-            <Button variant="destructive" onClick={confirmDiscard}>{t("common.discard")}</Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

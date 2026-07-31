@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Search, X, ToggleLeft, ToggleRight, Plus } from "lucide-react";
+import { Search, X, ToggleLeft, ToggleRight, Plus, Pencil } from "lucide-react";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { DataTable } from "@/shared/components/tables/DataTable";
@@ -126,6 +126,15 @@ const CitiesPage: React.FC = () => {
             header: t("common.actions"),
             accessor: (row: CityData) => (
               <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  title={t("common.edit")}
+                  onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/cities/${row._id}/edit`); }}
+                >
+                  <Pencil size={12} />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
