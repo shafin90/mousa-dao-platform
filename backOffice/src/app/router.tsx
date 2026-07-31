@@ -8,7 +8,6 @@ import LoginPage from "@/features/auth/pages/LoginPage";
 const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
 const BookingsPage = lazy(() => import("@/features/bookings/pages/BookingsPage"));
 const BookingDetailsPage = lazy(() => import("@/features/bookings/pages/BookingDetailsPage"));
-const PaymentsPage = lazy(() => import("@/features/payments/pages/PaymentsPage"));
 const TripsPage = lazy(() => import("@/features/trips/pages/TripsPage"));
 const TripCreatePage = lazy(() => import("@/features/trips/pages/TripCreatePage"));
 const TripEditPage = lazy(() => import("@/features/trips/pages/TripEditPage"));
@@ -81,10 +80,6 @@ export const router = createBrowserRouter([
       {
         path: "bookings/:id",
         element: <SuspenseWrapper><BookingDetailsPage /></SuspenseWrapper>,
-      },
-      {
-        path: "payments",
-        element: <SuspenseWrapper><PaymentsPage /></SuspenseWrapper>,
       },
       {
         path: "trips",

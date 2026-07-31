@@ -15,7 +15,6 @@ import notificationReducer from "@/features/notifications/store/notificationSlic
 import configReducer from "@/features/config/store/configSlice";
 import analyticsReducer from "@/features/analytics/store/analyticsSlice";
 import stationReducer from "@/features/stations/store/stationSlice";
-import paymentReducer from "@/features/payments/store/paymentSlice";
 
 export const store = configureStore({
   reducer: {
@@ -32,7 +31,6 @@ export const store = configureStore({
     config: configReducer,
     analytics: analyticsReducer,
     stations: stationReducer,
-    payments: paymentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

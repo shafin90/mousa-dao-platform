@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { useAppSelector } from "@/app/store";
-import { GraduationCap, LayoutDashboard, Calendar, CreditCard, Map, Route, Users, UserCog, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Building2, MessageCircle, Bell, Settings, ClipboardList } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Calendar, Map, Route, Users, UserCog, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Bus, LogOut, MapPin, Building2, MessageCircle, Bell, Settings, ClipboardList } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
@@ -30,7 +30,6 @@ interface NavItem {
 const NavKeys: NavItem[] = [
   { icon: LayoutDashboard, key: "dashboard", href: "/dashboard", roles: ["admin", "staff", "manager"] },
   { icon: Calendar, key: "bookings", href: "/bookings", roles: ["admin", "staff", "manager"] },
-  { icon: CreditCard, key: "payments", href: "/payments", roles: ["admin", "manager"] },
   { icon: Map, key: "trips", href: "/trips", roles: ["admin", "staff", "manager"] },
   // { icon: Navigation, key: "tracking", href: "/tracking", roles: ["admin", "staff"] },
   { icon: Route, key: "routes", href: "/routes", roles: ["admin", "manager"] },
