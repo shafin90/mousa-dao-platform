@@ -1,25 +1,22 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTrips } from "../hooks/useTrips";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
-import { Select } from "@/shared/components/ui/Select";
-import { Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Search, X, AlertTriangle } from "lucide-react";
+import { Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Pencil, Search, X, AlertTriangle } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { busApi, type BusData } from "@/api/busApi";
-import { stationApi, type StationData } from "@/api/stationApi";
-import { tripApi, type TripData, type TripInput, type TripFilters } from "@/api/tripApi";
+import { tripApi, type TripData, type TripFilters } from "@/api/tripApi";
 
 const statusOptions = ["scheduled", "active", "completed", "cancelled"];
 
 const TripsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
   const { showError } = useErrorModal();
 
   const [filterBusId, setFilterBusId] = useState("");
@@ -41,53 +38,20 @@ const TripsPage: React.FC = () => {
   }, [filterBusId, filterDate, filterStatus, filterPriceMin, filterPriceMax, filterSearch]);
 
   const { isAdmin } = useAuth();
-  const { trips, loading, update, refresh } = useTrips(filters);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { trips, loading, refresh } = useTrips(filters);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<TripData | null>(null);
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
-  const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [buses, setBuses] = useState<BusData[]>([]);
-  const [stations, setStations] = useState<StationData[]>([]);
-  const [busesLoading, setBusesLoading] = useState(false);
-  const [form, setForm] = useState({ fromStation: "", toStation: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" });
-
-  const openEdit = (item: TripData) => {
-    setEditingTripId(item._id);
-    setForm({
-      fromStation: item.routeId?.fromCity?._id || "",
-      toStation: item.routeId?.toCity?._id || "",
-      busId: typeof item.busId === "string" ? item.busId : item.busId?._id || "",
-      departureTime: item.departureTime,
-      arrivalTime: item.arrivalTime,
-      date: item.date?.split("T")[0] || item.date,
-      price: String(item.price || ""),
-      status: item.status || "scheduled",
-    });
-    setIsModalOpen(true);
-  };
-
-  const fetchBuses = async () => {
-    setBusesLoading(true);
-    try { const data = await busApi.getAll(); setBuses(data.buses || []); }
-    catch { showError(t("trips.busesLoadFailed")); }
-    finally { setBusesLoading(false); }
-  };
-
-  useEffect(() => { fetchBuses(); stationApi.getAll().then(setStations).catch(() => setStations([])); }, []);
-  useEffect(() => {
-    if (isModalOpen && buses.length === 0) fetchBuses();
-  }, [isModalOpen]);
 
   useEffect(() => {
-    const editId = (location.state as { editTripId?: string } | null)?.editTripId;
-    if (editId && trips.length > 0) {
-      const target = trips.find((tr) => tr._id === editId);
-      if (target) openEdit(target);
-      navigate(location.pathname, { replace: true, state: null });
-    }
+    let cancelled = false;
+    busApi.getAll()
+      .then((data) => { if (!cancelled) setBuses(data.buses || []); })
+      .catch(() => { if (!cancelled) showError(t("trips.busesLoadFailed")); });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, trips]);
+  }, []);
 
   const clearFilters = () => {
     setFilterBusId("");
@@ -99,38 +63,6 @@ const TripsPage: React.FC = () => {
   };
 
   const compactHasFilters = filterSearch || filterBusId || filterDate || filterStatus;
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTripId) return;
-    try {
-      const payload: TripInput = {
-        fromStation: form.fromStation,
-        toStation: form.toStation,
-        busId: form.busId,
-        departureTime: form.departureTime,
-        arrivalTime: form.arrivalTime,
-        date: form.date,
-        price: Number(form.price),
-        status: form.status,
-      }
-      await update(editingTripId, payload);
-      toast.success(t("trips.updated"));
-      setIsModalOpen(false);
-      setEditingTripId(null);
-      setForm({ fromStation: "", toStation: "", busId: "", departureTime: "", arrivalTime: "", date: "", price: "", status: "scheduled" });
-    } catch { showError(t("trips.saveFailed")); }
-  };
-
-  const stationOptions = stations.map((s) => ({
-    value: s._id,
-    label: `${s.name} (${s.cityId?.name || "?"})`,
-  }));
-
-  const busOptions = buses.map((b) => ({
-    value: b._id,
-    label: `${b.busNumber} - ${b.name} (${b.capacity} seats)`,
-  }));
 
   const serialByTripId = useMemo(() => {
     const byDate: Record<string, TripData[]> = {};
@@ -170,6 +102,12 @@ const TripsPage: React.FC = () => {
         <div className="flex gap-1">
           {isAdmin && (
             <>
+              <Button variant="outline" size="sm" className="h-6 w-6 p-0" title={t("common.edit")} onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/trips/${item._id}/edit`);
+              }}>
+                <Pencil size={12} />
+              </Button>
               <Button variant="outline" size="sm" className="h-6 w-6 p-0" onClick={async (e) => {
                 e.stopPropagation();
                 const newStatus = item.status === "active" ? "cancelled" : item.status === "cancelled" ? "scheduled" : "active";
@@ -292,76 +230,6 @@ const TripsPage: React.FC = () => {
             }}>{t("common.delete")}</Button>
           </div>
         </div>
-      </Modal>
-
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingTripId(null); }} title={editingTripId ? t("trips.editTrip") : t("trips.scheduleNewTrip")}>
-        <form className="space-y-4" onSubmit={handleCreate}>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("trips.fromStation")}</label>
-              <Select
-                required
-                value={form.fromStation}
-                onChange={(e) => setForm({...form, fromStation: e.target.value})}
-                options={stationOptions}
-                placeholder={t("trips.selectFromStation")}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("trips.toStation")}</label>
-              <Select
-                required
-                value={form.toStation}
-                onChange={(e) => setForm({...form, toStation: e.target.value})}
-                options={stationOptions}
-                placeholder={t("trips.selectToStation")}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("trips.bus")}</label>
-            <Select
-              required
-              value={form.busId}
-              onChange={(e) => setForm({...form, busId: e.target.value})}
-              options={busOptions}
-              placeholder={busesLoading ? t("trips.loadingBuses") : t("trips.selectBus")}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("trips.date")}</label>
-              <input required type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full p-2 border rounded-md" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("trips.departure")}</label>
-              <input required type="time" value={form.departureTime} onChange={e => setForm({...form, departureTime: e.target.value})} className="w-full p-2 border rounded-md" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("trips.arrival")}</label>
-            <input required type="time" value={form.arrivalTime} onChange={e => setForm({...form, arrivalTime: e.target.value})} className="w-full p-2 border rounded-md" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("trips.price")}</label>
-              <input required type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} className="w-full p-2 border rounded-md" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("trips.status")}</label>
-              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full p-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="scheduled">{t("trips.scheduled")}</option>
-                <option value="active">{t("trips.active")}</option>
-                <option value="completed">{t("trips.completed")}</option>
-                <option value="cancelled">{t("trips.cancelled")}</option>
-              </select>
-            </div>
-          </div>
-          <div className="pt-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button type="submit">{editingTripId ? t("common.update") : t("common.create")}</Button>
-          </div>
-        </form>
       </Modal>
     </div>
   );

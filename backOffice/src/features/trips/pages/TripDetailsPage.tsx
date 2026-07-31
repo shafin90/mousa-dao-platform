@@ -15,7 +15,6 @@ import {
   Wallet,
   MapPin,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -344,10 +343,7 @@ const TripDetailsPage: React.FC = () => {
         {activeSection !== "overview" && (
           <Button
             className="gap-2"
-            onClick={() => {
-              navigate("/trips", { state: { editTripId: trip._id } });
-              toast.info(t("trips.editFromList"));
-            }}
+            onClick={() => navigate(`/trips/${trip._id}/edit`)}
           >
             <Pencil size={16} /> {t("common.edit")}
           </Button>

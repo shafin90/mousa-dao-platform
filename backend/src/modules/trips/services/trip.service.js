@@ -318,13 +318,26 @@ const updateTrip = async (id, companyId, data) => {
   const updateData = { ...data };
   delete updateData.seatsBooked;
 
-  if (data.busId) {
+  const stationsChanged = data.fromStation && data.toStation;
+  if (data.busId || stationsChanged) {
     const current = await tripRepository.findById(id, companyId);
     if (!current) throw new AppError("Trip not found", 404, ErrorCodes.TRIP_NOT_FOUND);
-    const currentBusId = current.busId?._id ? String(current.busId._id) : String(current.busId);
-    if (currentBusId !== String(data.busId)) {
-      const bus = await validateBus(data.busId, companyId);
-      updateData.seatsTotal = Math.max(bus.capacity, current.seatsBooked || 0);
+
+    if (data.busId) {
+      const currentBusId = current.busId?._id ? String(current.busId._id) : String(current.busId);
+      if (currentBusId !== String(data.busId)) {
+        const bus = await validateBus(data.busId, companyId);
+        updateData.seatsTotal = Math.max(bus.capacity, current.seatsBooked || 0);
+      }
+    }
+
+    if (stationsChanged) {
+      const currentFrom = current.fromStation?._id ? String(current.fromStation._id) : String(current.fromStation);
+      const currentTo = current.toStation?._id ? String(current.toStation._id) : String(current.toStation);
+      if (currentFrom !== String(data.fromStation) || currentTo !== String(data.toStation)) {
+        const route = await findOrCreateRoute(companyId, data.fromStation, data.toStation);
+        updateData.routeId = route._id;
+      }
     }
   }
 

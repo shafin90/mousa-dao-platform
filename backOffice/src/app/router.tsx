@@ -11,6 +11,7 @@ const BookingDetailsPage = lazy(() => import("@/features/bookings/pages/BookingD
 const PaymentsPage = lazy(() => import("@/features/payments/pages/PaymentsPage"));
 const TripsPage = lazy(() => import("@/features/trips/pages/TripsPage"));
 const TripCreatePage = lazy(() => import("@/features/trips/pages/TripCreatePage"));
+const TripEditPage = lazy(() => import("@/features/trips/pages/TripEditPage"));
 const TripDetailsPage = lazy(() => import("@/features/trips/pages/TripDetailsPage"));
 const FleetPage = lazy(() => import("@/features/fleet/pages/FleetPage"));
 const FleetCreatePage = lazy(() => import("@/features/fleet/pages/FleetCreatePage"));
@@ -87,6 +88,10 @@ export const router = createBrowserRouter([
       {
         path: "trips/new",
         element: <SuspenseWrapper><TripCreatePage /></SuspenseWrapper>,
+      },
+      {
+        path: "trips/:id/edit",
+        element: <SuspenseWrapper><TripEditPage /></SuspenseWrapper>,
       },
       {
         path: "trips/:id",
