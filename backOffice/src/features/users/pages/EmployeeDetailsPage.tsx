@@ -15,8 +15,6 @@ import {
   Unlock,
   Trash2,
   Edit3,
-  X,
-  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
@@ -94,51 +92,6 @@ const EmployeeDetailsPage: React.FC = () => {
     } catch { showError(t("users.deleteFailed")); }
   };
 
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<Partial<User>>({});
-  const [saving, setSaving] = useState(false);
-
-  const startEdit = () => {
-    setForm({
-      profile: { ...user!.profile },
-      email: user!.email,
-      email2: user!.email2,
-      phone: user!.phone,
-      phone2: user!.phone2,
-      dateOfBirth: user!.dateOfBirth,
-      employmentStatus: user!.employmentStatus,
-      role: user!.role,
-    });
-    setEditing(true);
-  };
-
-  const cancelEdit = () => {
-    setEditing(false);
-    setForm({});
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
-    setSaving(true);
-    try {
-      const updated = await userApi.update(user._id, {
-        firstName: form.profile?.firstName,
-        lastName: form.profile?.lastName,
-        email: form.email,
-        email2: form.email2 || undefined,
-        phone: form.phone,
-        phone2: form.phone2 || undefined,
-        dateOfBirth: form.dateOfBirth || undefined,
-        employmentStatus: form.employmentStatus,
-        role: form.role,
-      });
-      setUser(updated);
-      setEditing(false);
-      toast.success(t("users.updated"));
-    } catch { showError(t("users.updateFailed")); }
-    finally { setSaving(false); }
-  };
-
   const renderField = (label: string, value: React.ReactNode, icon?: React.ReactNode) => (
     <div className="flex items-center justify-between gap-4 py-1.5 text-sm">
       <span className="flex items-center gap-2 text-muted-foreground">
@@ -146,26 +99,6 @@ const EmployeeDetailsPage: React.FC = () => {
         {label}
       </span>
       <span className="text-right font-medium">{value}</span>
-    </div>
-  );
-
-  const renderInput = (
-    label: string,
-    value: string | undefined,
-    onChange: (v: string) => void,
-    opts: { type?: string; required?: boolean; icon?: React.ReactNode } = {}
-  ) => (
-    <div className="space-y-1.5">
-      <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-        {opts.icon && <span className="shrink-0">{opts.icon}</span>}
-        {label}{opts.required && <span className="text-destructive">*</span>}
-      </label>
-      <input
-        type={opts.type || "text"}
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-      />
     </div>
   );
 
@@ -207,37 +140,22 @@ const EmployeeDetailsPage: React.FC = () => {
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <UserIcon size={22} className="text-primary" />
             <span>{user.profile.firstName} {user.profile.lastName}</span>
-            {!editing && (
-              <>
-                <Badge variant="outline" className="capitalize">{t(`roles.${user.role}`, user.role)}</Badge>
-                <Badge variant={user.authTracking?.isLocked ? "destructive" : "success"}>
-                  {user.authTracking?.isLocked ? t("users.locked") : t("users.active")}
-                </Badge>
-              </>
-            )}
+            <Badge variant="outline" className="capitalize">{t(`roles.${user.role}`, user.role)}</Badge>
+            <Badge variant={user.authTracking?.isLocked ? "destructive" : "success"}>
+              {user.authTracking?.isLocked ? t("users.locked") : t("users.active")}
+            </Badge>
           </h1>
           <p className="font-mono text-xs text-muted-foreground">{user._id}</p>
         </div>
         <div className="flex items-center gap-2">
-          {editing ? (
-            <>
-              <Button variant="outline" size="sm" className="gap-2" onClick={cancelEdit}>
-                <X size={16} /> {t("common.cancel")}
-              </Button>
-              <Button size="sm" className="gap-2" onClick={handleSave} disabled={saving}>
-                <Save size={16} /> {saving ? t("common.saving") : t("common.save")}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" size="sm" className="gap-2" onClick={handleToggleStatus} disabled={isSelf} title={isSelf ? t("users.cannotLockSelf") : ""}>
-                {user.authTracking?.isLocked ? <Unlock size={16} /> : <Lock size={16} />}
-                {user.authTracking?.isLocked ? t("users.unlock") : t("users.lock")}
-              </Button>
-              <Button size="sm" className="gap-2" onClick={startEdit}>
-                <Edit3 size={16} /> {t("users.editUser")}
-              </Button>
-            </>
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleToggleStatus} disabled={isSelf} title={isSelf ? t("users.cannotLockSelf") : ""}>
+            {user.authTracking?.isLocked ? <Unlock size={16} /> : <Lock size={16} />}
+            {user.authTracking?.isLocked ? t("users.unlock") : t("users.lock")}
+          </Button>
+          {activeSection === "overview" && (
+            <Button size="sm" className="gap-2" onClick={() => navigate(`/employees/${user._id}/edit`)}>
+              <Edit3 size={16} /> {t("users.editUser")}
+            </Button>
           )}
         </div>
       </div>
@@ -325,17 +243,8 @@ const EmployeeDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              {editing ? (
-                <div className="space-y-3">
-                  {renderInput(t("employees.email1"), form.email, (v) => setForm({ ...form, email: v }), { type: "email", required: true, icon: <Mail size={14} /> })}
-                  {renderInput(t("employees.email2"), form.email2, (v) => setForm({ ...form, email2: v }), { type: "email", icon: <Mail size={14} /> })}
-                </div>
-              ) : (
-                <>
-                  {renderField(t("employees.email1"), user.email || "—", <Mail size={14} />)}
-                  {renderField(t("employees.email2"), user.email2 || "—", <Mail size={14} />)}
-                </>
-              )}
+              {renderField(t("employees.email1"), user.email || "—", <Mail size={14} />)}
+              {renderField(t("employees.email2"), user.email2 || "—", <Mail size={14} />)}
             </CardContent>
           </Card>
           <Card>
@@ -345,17 +254,8 @@ const EmployeeDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              {editing ? (
-                <div className="space-y-3">
-                  {renderInput(t("employees.phone1"), form.phone, (v) => setForm({ ...form, phone: v }), { type: "tel", required: true, icon: <Phone size={14} /> })}
-                  {renderInput(t("employees.phone2"), form.phone2, (v) => setForm({ ...form, phone2: v }), { type: "tel", icon: <Phone size={14} /> })}
-                </div>
-              ) : (
-                <>
-                  {renderField(t("employees.phone1"), user.phone || "—", <Phone size={14} />)}
-                  {renderField(t("employees.phone2"), user.phone2 || "—", <Phone size={14} />)}
-                </>
-              )}
+              {renderField(t("employees.phone1"), user.phone || "—", <Phone size={14} />)}
+              {renderField(t("employees.phone2"), user.phone2 || "—", <Phone size={14} />)}
             </CardContent>
           </Card>
         </div>
@@ -370,46 +270,9 @@ const EmployeeDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              {editing ? (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                      <ShieldCheck size={14} /> {t("users.role")}
-                    </label>
-                    <select
-                      value={form.role ?? user.role}
-                      onChange={(e) => setForm({ ...form, role: e.target.value })}
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="staff">{t("roles.staff")}</option>
-                      <option value="driver">{t("roles.driver")}</option>
-                      <option value="admin">{t("roles.admin")}</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                      <Briefcase size={14} /> {t("employees.employmentStatus")}
-                    </label>
-                    <select
-                      value={form.employmentStatus ?? user.employmentStatus ?? "active"}
-                      onChange={(e) => setForm({ ...form, employmentStatus: e.target.value })}
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="active">{t("employees.active")}</option>
-                      <option value="inactive">{t("employees.inactive")}</option>
-                      <option value="on_leave">{t("employees.on_leave")}</option>
-                      <option value="terminated">{t("employees.terminated")}</option>
-                    </select>
-                  </div>
-                  {renderInput(t("employees.dateOfBirth"), form.dateOfBirth, (v) => setForm({ ...form, dateOfBirth: v }), { type: "date", icon: <CalendarDays size={14} /> })}
-                </div>
-              ) : (
-                <>
-                  {renderField(t("users.role"), <Badge variant="outline" className="capitalize">{t(`roles.${user.role}`, user.role)}</Badge>, <ShieldCheck size={14} />)}
-                  {renderField(t("employees.employmentStatus"), <Badge variant={employmentStatusVariant(user.employmentStatus)}>{t(`employees.${user.employmentStatus ?? "active"}`, user.employmentStatus ?? "active")}</Badge>, <Briefcase size={14} />)}
-                  {renderField(t("employees.dateOfBirth"), user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : "—", <CalendarDays size={14} />)}
-                </>
-              )}
+              {renderField(t("users.role"), <Badge variant="outline" className="capitalize">{t(`roles.${user.role}`, user.role)}</Badge>, <ShieldCheck size={14} />)}
+              {renderField(t("employees.employmentStatus"), <Badge variant={employmentStatusVariant(user.employmentStatus)}>{t(`employees.${user.employmentStatus ?? "active"}`, user.employmentStatus ?? "active")}</Badge>, <Briefcase size={14} />)}
+              {renderField(t("employees.dateOfBirth"), user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : "—", <CalendarDays size={14} />)}
             </CardContent>
           </Card>
           <Card>

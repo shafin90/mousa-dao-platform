@@ -5,7 +5,7 @@ import { useUsers } from "../hooks/useUsers";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/modals/Modal";
-import { Plus, RefreshCw, Trash2, Search, X, Lock, Unlock } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Pencil, Search, X, Lock, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
 import { useAppSelector } from "@/app/store";
@@ -123,6 +123,9 @@ const EmployeesPage: React.FC = () => {
         const isSelf = u._id === currentUserId;
         return (
           <div className="flex gap-1">
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title={t("common.edit")} onClick={(e) => { e.stopPropagation(); navigate(`/employees/${u._id}/edit`); }}>
+              <Pencil size={12} />
+            </Button>
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={isSelf} title={isSelf ? t("users.cannotDeleteSelf") : ""} onClick={(e) => { e.stopPropagation(); setUserToDelete(u); setIsDeleteOpen(true); }}>
               <Trash2 size={12} className="text-destructive" />
             </Button>
