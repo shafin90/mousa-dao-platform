@@ -15,6 +15,7 @@ const TripEditPage = lazy(() => import("@/features/trips/pages/TripEditPage"));
 const TripDetailsPage = lazy(() => import("@/features/trips/pages/TripDetailsPage"));
 const FleetPage = lazy(() => import("@/features/fleet/pages/FleetPage"));
 const FleetCreatePage = lazy(() => import("@/features/fleet/pages/FleetCreatePage"));
+const FleetEditPage = lazy(() => import("@/features/fleet/pages/FleetEditPage"));
 const BusDetailsPage = lazy(() => import("@/features/fleet/pages/BusDetailsPage"));
 const UsersPage = lazy(() => import("@/features/users/pages/UsersPage"));
 const EmployeesPage = lazy(() => import("@/features/users/pages/EmployeesPage"));
@@ -107,6 +108,10 @@ export const router = createBrowserRouter([
       {
         path: "fleet/new",
         element: <SuspenseWrapper><FleetCreatePage /></SuspenseWrapper>,
+      },
+      {
+        path: "fleet/:id/edit",
+        element: <SuspenseWrapper><FleetEditPage /></SuspenseWrapper>,
       },
       {
         path: "fleet/:id",

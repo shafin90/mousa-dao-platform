@@ -268,59 +268,6 @@ const BusDetailsPage: React.FC = () => {
   ];
 
   const [activeSection, setActiveSection] = useState("overview");
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<Record<string, string>>({});
-
-  const startEdit = useCallback(() => { setDraft({}); setEditing(true); }, []);
-  const cancelEdit = useCallback(() => { setEditing(false); setDraft({}); }, []);
-
-  const saveEdit = useCallback(async () => {
-    if (!bus) return;
-    try {
-      let payload: Record<string, unknown> = {};
-      if (activeSection === "vehicle") {
-        payload = {
-          busNumber: draft.busNumber ?? bus.busNumber,
-          name: draft.name ?? bus.name,
-          make: draft.make ?? bus.make,
-          model: draft.model ?? bus.model,
-          year: draft.year ? Number(draft.year) : bus.year,
-          color: draft.color ?? bus.color,
-          plateNumber: draft.plateNumber ?? bus.plateNumber,
-          vin: draft.vin ?? bus.vin,
-          fuelType: draft.fuelType ?? bus.fuelType,
-          odometer: draft.odometer ? Number(draft.odometer) : bus.odometer,
-          registrationNumber: draft.registrationNumber ?? bus.registrationNumber,
-          capacity: draft.capacity ? Number(draft.capacity) : bus.capacity,
-          type: draft.type ?? bus.type,
-        };
-      } else if (activeSection === "compliance") {
-        payload = {
-          registrationExpiry: draft.registrationExpiry || undefined,
-          fitnessExpiry: draft.fitnessExpiry || undefined,
-          insuranceProvider: draft.insuranceProvider || undefined,
-          insurancePolicyNumber: draft.insurancePolicyNumber || undefined,
-          insuranceIssueDate: draft.insuranceIssueDate || undefined,
-          insuranceExpiry: draft.insuranceExpiry || undefined,
-          lastInspectionDate: draft.lastInspectionDate || undefined,
-          firstServiceDate: draft.firstServiceDate || undefined,
-          matriculationDate: draft.matriculationDate || undefined,
-          purchaseDate: draft.purchaseDate || undefined,
-          purchaseCost: draft.purchaseCost ? Number(draft.purchaseCost) : undefined,
-          homeDepot: draft.homeDepot || undefined,
-        };
-      } else {
-        return;
-      }
-      const updated = await busApi.update(bus._id, payload);
-      setBus(updated);
-      toast.success(t("fleet.updated"));
-      setEditing(false);
-      setDraft({});
-    } catch {
-      toast.error(t("fleet.saveFailed"));
-    }
-  }, [bus, activeSection, draft, t]);
 
   const handleSaveSeatLayout = useCallback(async () => {
     if (!bus) return;
@@ -395,13 +342,8 @@ const BusDetailsPage: React.FC = () => {
           <p className="text-sm text-muted-foreground">{makeModel ? `${bus.name} · ${makeModel}` : bus.name}</p>
           <p className="font-mono text-xs text-muted-foreground">{bus._id}</p>
         </div>
-        {editing ? (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={cancelEdit}>{t("common.cancel")}</Button>
-            <Button size="sm" className="gap-2" onClick={saveEdit}><Pencil size={14} /> {t("common.save")}</Button>
-          </div>
-        ) : (
-          <Button variant="outline" size="sm" className="gap-2" onClick={startEdit} disabled={activeSection === "overview" || activeSection === "driver" || activeSection === "managers" || activeSection === "tracking" || activeSection === "photos" || activeSection === "seats" || activeSection === "trips"}>
+        {activeSection === "overview" && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/fleet/${bus._id}/edit`)}>
             <Pencil size={14} /> {t("common.edit")}
           </Button>
         )}
@@ -448,25 +390,7 @@ const BusDetailsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {editing ? (
-              <>
-                <InfoRow label={t("fleet.busNumber")} value={<input type="text" value={draft.busNumber ?? bus.busNumber} onChange={(e) => setDraft({ ...draft, busNumber: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.name")} value={<input type="text" value={draft.name ?? bus.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.make")} value={<input type="text" value={draft.make ?? bus.make ?? ""} onChange={(e) => setDraft({ ...draft, make: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.model")} value={<input type="text" value={draft.model ?? bus.model ?? ""} onChange={(e) => setDraft({ ...draft, model: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.year")} value={<input type="number" value={draft.year ?? bus.year ?? ""} onChange={(e) => setDraft({ ...draft, year: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.color")} value={<input type="text" value={draft.color ?? bus.color ?? ""} onChange={(e) => setDraft({ ...draft, color: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.plateNumber")} value={<input type="text" value={draft.plateNumber ?? bus.plateNumber ?? ""} onChange={(e) => setDraft({ ...draft, plateNumber: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.vin")} value={<input type="text" value={draft.vin ?? bus.vin ?? ""} onChange={(e) => setDraft({ ...draft, vin: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.fuelType")} value={<input type="text" value={draft.fuelType ?? bus.fuelType ?? ""} onChange={(e) => setDraft({ ...draft, fuelType: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.odometer")} value={<input type="number" value={draft.odometer ?? bus.odometer ?? ""} onChange={(e) => setDraft({ ...draft, odometer: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.registrationNumber")} value={<input type="text" value={draft.registrationNumber ?? bus.registrationNumber ?? ""} onChange={(e) => setDraft({ ...draft, registrationNumber: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.capacity")} value={<input type="number" value={draft.capacity ?? bus.capacity} onChange={(e) => setDraft({ ...draft, capacity: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-                <InfoRow label={t("fleet.type")} value={<input type="text" value={draft.type ?? bus.type} onChange={(e) => setDraft({ ...draft, type: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />} />
-              </>
-            ) : (
-              <>
-                <InfoRow label={t("fleet.busNumber")} value={bus.busNumber} />
+            <InfoRow label={t("fleet.busNumber")} value={bus.busNumber} />
                 <InfoRow label={t("fleet.name")} value={bus.name} />
                 <InfoRow label={t("fleet.make")} value={bus.make || t("common.na")} />
                 <InfoRow label={t("fleet.model")} value={bus.model || t("common.na")} />
@@ -493,8 +417,6 @@ const BusDetailsPage: React.FC = () => {
                     <p className="text-xs text-muted-foreground">{t("fleet.noAmenities")}</p>
                   )}
                 </div>
-              </>
-            )}
           </CardContent>
         </Card>
       )}

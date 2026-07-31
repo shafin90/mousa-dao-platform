@@ -6,7 +6,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { DataTable } from "@/shared/components/tables/DataTable";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
-import { Plus, Trash2, Search, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, X } from "lucide-react";
 import { Modal } from "@/shared/components/modals/Modal";
 import { toast } from "sonner";
 import type { BusData } from "@/api/busApi";
@@ -34,11 +34,19 @@ const FleetPage: React.FC = () => {
     {
       header: t("fleet.actions"),
       accessor: (item: BusData) => (
-        <div className="flex justify-end">
+        <div className="flex gap-1">
           {isAdmin && (
-            <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); setBusToDelete(item); setIsDeleteOpen(true); }}>
-              <Trash2 size={14} />
-            </Button>
+            <>
+              <Button variant="outline" size="sm" className="h-6 w-6 p-0" title={t("common.edit")} onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/fleet/${item._id}/edit`);
+              }}>
+                <Pencil size={12} />
+              </Button>
+              <Button variant="destructive" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setBusToDelete(item); setIsDeleteOpen(true); }}>
+                <Trash2 size={12} />
+              </Button>
+            </>
           )}
         </div>
       ),
