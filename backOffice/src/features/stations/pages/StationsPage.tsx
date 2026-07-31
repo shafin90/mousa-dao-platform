@@ -7,7 +7,7 @@ import { DataTable } from "@/shared/components/tables/DataTable";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Modal } from "@/shared/components/modals/Modal";
-import { Plus, Search, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import type { StationData } from "@/api/stationApi";
 import { cityApi, type CityData } from "@/api/cityApi";
@@ -70,13 +70,21 @@ const StationsPage: React.FC = () => {
       accessor: (item: StationData) => (
         <div className="flex justify-end">
           {isAdmin && (
-            <Button variant="destructive" size="sm" onClick={(e) => {
-              e.stopPropagation();
-              setStationToDelete(item);
-              setIsDeleteOpen(true);
-            }}>
-              <Trash2 size={14} />
-            </Button>
+            <>
+              <Button variant="outline" size="sm" className="h-6 w-6 p-0" title={t("common.edit")} onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/stations/${item._id}/edit`);
+              }}>
+                <Pencil size={12} />
+              </Button>
+              <Button variant="destructive" size="sm" onClick={(e) => {
+                e.stopPropagation();
+                setStationToDelete(item);
+                setIsDeleteOpen(true);
+              }}>
+                <Trash2 size={14} />
+              </Button>
+            </>
           )}
         </div>
       ),

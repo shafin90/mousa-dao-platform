@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -34,8 +34,6 @@ import { stationApi, type StationData } from "@/api/stationApi";
 import { tripApi, type TripData } from "@/api/tripApi";
 import { routeApi, type RouteData } from "@/api/routeApi";
 import { busApi, type BusData } from "@/api/busApi";
-import { toast } from "sonner";
-import { useErrorModal } from "@/shared/contexts/ErrorContext";
 
 const SECTIONS = (t: (key: string) => string) => [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -113,46 +111,6 @@ const StationDetailsPage: React.FC = () => {
   const [buses, setBuses] = useState<BusData[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
 
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<Record<string, string>>({});
-  const { showError } = useErrorModal();
-
-  const startEdit = useCallback(() => {
-    if (!station) return;
-    setDraft({});
-    setEditing(true);
-  }, [station]);
-
-  const cancelEdit = useCallback(() => {
-    setEditing(false);
-    setDraft({});
-  }, []);
-
-  const saveEdit = useCallback(async () => {
-    if (!station) return;
-    try {
-      let payload: Record<string, unknown> = {};
-      if (activeSection === "address") {
-        payload = { address1: draft.address1 || undefined, address2: draft.address2 || undefined };
-      } else if (activeSection === "contact") {
-        payload = { phone1: draft.phone1 || undefined, phone2: draft.phone2 || undefined, email1: draft.email1 || undefined, email2: draft.email2 || undefined };
-      } else if (activeSection === "management") {
-        payload = { manager1: draft.manager1 || undefined, manager2: draft.manager2 || undefined };
-      } else if (activeSection === "location") {
-        payload = { location: { lat: Number(draft.lat), lng: Number(draft.lng) } };
-      } else if (activeSection === "status") {
-        payload = { isActive: draft.isActive === "true" };
-      }
-      const updated = await stationApi.update(station._id, payload);
-      setStation(updated);
-      toast.success(t("stations.updated"));
-      setEditing(false);
-      setDraft({});
-    } catch {
-      showError(t("stations.updateFailed"));
-    }
-  }, [station, activeSection, draft, showError, t]);
-
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -224,16 +182,7 @@ const StationDetailsPage: React.FC = () => {
       attribution: "&copy; OpenStreetMap",
       maxZoom: 18,
     }).addTo(map);
-    const marker = L.marker([lat, lng], { draggable: editing }).addTo(map);
-    marker.on("dragend", () => {
-      const pos = marker.getLatLng();
-      setDraft((prev: Record<string, unknown>) => ({ ...prev, lat: String(pos.lat.toFixed(6)), lng: String(pos.lng.toFixed(6)) }));
-    });
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      if (!editing) return;
-      marker.setLatLng(e.latlng);
-      setDraft((prev: Record<string, unknown>) => ({ ...prev, lat: String(e.latlng.lat.toFixed(6)), lng: String(e.latlng.lng.toFixed(6)) }));
-    });
+    const marker = L.marker([lat, lng]).addTo(map);
     markerRef.current = marker;
     mapInstanceRef.current = map;
     return () => {
@@ -241,7 +190,7 @@ const StationDetailsPage: React.FC = () => {
       mapInstanceRef.current = null;
       markerRef.current = null;
     };
-  }, [station, activeSection, editing]);
+  }, [station, activeSection]);
 
   if (loading) {
     return (
@@ -286,13 +235,8 @@ const StationDetailsPage: React.FC = () => {
           <Badge variant={station.isActive !== false ? "success" : "secondary"} className="w-fit">
             {station.isActive !== false ? t("stations.active") : t("stations.inactive")}
           </Badge>
-          {editing ? (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={cancelEdit}>{t("common.cancel")}</Button>
-              <Button size="sm" className="gap-2" onClick={saveEdit}><Pencil size={14} /> {t("common.save")}</Button>
-            </div>
-          ) : (
-            <Button variant="outline" size="sm" className="gap-2" onClick={startEdit}>
+          {activeSection === "overview" && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/stations/${station._id}/edit`)}>
               <Pencil size={14} /> {t("common.edit")}
             </Button>
           )}
@@ -342,17 +286,8 @@ const StationDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              {editing ? (
-                <>
-                  {renderField(t("stations.address1"), <input type="text" value={draft.address1 ?? station.address1 ?? ""} onChange={(e) => setDraft({ ...draft, address1: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <MapPin size={14} />)}
-                  {renderField(t("stations.address2"), <input type="text" value={draft.address2 ?? station.address2 ?? ""} onChange={(e) => setDraft({ ...draft, address2: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <MapPin size={14} />)}
-                </>
-              ) : (
-                <>
-                  {renderField(t("stations.address1"), station.address1 || "—", <MapPin size={14} />)}
-                  {renderField(t("stations.address2"), station.address2 || "—", <MapPin size={14} />)}
-                </>
-              )}
+              {renderField(t("stations.address1"), station.address1 || "—", <MapPin size={14} />)}
+              {renderField(t("stations.address2"), station.address2 || "—", <MapPin size={14} />)}
             </CardContent>
           </Card>
         </div>
@@ -367,21 +302,10 @@ const StationDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              {editing ? (
-                <>
-                  {renderField(t("stations.phone1"), <input type="tel" value={draft.phone1 ?? station.phone1 ?? ""} onChange={(e) => setDraft({ ...draft, phone1: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <Phone size={14} />)}
-                  {renderField(t("stations.phone2"), <input type="tel" value={draft.phone2 ?? station.phone2 ?? ""} onChange={(e) => setDraft({ ...draft, phone2: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <Phone size={14} />)}
-                  {renderField(t("stations.email1"), <input type="email" value={draft.email1 ?? station.email1 ?? ""} onChange={(e) => setDraft({ ...draft, email1: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <Mail size={14} />)}
-                  {renderField(t("stations.email2"), <input type="email" value={draft.email2 ?? station.email2 ?? ""} onChange={(e) => setDraft({ ...draft, email2: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <Mail size={14} />)}
-                </>
-              ) : (
-                <>
-                  {renderField(t("stations.phone1"), station.phone1 || "—", <Phone size={14} />)}
-                  {renderField(t("stations.phone2"), station.phone2 || "—", <Phone size={14} />)}
-                  {renderField(t("stations.email1"), station.email1 || "—", <Mail size={14} />)}
-                  {renderField(t("stations.email2"), station.email2 || "—", <Mail size={14} />)}
-                </>
-              )}
+              {renderField(t("stations.phone1"), station.phone1 || "—", <Phone size={14} />)}
+              {renderField(t("stations.phone2"), station.phone2 || "—", <Phone size={14} />)}
+              {renderField(t("stations.email1"), station.email1 || "—", <Mail size={14} />)}
+              {renderField(t("stations.email2"), station.email2 || "—", <Mail size={14} />)}
             </CardContent>
           </Card>
         </div>
@@ -396,17 +320,8 @@ const StationDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              {editing ? (
-                <>
-                  {renderField(t("stations.manager1"), <input type="text" value={draft.manager1 ?? (typeof station.manager1 === "object" ? `${station.manager1.profile.firstName} ${station.manager1.profile.lastName}` : station.manager1 || "")} onChange={(e) => setDraft({ ...draft, manager1: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <UserIcon size={14} />)}
-                  {renderField(t("stations.manager2"), <input type="text" value={draft.manager2 ?? (typeof station.manager2 === "object" ? `${station.manager2.profile.firstName} ${station.manager2.profile.lastName}` : station.manager2 || "")} onChange={(e) => setDraft({ ...draft, manager2: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />, <UserIcon size={14} />)}
-                </>
-              ) : (
-                <>
-                  {renderField(t("stations.manager1"), getManagerName(station.manager1) || "—", <UserIcon size={14} />)}
-                  {renderField(t("stations.manager2"), getManagerName(station.manager2) || "—", <UserIcon size={14} />)}
-                </>
-              )}
+              {renderField(t("stations.manager1"), getManagerName(station.manager1) || "—", <UserIcon size={14} />)}
+              {renderField(t("stations.manager2"), getManagerName(station.manager2) || "—", <UserIcon size={14} />)}
             </CardContent>
           </Card>
         </div>
@@ -559,17 +474,10 @@ const StationDetailsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {editing ? (
-                <div className="flex gap-2">
-                  <div className="flex-1">{renderField("Lat", <input type="number" step="any" value={draft.lat ?? String(station.location.lat)} onChange={(e) => setDraft({ ...draft, lat: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />)}</div>
-                  <div className="flex-1">{renderField("Lng", <input type="number" step="any" value={draft.lng ?? String(station.location.lng)} onChange={(e) => setDraft({ ...draft, lng: e.target.value })} className="w-full p-1.5 border rounded-md bg-muted/30 text-sm" />)}</div>
-                </div>
-              ) : (
-                renderField(
-                  t("stations.coordinates"),
-                  `${station.location.lat.toFixed(6)}, ${station.location.lng.toFixed(6)}`,
-                  <Globe size={14} />
-                )
+              {renderField(
+                t("stations.coordinates"),
+                `${station.location.lat.toFixed(6)}, ${station.location.lng.toFixed(6)}`,
+                <Globe size={14} />
               )}
               <div ref={mapRef} className="h-64 w-full rounded-lg border z-0" />
             </CardContent>
@@ -587,25 +495,12 @@ const StationDetailsPage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1">
-                {editing ? (
-                  <div className="flex items-center gap-3 pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="editStatus" checked={(draft.isActive ?? String(station.isActive !== false)) === "true"} onChange={() => setDraft({ ...draft, isActive: "true" })} className="accent-primary" />
-                      <span className="text-sm">{t("stations.active")}</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="editStatus" checked={(draft.isActive ?? String(station.isActive !== false)) === "false"} onChange={() => setDraft({ ...draft, isActive: "false" })} className="accent-destructive" />
-                      <span className="text-sm">{t("stations.inactive")}</span>
-                    </label>
-                  </div>
-                ) : (
-                  renderField(
-                    t("stations.status"),
-                    <Badge variant={station.isActive !== false ? "success" : "secondary"}>
-                      {station.isActive !== false ? t("stations.active") : t("stations.inactive")}
-                    </Badge>,
-                    <ShieldCheck size={14} />
-                  )
+                {renderField(
+                  t("stations.status"),
+                  <Badge variant={station.isActive !== false ? "success" : "secondary"}>
+                    {station.isActive !== false ? t("stations.active") : t("stations.inactive")}
+                  </Badge>,
+                  <ShieldCheck size={14} />
                 )}
               </CardContent>
             </Card>
