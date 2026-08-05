@@ -61,25 +61,7 @@ const DashboardPage: React.FC = () => {
         <div className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
         <div className="relative grid gap-6 p-6 sm:p-8 lg:grid-cols-3 lg:items-center">
           <div className="lg:col-span-2 space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-white/20 text-white border-white/30 backdrop-blur hover:bg-white/25">
-                <Sparkles size={12} className="mr-1" /> {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
-              </Badge>
-              {user?.role && (
-                <Badge className="bg-white/15 text-white/90 border-white/20 backdrop-blur capitalize">
-                  {t(`roles.${user.role}`, { defaultValue: user.role })}
-                </Badge>
-              )}
-            </div>
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                {greeting}, {fullName} 👋
-              </h2>
-              <p className="mt-1 max-w-2xl text-white/85 text-sm sm:text-base">
-                {t("dashboard.subtitle")}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="rounded-xl bg-white/10 backdrop-blur border border-white/15 px-3 py-2.5">
                 <div className="flex items-center gap-1.5 text-white/75 text-xs">
                   <Ticket size={12} /> {t("dashboard.kpi.bookingsToday")}
@@ -113,16 +95,6 @@ const DashboardPage: React.FC = () => {
               onClick={() => navigate("/trips")}
             >
               <Plus size={16} /> {t("dashboard.scheduleTrip")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white gap-2 backdrop-blur"
-              onClick={refreshStats}
-              disabled={loading || chartLoading || extendedLoading}
-            >
-              <RefreshCw size={14} className={loading || chartLoading || extendedLoading ? "animate-spin" : ""} />
-              {t("dashboard.updatedAt")} {new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
             </Button>
           </div>
         </div>
