@@ -33,6 +33,14 @@
     "tutorial": "Tutorial",
     "activityLog": "Activity Log"
   },
+  "sections": {
+    "operations": "Operations",
+    "fleet": "Fleet & Maintenance",
+    "network": "Network",
+    "people": "People",
+    "insights": "Insights",
+    "support": "Support & Admin"
+  },
   "common": {
     "refresh": "Refresh",
     "cancel": "Cancel",
@@ -83,30 +91,63 @@
     "manager": "Manager"
   },
   "dashboard": {
-    "title": "Dashboard",
-    "subtitle": "Real-time operational overview.",
+    "title": "Command Center",
+    "subtitle": "Live business performance & real-time operations.",
+    "greeting": "Good day",
+    "updatedAt": "Updated",
     "kpi": {
       "bookingsToday": "Bookings Today",
       "revenueToday": "Revenue Today",
       "activeTrips": "Active Trips",
-      "occupancy": "Occupancy",
-      "passengers": "Passengers",
-      "pendingPayments": "Pending Payments"
+      "occupancy": "Occupancy Rate",
+      "passengers": "Passengers Today",
+      "pendingPayments": "Pending Payments",
+      "totalRevenue": "All-Time Revenue",
+      "totalBuses": "Fleet Size",
+      "totalCustomers": "Total Customers"
     },
-    "liveTrips": "Live Trips Today",
-    "alerts": "Alerts & Incidents",
-    "recentBookings": "Recent Bookings",
-    "paymentOverview": "Payment Overview",
-    "quickActions": "Quick Actions",
-    "revenueTrend": "Revenue Trend (14d)",
-    "bookingsTrend": "Bookings Trend (14d)",
-    "overallOccupancy": "Overall Occupancy",
+    "kpiHint": {
+      "bookingsToday": "New reservations in the last 24h",
+      "revenueToday": "Gross ticket sales today",
+      "activeTrips": "Trips on the road now",
+      "occupancy": "Avg seats filled vs capacity",
+      "passengersToday": "Passengers traveling today",
+      "pendingPayments": "Transactions to reconcile",
+      "totalRevenue": "Cumulative revenue to date",
+      "totalBuses": "Buses registered in fleet",
+      "totalCustomers": "Registered passenger accounts"
+    },
+    "liveTrips": "Live Trips Now",
+    "liveTripsBus": "Bus",
+    "liveTripsRoute": "Route",
+    "liveTripsDeparts": "Departs",
+    "liveTripsSeats": "Seats",
+    "liveTripsStatus": "Status",
+    "active": "In Service",
+    "scheduled": "Boarding Soon",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "alerts": "Attention Required",
+    "recentBookings": "Latest Bookings",
+    "paymentOverview": "Payment Health",
+    "quickActions": "Start Here",
+    "revenueTrend": "Revenue (14 days)",
+    "bookingsTrend": "Bookings (14 days)",
+    "overallOccupancy": "Fleet Occupancy",
     "viewAll": "View All",
-    "activeBuses": "{{count}} active buses - {{total}} total trips",
-    "scheduleTrip": "Schedule Trip",
-    "newRoute": "New Route",
-    "addBus": "Add Bus",
-    "createUser": "Create User"
+    "manage": "Manage",
+    "activeBuses": "{{count}} buses on the road out of {{total}} trips scheduled",
+    "scheduleTrip": "Schedule a Trip",
+    "newRoute": "Create Route",
+    "addBus": "Add Bus to Fleet",
+    "createUser": "Invite Employee",
+    "newBooking": "Record Manual Booking",
+    "runRateDaily": "Daily Run Rate",
+    "insights": "Key Insights",
+    "occupancyLow": "Occupancy is below 60% — consider promotions or route adjustments.",
+    "occupancyGood": "Healthy occupancy — keep up the pace!",
+    "alertsNone": "All systems operational. No active incidents.",
+    "topRoutes": "Top Routes by Bookings"
   },
   "analytics": {
     "title": "Analytics",
@@ -583,6 +624,14 @@
     "seatMap": "Seat Map",
     "seatAvailable": "Available",
     "seatBooked": "Booked",
+    "seatBlocked": "Blocked",
+    "blocked": "Blocked",
+    "clickToBlock": "Click to block",
+    "blockSeatHint": "Click a seat to block/unblock it. Blocked seats cannot be booked by customers.",
+    "seatUnblocked": "Seat unblocked",
+    "seatBlocked": "Seat blocked",
+    "seatBlockFailed": "Failed to update seat",
+    "seatsBlockedCount": "{{blocked}} of {{total}} seats blocked",
     "front": "Front",
     "seatsBookedCount": "{{booked}} of {{total}} seats booked",
     "passengerManifest": "Passenger Manifest",
@@ -1035,7 +1084,10 @@
     "noData": "No booking data available.",
     "bookedOn": "Booked On",
     "backToBookings": "Back to Bookings",
-    "notFound": "Booking not found."
+    "notFound": "Booking not found.",
+    "seatChanged": "Seat changed successfully",
+    "seatChangeFailed": "Failed to change seat",
+    "selectSeat": "Select seat"
   },
   "payments": {
     "title": "Payments",
@@ -1134,7 +1186,7 @@
     "successRate": "Success Rate"
   },
   "charts": {
-    "noData": "No data",
+    "noData": "No data yet",
     "revenue": "Revenue",
     "bookings": "Bookings",
     "occupancy": "Occupancy",
@@ -1145,11 +1197,50 @@
     "cancellationAnalysis": "Cancellation Analysis",
     "cancelled": "Cancelled",
     "totalBookings": "Total Bookings",
-    "revenueTrend": "Revenue Trend"
+    "revenueTrend": "Revenue Trend",
+    "revenueByMethod": "Revenue by Payment Method",
+    "bookingsByStatus": "Bookings by Status",
+    "routeOccupancy": "Occupancy by Route",
+    "paymentMethods": {
+      "card": "Card",
+      "cash": "Cash",
+      "wallet": "Wallet",
+      "transfer": "Transfer",
+      "orange": "Orange Money",
+      "momo": "Mobile Money",
+      "other": "Other"
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    }
   },
   "liveTrips": {
     "noActive": "No active trips today.",
     "occupancy": "Occupancy"
+  },
+  "dashboardTables": {
+    "liveTrips": {
+      "route": "Route",
+      "bus": "Bus",
+      "departure": "Departs",
+      "seats": "Seats Sold/Capacity",
+      "occupancy": "Occ %",
+      "status": "Status"
+    },
+    "topRoutes": {
+      "rank": "#",
+      "route": "Route",
+      "bookings": "Bookings",
+      "share": "Share"
+    },
+    "tripOccupancy": {
+      "route": "Route",
+      "occupancy": "Occ %",
+      "trend": "Trend"
+    }
   },
   "recentBookings": {
     "none": "No recent bookings."

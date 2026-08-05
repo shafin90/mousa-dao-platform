@@ -51,12 +51,13 @@ const BookingsPage: React.FC = () => {
 
   const columns = [
     { header: t("bookings.bookingCode"), accessor: (item: BookingData) => <span className="font-mono font-medium">{item.bookingCode || item._id?.slice(-6).toUpperCase()}</span> },
-    { header: t("bookings.customer"), accessor: (item: BookingData) => (
-        <div>
-          <p className="font-medium">{item.userId?.profile?.firstName} {item.userId?.profile?.lastName}</p>
-          <p className="text-xs text-muted-foreground">{item.userId?.email}</p>
-        </div>
-      )
+    { header: t("bookings.customer"), accessor: (item: BookingData) => {
+        const primaryPassenger = item.passengers && item.passengers.length > 0 ? item.passengers[0] : null;
+        const name = primaryPassenger?.name
+          || `${item.userId?.profile?.firstName || ""} ${item.userId?.profile?.lastName || ""}`.trim()
+          || "—";
+        return <p className="font-medium">{name}</p>;
+      }
     },
     { header: t("bookings.route"), accessor: (item: BookingData) => item.tripId?.routeId ? `${item.tripId.routeId.fromCity?.name || ''} → ${item.tripId.routeId.toCity?.name || ''}` : t("common.na") },
     { header: t("bookings.seats"), accessor: (item: BookingData) => Array.isArray(item.seats) ? item.seats.join(', ') : t("common.na") },
@@ -92,7 +93,7 @@ const BookingsPage: React.FC = () => {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder={`${t("common.search")} ${t("bookings.bookingCode")} / email...`}
+            placeholder={`${t("common.search")} ${t("bookings.bookingCode")} / ${t("users.phoneLabel")}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-9 pr-4 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"

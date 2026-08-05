@@ -39,6 +39,14 @@ const SettingsPage = lazy(() => import("@/features/settings/pages/SettingsPage")
 const ActivityLogPage = lazy(() => import("@/features/audit-logs/pages/AuditLogsPage"));
 const SupportPage = lazy(() => import("@/features/support/pages/SupportPage"));
 const ConversationPage = lazy(() => import("@/features/support/pages/ConversationPage"));
+const LiveTrackingPage = lazy(() => import("@/features/tracking/pages/LiveTrackingPage"));
+const TicketsPage = lazy(() => import("@/features/tickets/pages/TicketsPage"));
+const MaintenanceDashboardPage = lazy(() => import("@/features/maintenance/pages/MaintenanceDashboardPage"));
+const MaintenanceSchedulePage = lazy(() => import("@/features/maintenance/pages/MaintenanceSchedulePage"));
+const WorkOrdersPage = lazy(() => import("@/features/maintenance/pages/WorkOrdersPage"));
+const MaintenanceRecordsPage = lazy(() => import("@/features/maintenance-records/pages/MaintenanceRecordsPage"));
+const MaintenanceStaffPage = lazy(() => import("@/features/maintenance-staff/pages/MaintenanceStaffPage"));
+const MaintenanceFacilitiesPage = lazy(() => import("@/features/maintenance-facilities/pages/MaintenanceFacilitiesPage"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -202,6 +210,38 @@ export const router = createBrowserRouter([
       {
         path: "support/:id",
         element: <SuspenseWrapper><ConversationPage /></SuspenseWrapper>,
+      },
+      {
+        path: "tickets",
+        element: <SuspenseWrapper><TicketsPage /></SuspenseWrapper>,
+      },
+      {
+        path: "tracking",
+        element: <SuspenseWrapper><LiveTrackingPage /></SuspenseWrapper>,
+      },
+      {
+        path: "maintenance/dashboard",
+        element: <SuspenseWrapper><MaintenanceDashboardPage /></SuspenseWrapper>,
+      },
+      {
+        path: "maintenance/schedule",
+        element: <SuspenseWrapper><MaintenanceSchedulePage /></SuspenseWrapper>,
+      },
+      {
+        path: "maintenance/work-orders",
+        element: <SuspenseWrapper><WorkOrdersPage /></SuspenseWrapper>,
+      },
+      {
+        path: "maintenance/records",
+        element: <SuspenseWrapper><MaintenanceRecordsPage /></SuspenseWrapper>,
+      },
+      {
+        path: "maintenance/staff",
+        element: <SuspenseWrapper><MaintenanceStaffPage /></SuspenseWrapper>,
+      },
+      {
+        path: "maintenance/facilities",
+        element: <SuspenseWrapper><MaintenanceFacilitiesPage /></SuspenseWrapper>,
       },
     ],
   },

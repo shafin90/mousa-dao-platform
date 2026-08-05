@@ -46,5 +46,9 @@
     "mongodb-memory-server": "^11.1.0",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
+  },
+  "optionalDependencies": {
+    "axios": "^1.19.0",
+    "socket.io-client": "^4.6.2"
   }
 }

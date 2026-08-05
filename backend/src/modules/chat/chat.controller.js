@@ -1,6 +1,15 @@
 const { Conversation, ChatMessage } = require('./chat.model');
 const { respond } = require('../../utils/response');
 
+const emitToCompanySafe = (companyId, event, data) => {
+  try {
+    const socketModule = require('../../socket');
+    if (socketModule && typeof socketModule.emitToCompany === 'function') {
+      socketModule.emitToCompany(companyId, event, data);
+    }
+  } catch (_err) {}
+};
+
 exports.getMyConversations = async (req, res, next) => {
   try {
     const query = { companyId: req.user.companyId };
@@ -51,8 +60,9 @@ exports.createConversation = async (req, res, next) => {
       subject: req.body.subject || 'Support',
     });
 
+    let firstMessage = null;
     if (req.body.message) {
-      await ChatMessage.create({
+      firstMessage = await ChatMessage.create({
         companyId: req.user.companyId,
         conversationId: conversation._id,
         senderId: req.user._id,
@@ -63,10 +73,18 @@ exports.createConversation = async (req, res, next) => {
       conversation.lastMessageAt = new Date();
       conversation.unreadAgent = 1;
       await conversation.save();
+      firstMessage = await ChatMessage.findById(firstMessage._id)
+        .populate('senderId', 'phone profile role');
     }
 
     const populated = await Conversation.findById(conversation._id)
       .populate('customerId', 'phone profile');
+
+    emitToCompanySafe(conversation.companyId, 'chat:conversation-updated', populated);
+    if (firstMessage) {
+      emitToCompanySafe(conversation.companyId, 'chat:message', firstMessage);
+    }
+
     respond(res, 200, populated);
   } catch (error) {
     next(error);
@@ -75,14 +93,18 @@ exports.createConversation = async (req, res, next) => {
 
 exports.markRead = async (req, res, next) => {
   try {
-    const role = req.user.role === 'customer' ? 'customer' : 'agent';
-    const updateField = role === 'customer' ? 'unreadCustomer' : 'unreadAgent';
+    const isCustomer = req.user.role === 'customer';
+    const updateField = isCustomer ? 'unreadCustomer' : 'unreadAgent';
     await Conversation.updateOne(
       { _id: req.params.id, companyId: req.user.companyId },
       { $set: { [updateField]: 0 } }
     );
     await ChatMessage.updateMany(
-      { conversationId: req.params.id, readAt: null },
+      {
+        conversationId: req.params.id,
+        readAt: null,
+        senderRole: isCustomer ? { $ne: 'customer' } : 'customer',
+      },
       { readAt: new Date() }
     );
     respond(res, 200, { success: true });

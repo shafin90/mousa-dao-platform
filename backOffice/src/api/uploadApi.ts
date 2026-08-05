@@ -11,10 +11,7 @@ export const uploadApi = {
   uploadImages: async (files: File[]): Promise<string[]> => {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
-    const { data } = await apiClient.post<ApiResponse<UploadResult>>("/uploads", formData, {
-      // Let the browser set multipart/form-data with the correct boundary.
-      headers: { "Content-Type": undefined as unknown as string },
-    });
+    const { data } = await apiClient.post<ApiResponse<UploadResult>>("/uploads", formData);
     return data.data.urls;
   },
 };

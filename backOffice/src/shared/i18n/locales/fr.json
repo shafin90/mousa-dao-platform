@@ -29,7 +29,16 @@
       "support": "Support",
     "configuration": "Configuration",
     "tutorial": "Tutoriel",
-    "activityLog": "Journal d'Activité"
+    "activityLog": "Journal d'Activité",
+    "tracking": "Suivi en Temps Réel"
+  },
+  "sections": {
+    "operations": "Opérations",
+    "fleet": "Flotte & Maintenance",
+    "network": "Réseau",
+    "people": "Personnes",
+    "insights": "Analyses",
+    "support": "Support & Admin"
   },
   "common": {
     "refresh": "Actualiser",
@@ -80,30 +89,63 @@
     "manager": "Gestionnaire"
   },
   "dashboard": {
-    "title": "Tableau de Bord",
-    "subtitle": "Aperçu opérationnel en temps réel.",
+    "title": "Centre de Commande",
+    "subtitle": "Performance commerciale en direct et opérations en temps réel.",
+    "greeting": "Bonne journée",
+    "updatedAt": "Mis à jour",
     "kpi": {
       "bookingsToday": "Réservations Aujourd'hui",
       "revenueToday": "Revenus Aujourd'hui",
       "activeTrips": "Voyages Actifs",
       "occupancy": "Taux d'Occupation",
-      "passengers": "Passagers",
-      "pendingPayments": "Paiements en Attente"
+      "passengers": "Passagers Aujourd'hui",
+      "pendingPayments": "Paiements en Attente",
+      "totalRevenue": "Revenus Cumulés",
+      "totalBuses": "Taille de Flotte",
+      "totalCustomers": "Clients Totaux"
+    },
+    "kpiHint": {
+      "bookingsToday": "Nouvelles réservations des dernières 24h",
+      "revenueToday": "Ventes brutes de billets aujourd'hui",
+      "activeTrips": "Voyages en cours sur la route",
+      "occupancy": "Places moyennes remplies vs capacité",
+      "passengersToday": "Passagers en voyage aujourd'hui",
+      "pendingPayments": "Transactions à rapprocher",
+      "totalRevenue": "Revenus cumulés à ce jour",
+      "totalBuses": "Bus enregistrés dans la flotte",
+      "totalCustomers": "Comptes passagers enregistrés"
     },
     "liveTrips": "Voyages en Direct",
-    "alerts": "Alertes et Incidents",
-    "recentBookings": "Réservations Récentes",
-    "paymentOverview": "Aperçu des Paiements",
-    "quickActions": "Actions Rapides",
-    "revenueTrend": "Tendance des Revenus (14j)",
-    "bookingsTrend": "Tendance des Réservations (14j)",
-    "overallOccupancy": "Occupation Globale",
+    "liveTripsBus": "Bus",
+    "liveTripsRoute": "Trajet",
+    "liveTripsDeparts": "Départ",
+    "liveTripsSeats": "Places",
+    "liveTripsStatus": "Statut",
+    "active": "En Service",
+    "scheduled": "Embarquement Prochain",
+    "completed": "Terminé",
+    "cancelled": "Annulé",
+    "alerts": "Attention Requise",
+    "recentBookings": "Dernières Réservations",
+    "paymentOverview": "Santé des Paiements",
+    "quickActions": "Par où Commencer",
+    "revenueTrend": "Revenus (14 jours)",
+    "bookingsTrend": "Réservations (14 jours)",
+    "overallOccupancy": "Occupation Flotte",
     "viewAll": "Voir Tout",
-    "activeBuses": "{{count}} bus actifs - {{total}} voyages total",
+    "manage": "Gérer",
+    "activeBuses": "{{count}} bus sur la route sur {{total}} voyages programmés",
     "scheduleTrip": "Planifier un Voyage",
-    "newRoute": "Nouvelle Ligne",
-    "addBus": "Ajouter un Bus",
-    "createUser": "Créer un Utilisateur"
+    "newRoute": "Créer une Ligne",
+    "addBus": "Ajouter un Bus à la Flotte",
+    "createUser": "Inviter un Employé",
+    "newBooking": "Saisir Réservation Manuelle",
+    "runRateDaily": "Cadence Quotidienne",
+    "insights": "Points Clés",
+    "occupancyLow": "Occupation inférieure à 60 % — envisagez des promotions ou ajustements.",
+    "occupancyGood": "Occupation saine — continuez comme ça !",
+    "alertsNone": "Tous les systèmes opérationnels. Aucun incident actif.",
+    "topRoutes": "Lignes les plus Réservées"
   },
   "analytics": {
     "title": "Analytique",
@@ -580,6 +622,14 @@
     "seatMap": "Plan des Sièges",
     "seatAvailable": "Disponible",
     "seatBooked": "Réservé",
+    "seatBlocked": "Bloqué",
+    "blocked": "Bloqué",
+    "clickToBlock": "Cliquer pour bloquer/débloquer",
+    "blockSeatHint": "Cliquez sur un siège pour le bloquer/débloquer. Les sièges bloqués ne peuvent pas être réservés par les clients.",
+    "seatUnblocked": "Siège débloqué",
+    "seatBlocked": "Siège bloqué",
+    "seatBlockFailed": "Échec de la mise à jour du siège",
+    "seatsBlockedCount": "{{blocked}} sur {{total}} sièges bloqués",
     "front": "Avant",
     "seatsBookedCount": "{{booked}} sur {{total}} sièges réservés",
     "passengerManifest": "Liste des Passagers",
@@ -1032,7 +1082,10 @@
     "noData": "Aucune donnée de réservation disponible.",
     "bookedOn": "Réservé le",
     "backToBookings": "Retour aux Réservations",
-    "notFound": "Réservation introuvable."
+    "notFound": "Réservation introuvable.",
+    "seatChanged": "Siège changé avec succès",
+    "seatChangeFailed": "Échec du changement de siège",
+    "selectSeat": "Sélectionner le siège"
   },
   "payments": {
     "title": "Paiements",
@@ -1147,6 +1200,72 @@
   "liveTrips": {
     "noActive": "Aucun voyage actif aujourd'hui.",
     "occupancy": "Occupation"
+  },
+  "recentBookings": {
+    "none": "Aucune réservation récente."
+  },
+  "paymentOverview": {
+    "successful": "Réussis",
+    "failed": "Échoués",
+    "pending": "En attente",
+    "successRate": "Taux de réussite"
+  },
+  "charts": {
+    "noData": "Pas encore de données",
+    "revenue": "Revenus",
+    "bookings": "Réservations",
+    "occupancy": "Occupation",
+    "avgOccupancy": "Occupation Moyenne",
+    "seatsBooked": "Places Réservées",
+    "bookingTrends": "Tendances Réservations",
+    "bookingTrendsLast30": "Tendances (30 derniers jours)",
+    "cancellationAnalysis": "Analyse des Annulations",
+    "cancelled": "Annulés",
+    "totalBookings": "Total Réservations",
+    "revenueTrend": "Tendance des Revenus",
+    "revenueByMethod": "Revenus par Méthode de Paiement",
+    "bookingsByStatus": "Réservations par Statut",
+    "routeOccupancy": "Occupation par Ligne",
+    "paymentMethods": {
+      "card": "Carte",
+      "cash": "Espèces",
+      "wallet": "Portefeuille",
+      "transfer": "Virement",
+      "orange": "Orange Money",
+      "momo": "Mobile Money",
+      "other": "Autre"
+    },
+    "status": {
+      "confirmed": "Confirmées",
+      "pending": "En attente",
+      "cancelled": "Annulées",
+      "completed": "Terminées"
+    }
+  },
+  "liveTrips": {
+    "noActive": "Aucun voyage actif aujourd'hui.",
+    "occupancy": "Occupation"
+  },
+  "dashboardTables": {
+    "liveTrips": {
+      "route": "Trajet",
+      "bus": "Bus",
+      "departure": "Départ",
+      "seats": "Places Vendues / Capacité",
+      "occupancy": "Occ %",
+      "status": "Statut"
+    },
+    "topRoutes": {
+      "rank": "#",
+      "route": "Ligne",
+      "bookings": "Réservations",
+      "share": "Part"
+    },
+    "tripOccupancy": {
+      "route": "Ligne",
+      "occupancy": "Occ %",
+      "trend": "Tendance"
+    }
   },
   "recentBookings": {
     "none": "Aucune réservation récente."

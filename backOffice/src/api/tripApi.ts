@@ -17,6 +17,7 @@ export interface TripData {
   price: number;
   seatsTotal: number;
   seatsBooked: number;
+  blockedSeats?: string[];
   status: "scheduled" | "active" | "completed" | "cancelled";
   createdBy?: { _id: string; firstName: string; lastName: string; email: string };
   createdAt: string;
@@ -32,6 +33,7 @@ export interface TripInput {
   date: string;
   price: number;
   status?: string;
+  blockedSeats?: string[];
 }
 
 export interface TripFilters {

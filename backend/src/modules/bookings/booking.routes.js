@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bookingController = require('./controllers/booking.controller');
 const validate = require('../../middlewares/validate.middleware');
-const { createBookingSchema } = require('./validators/booking.validator');
+const { createBookingSchema, changeSeatSchema } = require('./validators/booking.validator');
 const { authenticate, requireRole } = require('../auth/auth.middleware');
 
 router.use(authenticate);
@@ -14,5 +14,6 @@ router.get('/', requireRole(['admin', 'manager']), bookingController.getAllBooki
 router.get('/:id', bookingController.getBookingById);
 router.get('/:id/refundable-amount', bookingController.getRefundableAmount);
 router.patch('/:id/cancel', bookingController.cancelBooking);
+router.patch('/:id/change-seat', validate(changeSeatSchema), bookingController.changeSeat);
 
 module.exports = router;

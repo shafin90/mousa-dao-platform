@@ -8,11 +8,18 @@ import type { ApiResponse } from "@/shared/types";
 //   location: { lat: number; lng: number };
 // }
 
+export interface PassengerInfo {
+  seat: string;
+  name: string;
+  phone: string;
+}
+
 export interface BookingData {
   _id: string;
   userId: { _id: string; profile: { firstName: string; lastName: string }; email: string; phone: string };
   tripId: { _id: string; routeId: { _id: string; fromCity: { _id: string; name: string }; toCity: { _id: string; name: string } }; busId: { busNumber: string }; departureTime: string; arrivalTime: string; date: string; price: number; seatsTotal: number; seatsBooked: number; status: string };
   seats: string[];
+  passengers: PassengerInfo[];
   bookingCode: string;
   totalAmount: number;
   status: string;
@@ -49,6 +56,10 @@ export const bookingApi = {
   },
   cancel: async (id: string): Promise<BookingData> => {
     const { data } = await apiClient.patch<ApiResponse<BookingData>>(`/bookings/${id}/cancel`);
+    return data.data;
+  },
+  changeSeat: async (id: string, oldSeat: string, newSeat: string): Promise<BookingData> => {
+    const { data } = await apiClient.patch<ApiResponse<BookingData>>(`/bookings/${id}/change-seat`, { oldSeat, newSeat });
     return data.data;
   },
 };

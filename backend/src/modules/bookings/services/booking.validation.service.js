@@ -26,7 +26,9 @@ const validateTripAvailability = async (tripId, companyId, seatCount) => {
   const trip = await tripRepository.findById(tripId, companyId);
   if (!trip) throw new AppError('Trip not found', 404, ErrorCodes.TRIP_NOT_FOUND);
   if (trip.status !== 'scheduled') throw new AppError('Trip is not available for booking', 400, ErrorCodes.TRIP_NOT_AVAILABLE);
-  if (trip.seatsBooked + seatCount > trip.seatsTotal) throw new AppError('Not enough seats available', 400, ErrorCodes.NOT_ENOUGH_SEATS);
+  const blockedCount = (trip.blockedSeats || []).length;
+  const availableSeats = trip.seatsTotal - trip.seatsBooked - blockedCount;
+  if (seatCount > availableSeats) throw new AppError('Not enough seats available', 400, ErrorCodes.NOT_ENOUGH_SEATS);
   return trip;
 };
 
@@ -60,6 +62,25 @@ const checkSeatConflicts = async (tripId, companyId, seats, session) => {
 };
 
 /**
+ * Checks that none of the requested seats are blocked by admin.
+ *
+ * @param {string} tripId
+ * @param {string} companyId
+ * @param {Array<string>} seats - Seat numbers to check
+ * @returns {Promise<void>}
+ */
+const checkBlockedSeats = async (tripId, companyId, seats) => {
+  const trip = await tripRepository.findById(tripId, companyId);
+  if (!trip) throw new AppError('Trip not found', 404, ErrorCodes.TRIP_NOT_FOUND);
+  const blockedSeats = trip.blockedSeats || [];
+  for (const seat of seats) {
+    if (blockedSeats.includes(seat)) {
+      throw new AppError(`Seat ${seat} is blocked and cannot be booked`, 403, ErrorCodes.SEAT_ALREADY_BOOKED);
+    }
+  }
+};
+
+/**
  * Builds the total amount for a booking based on seat count and trip price.
  *
  * @param {Array<string>} seats
@@ -70,4 +91,4 @@ const calculateTotalAmount = (seats, pricePerSeat) => {
   return seats.length * pricePerSeat;
 };
 
-module.exports = { validateTripAvailability, checkSeatConflicts, calculateTotalAmount };
+module.exports = { validateTripAvailability, checkSeatConflicts, checkBlockedSeats, calculateTotalAmount };

@@ -9,7 +9,16 @@ const mongoose = require('mongoose');
  * @returns {Promise<Object|null>}
  */
 const findById = async (id, companyId) => {
-  return await Booking.findOne({ _id: id, companyId });
+  return await Booking.findOne({ _id: id, companyId })
+    .populate({ path: 'userId', select: 'email phone profile' })
+    .populate({
+      path: 'tripId',
+      select: 'routeId busId departureTime arrivalTime date price seatsTotal seatsBooked status',
+      populate: [
+        { path: 'routeId', populate: [{ path: 'fromCity', select: 'name' }, { path: 'toCity', select: 'name' }, { path: 'fromStations', select: 'name location' }, { path: 'toStations', select: 'name location' }] },
+        { path: 'busId', select: 'busNumber name capacity type' },
+      ],
+    });
 };
 
 /**

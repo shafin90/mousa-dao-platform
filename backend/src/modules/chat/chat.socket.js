@@ -11,7 +11,10 @@ const handleChatSend = (io, socket) => async (data) => {
       _id: conversationId,
       companyId: socket.companyId,
     });
-    if (!conversation) return socket.emit('chat:error', { message: 'Conversation not found' });
+    if (!conversation) {
+      console.error('[chat:send] Conversation not found:', conversationId, 'company:', socket.companyId, 'role:', socket.role, 'userId:', socket.userId);
+      return socket.emit('chat:error', { message: 'Conversation not found' });
+    }
 
     const message = await ChatMessage.create({
       companyId: socket.companyId,
@@ -36,6 +39,7 @@ const handleChatSend = (io, socket) => async (data) => {
     io.to(`company:${socket.companyId}`).emit('chat:message', populated);
     io.to(`company:${socket.companyId}`).emit('chat:conversation-updated', conversation);
   } catch (error) {
+    console.error('[chat:send] Error:', error.message, error.stack);
     socket.emit('chat:error', { message: error.message });
   }
 };
@@ -55,14 +59,18 @@ const handleChatHistory = (socket) => async (data) => {
 const handleChatMarkRead = (io, socket) => async (data) => {
   try {
     const { conversationId } = data;
-    const role = socket.role === 'customer' ? 'customer' : 'agent';
-    const updateField = role === 'customer' ? 'unreadCustomer' : 'unreadAgent';
+    const isCustomer = socket.role === 'customer';
+    const updateField = isCustomer ? 'unreadCustomer' : 'unreadAgent';
     await Conversation.updateOne(
       { _id: conversationId, companyId: socket.companyId },
       { $set: { [updateField]: 0 } }
     );
     await ChatMessage.updateMany(
-      { conversationId, readAt: null },
+      {
+        conversationId,
+        readAt: null,
+        senderRole: isCustomer ? { $ne: 'customer' } : 'customer',
+      },
       { readAt: new Date() }
     );
     io.to(`company:${socket.companyId}`).emit('chat:read', { conversationId, readBy: socket.role });

@@ -11,6 +11,7 @@ import {
   Clock,
   DollarSign,
   ShieldCheck,
+  Armchair,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useErrorModal } from "@/shared/contexts/ErrorContext";
@@ -20,6 +21,27 @@ import { Select } from "@/shared/components/ui/Select";
 import { tripApi, type TripInput } from "@/api/tripApi";
 import { busApi, type BusData } from "@/api/busApi";
 import { stationApi, type StationData } from "@/api/stationApi";
+import { cn } from "@/shared/utils/cn";
+
+const ROW_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+const buildSeatRows = (capacity: number, seatRows?: number, leftSeats?: number, rightSeats?: number): string[][] => {
+  const left = leftSeats ?? 2;
+  const right = rightSeats ?? 2;
+  const seatsPerRow = left + right;
+  const rows = seatRows ?? Math.ceil(capacity / seatsPerRow);
+  const result: string[][] = [];
+  let idx = 0;
+  for (let r = 0; r < rows && idx < capacity; r++) {
+    const row: string[] = [];
+    for (let c = 1; c <= seatsPerRow && idx < capacity; c++) {
+      row.push(`${ROW_LETTERS[r]}${c}`);
+      idx++;
+    }
+    result.push(row);
+  }
+  return result;
+};
 
 const TripEditPage: React.FC = () => {
   const { t } = useTranslation();
@@ -32,6 +54,10 @@ const TripEditPage: React.FC = () => {
   const [buses, setBuses] = useState<BusData[]>([]);
   const [stations, setStations] = useState<StationData[]>([]);
   const [busesLoading, setBusesLoading] = useState(false);
+  const [blockedSeats, setBlockedSeats] = useState<string[]>([]);
+  const [selectedBus, setSelectedBus] = useState<BusData | null>(null);
+  const [bookedSeats, setBookedSeats] = useState<string[]>([]);
+  const [togglingSeat, setTogglingSeat] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBuses = async () => {
@@ -60,11 +86,39 @@ const TripEditPage: React.FC = () => {
           price: String(trip.price ?? ""),
           status: trip.status || "scheduled",
         });
+        setBlockedSeats(trip.blockedSeats || []);
       })
       .catch(() => showError(t("trips.notFound")))
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (!form.busId) return;
+    let cancelled = false;
+    busApi.getById(form.busId)
+      .then((b) => { if (!cancelled) setSelectedBus(b); })
+      .catch(() => { if (!cancelled) setSelectedBus(null); });
+    return () => { cancelled = true; };
+  }, [form.busId]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    import("@/api/bookingApi").then(({ bookingApi }) =>
+      bookingApi.getAll({ tripId: id, limit: 500 })
+        .then((res) => {
+          if (!cancelled) {
+            const seats = (res.bookings || [])
+              .filter((b: { status: string }) => b.status !== "cancelled")
+              .flatMap((b: { seats?: string[] }) => b.seats || []);
+            setBookedSeats(seats);
+          }
+        })
+        .catch(() => { if (!cancelled) setBookedSeats([]); })
+    );
+    return () => { cancelled = true; };
   }, [id]);
 
   const stationOptions = stations.map((s) => ({
@@ -99,6 +153,24 @@ const TripEditPage: React.FC = () => {
       showError(t("trips.saveFailed"));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleBlockSeat = async (seatLabel: string) => {
+    if (!id || togglingSeat) return;
+    setTogglingSeat(seatLabel);
+    const isCurrentlyBlocked = blockedSeats.includes(seatLabel);
+    const nextBlocked = isCurrentlyBlocked
+      ? blockedSeats.filter((s) => s !== seatLabel)
+      : [...blockedSeats, seatLabel];
+    try {
+      await tripApi.update(id, { blockedSeats: nextBlocked });
+      setBlockedSeats(nextBlocked);
+      toast.success(isCurrentlyBlocked ? t("trips.seatUnblocked") : t("trips.seatBlocked"));
+    } catch {
+      showError(t("trips.seatBlockFailed"));
+    } finally {
+      setTogglingSeat(null);
     }
   };
 
@@ -240,6 +312,81 @@ const TripEditPage: React.FC = () => {
             </Card>
           </div>
         </div>
+
+        {selectedBus && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Armchair size={18} className="text-primary" /> {t("trips.seatMap")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("trips.blockSeatHint")}
+              </p>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-4 w-4 rounded border bg-secondary" /> {t("trips.seatAvailable")}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-4 w-4 rounded bg-primary" /> {t("trips.seatBooked")}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-4 w-4 rounded bg-destructive" /> {t("trips.seatBlocked")}
+                </span>
+              </div>
+              <div className="inline-flex flex-col gap-2 overflow-x-auto rounded-lg border bg-muted/20 p-4">
+                <p className="text-center text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                  {t("trips.front")}
+                </p>
+                {buildSeatRows(
+                  selectedBus.capacity,
+                  selectedBus.seatRows,
+                  selectedBus.leftSeats,
+                  selectedBus.rightSeats
+                ).map((row, ri) => (
+                  <div key={ri} className="flex items-center gap-2">
+                    <span className="w-4 text-center text-xs font-semibold text-muted-foreground">
+                      {ROW_LETTERS[ri]}
+                    </span>
+                    {row.map((seat, ci) => {
+                      const isBooked = bookedSeats.includes(seat);
+                      const isBlocked = blockedSeats.includes(seat);
+                      const leftCount = selectedBus.leftSeats ?? 2;
+                      return (
+                        <button
+                          key={seat}
+                          type="button"
+                          title={isBooked ? seat : isBlocked ? `${seat} (${t("trips.blocked")})` : `${seat} (${t("trips.clickToBlock")})`}
+                          disabled={isBooked || togglingSeat === seat}
+                          onClick={() => toggleBlockSeat(seat)}
+                          className={cn(
+                            "inline-flex h-9 w-9 items-center justify-center rounded-md text-[11px] font-medium transition-all",
+                            ci === leftCount && "ml-5",
+                            isBooked
+                              ? "bg-primary text-primary-foreground shadow-sm cursor-not-allowed"
+                              : isBlocked
+                                ? "bg-destructive text-destructive-foreground shadow-sm cursor-pointer hover:bg-destructive/80"
+                                : "border bg-secondary text-foreground cursor-pointer hover:border-destructive hover:text-destructive"
+                          )}
+                        >
+                          {togglingSeat === seat ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            seat
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t("trips.seatsBlockedCount", { blocked: blockedSeats.length, total: selectedBus.capacity })}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" className="gap-2" onClick={() => navigate(`/trips/${id}`)}>

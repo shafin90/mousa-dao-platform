@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bookingRepository = require('../repositories/booking.repository');
 const tripRepository = require('../../trips/repositories/trip.repository');
-const { validateTripAvailability, checkSeatConflicts, calculateTotalAmount } = require('./booking.validation.service');
+const { validateTripAvailability, checkSeatConflicts, checkBlockedSeats, calculateTotalAmount } = require('./booking.validation.service');
 const { publishBookingEvent, publishNotificationEvent } = require('./booking.publish.service');
 const { holdSeats, releaseHeldSeats } = require('../../../services/seatHold.service');
 const AppError = require('../../../errors/AppError');
@@ -51,6 +51,7 @@ const processBooking = async (userId, companyId, data) => {
     session.startTransaction();
     try {
       await checkSeatConflicts(data.tripId, companyId, data.seats, session);
+      await checkBlockedSeats(data.tripId, companyId, data.seats);
 
       const booking = await bookingRepository.create(
         { companyId, userId, tripId: data.tripId, seats: data.seats, totalAmount, status: 'pending', passengers: data.passengers || [] },
@@ -162,4 +163,59 @@ const cancelBooking = async (id, userId, companyId, isAdmin) => {
   }
 };
 
-module.exports = { createBooking, processBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking };
+/**
+ * Changes a passenger's seat on an existing booking (admin or booking owner).
+ *
+ * FLOW:
+ * Step 1: Fetch booking, verify it exists and is not cancelled
+ * Step 2: Verify user is admin or booking owner
+ * Step 3: Verify oldSeat is in the booking's seats
+ * Step 4: Verify oldSeat !== newSeat
+ * Step 5: Fetch trip to get bus layout
+ * Step 6: Check newSeat is not booked by another booking
+ * Step 7: Check newSeat is not blocked
+ * Step 8: Update booking seats and passengers
+ *
+ * @param {string} id - Booking ID
+ * @param {string} companyId
+ * @param {string} userId - Current user ID
+ * @param {boolean} isAdmin - Whether user is admin
+ * @param {string} oldSeat - Current seat label to change
+ * @param {string} newSeat - New seat label to assign
+ * @returns {Promise<Object>} Updated booking
+ */
+const changeSeat = async (id, companyId, userId, isAdmin, oldSeat, newSeat) => {
+  const booking = await bookingRepository.findById(id, companyId);
+  if (!booking) throw new AppError('Booking not found', 404, ErrorCodes.BOOKING_NOT_FOUND);
+  if (!isAdmin && !booking.userId.equals(userId)) {
+    throw new AppError('Unauthorized', 403, ErrorCodes.FORBIDDEN);
+  }
+  if (!['pending', 'completed'].includes(booking.status)) {
+    throw new AppError('Cannot change seat on a cancelled booking', 400, ErrorCodes.BOOKING_CANNOT_CANCEL);
+  }
+  if (!booking.seats.includes(oldSeat)) {
+    throw new AppError(`Seat ${oldSeat} is not in this booking`, 400, ErrorCodes.VALIDATION_ERROR);
+  }
+  if (oldSeat === newSeat) {
+    throw new AppError('New seat must be different from old seat', 400, ErrorCodes.VALIDATION_ERROR);
+  }
+
+  const trip = await tripRepository.findById(booking.tripId, companyId);
+  if (!trip) throw new AppError('Trip not found', 404, ErrorCodes.TRIP_NOT_FOUND);
+
+  await checkSeatConflicts(booking.tripId, companyId, [newSeat]);
+  await checkBlockedSeats(booking.tripId, companyId, [newSeat]);
+
+  const updatedSeats = booking.seats.map((s) => s === oldSeat ? newSeat : s);
+  const updatedPassengers = booking.passengers.map((p) =>
+    p.seat === oldSeat ? { ...p, seat: newSeat } : p
+  );
+
+  const updated = await bookingRepository.updateOne(id, companyId, {
+    $set: { seats: updatedSeats, passengers: updatedPassengers },
+  });
+
+  return updated;
+};
+
+module.exports = { createBooking, processBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking, changeSeat };

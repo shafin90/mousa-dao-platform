@@ -15,6 +15,7 @@ const tripSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   seatsTotal: { type: Number, required: true },
   seatsBooked: { type: Number, default: 0 },
+  blockedSeats: { type: [String], default: [] },
   status: { type: String, enum: ['scheduled', 'active', 'completed', 'cancelled'], default: 'scheduled' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });

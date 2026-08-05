@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Calendar, Clock, MapPin, Bus, User, CreditCard, Ticket, Shield, Wallet, Tag } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Bus, User, CreditCard, Ticket, Wallet, Tag, Pencil, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
+import { Select } from "@/shared/components/ui/Select";
 import { bookingApi, type BookingData } from "@/api/bookingApi";
+import { busApi, type BusData } from "@/api/busApi";
+import { useAppSelector } from "@/app/store";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive" | "outline"> = {
   confirmed: "success", pending: "warning", cancelled: "destructive",
@@ -34,6 +38,12 @@ const BookingDetailsPage: React.FC = () => {
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [bus, setBus] = useState<BusData | null>(null);
+  const [editingSeat, setEditingSeat] = useState<string | null>(null);
+  const [newSeatValue, setNewSeatValue] = useState("");
+  const [changingSeat, setChangingSeat] = useState(false);
+  const user = useAppSelector((s) => s.auth.user);
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     let active = true;
@@ -43,6 +53,11 @@ const BookingDetailsPage: React.FC = () => {
         if (!active) return;
         if (!data) { setNotFound(true); return; }
         setBooking(data);
+        const busId = typeof data.tripId?.busId === "object" ? data.tripId.busId?._id : data.tripId?.busId;
+        if (busId) {
+          const busData = await busApi.getById(busId).catch(() => null);
+          if (active && busData) setBus(busData);
+        }
       } catch {
         if (active) setNotFound(true);
       } finally {
@@ -51,6 +66,25 @@ const BookingDetailsPage: React.FC = () => {
     })();
     return () => { active = false; };
   }, [id]);
+
+  const seats = booking?.seats;
+
+  const availableSeats = React.useMemo(() => {
+    if (!bus) return [];
+    const left = bus.leftSeats ?? 2;
+    const right = bus.rightSeats ?? 2;
+    const seatsPerRow = left + right;
+    const rows = bus.seatRows ?? Math.ceil(bus.capacity / seatsPerRow);
+    const all: string[] = [];
+    for (let r = 1; r <= rows; r++) {
+      for (let c = 1; c <= seatsPerRow; c++) {
+        const label = String.fromCharCode(64 + c) + r;
+        if (all.length < bus.capacity) all.push(label);
+      }
+    }
+    const bookedSet = new Set(seats || []);
+    return all.filter((s) => !bookedSet.has(s));
+  }, [bus, seats]);
 
   if (loading) {
     return (
@@ -71,8 +105,30 @@ const BookingDetailsPage: React.FC = () => {
     );
   }
 
-  const { userId, tripId, seats, bookingCode, totalAmount, status, paymentStatus, createdAt } = booking;
+  const { userId, tripId, passengers, bookingCode, totalAmount, status, paymentStatus, createdAt } = booking;
   const route = tripId?.routeId;
+
+  const primaryPassenger = passengers && passengers.length > 0 ? passengers[0] : null;
+  const primaryName = primaryPassenger?.name
+    || `${userId?.profile?.firstName || ""} ${userId?.profile?.lastName || ""}`.trim()
+    || "—";
+  const primaryPhone = primaryPassenger?.phone || userId?.phone || "—";
+
+  const handleSeatChange = async (oldSeat: string) => {
+    if (!newSeatValue || newSeatValue === oldSeat || !id) return;
+    setChangingSeat(true);
+    try {
+      const updated = await bookingApi.changeSeat(id, oldSeat, newSeatValue);
+      setBooking(updated);
+      setEditingSeat(null);
+      setNewSeatValue("");
+      toast.success(t("bookings.seatChanged"));
+    } catch {
+      toast.error(t("bookings.seatChangeFailed"));
+    } finally {
+      setChangingSeat(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -105,11 +161,79 @@ const BookingDetailsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <DetailRow icon={User} label={t("users.name")} value={`${userId?.profile?.firstName || ""} ${userId?.profile?.lastName || ""}`.trim() || "—"} />
-            <DetailRow icon={Shield} label={t("users.email")} value={userId?.email || "—"} />
-            <DetailRow icon={CreditCard} label={t("users.phoneLabel")} value={userId?.phone || "—"} />
+            <DetailRow icon={User} label={t("users.name")} value={primaryName} />
+            <DetailRow icon={CreditCard} label={t("users.phoneLabel")} value={primaryPhone} />
           </CardContent>
         </Card>
+
+        {passengers && passengers.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Ticket size={16} /> {t("passenger.passengers") || "Passengers"} ({passengers.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {passengers.map((p, i) => (
+                <div key={i} className="rounded-lg border p-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-sm">{p.name || "—"}</p>
+                    {editingSeat === p.seat ? (
+                      <div className="flex items-center gap-1.5">
+                        <Select
+                          value={newSeatValue}
+                          onChange={(e) => setNewSeatValue(e.target.value)}
+                          options={availableSeats.map((s) => ({ value: s, label: s }))}
+                          placeholder={t("bookings.selectSeat")}
+                          className="w-24 text-xs"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          disabled={changingSeat || !newSeatValue || newSeatValue === p.seat}
+                          onClick={() => handleSeatChange(p.seat)}
+                        >
+                          {changingSeat ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          ) : (
+                            <Check size={14} className="text-green-600" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          disabled={changingSeat}
+                          onClick={() => { setEditingSeat(null); setNewSeatValue(""); }}
+                        >
+                          <X size={14} className="text-muted-foreground" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-xs font-mono">{p.seat}</Badge>
+                        {isAdmin && status !== "cancelled" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => { setEditingSeat(p.seat); setNewSeatValue(""); }}
+                          >
+                            <Pencil size={12} className="text-muted-foreground" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <CreditCard size={12} /> {p.phone || "—"}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-3">

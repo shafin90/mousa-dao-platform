@@ -88,4 +88,24 @@ const getRefundableAmount = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { createBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking, getCancellationPolicy, getRefundableAmount };
+/**
+ * PATCH /bookings/:id/change-seat
+ * Changes a passenger's seat on a booking (admin only).
+ */
+const changeSeat = async (req, res, next) => {
+  try {
+    const booking = await bookingService.changeSeat(
+      req.params.id,
+      req.user.companyId,
+      req.user._id,
+      req.user.role === 'admin',
+      req.body.oldSeat,
+      req.body.newSeat
+    );
+    respond(res, 200, booking, 'Seat changed successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking, getCancellationPolicy, getRefundableAmount, changeSeat };

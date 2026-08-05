@@ -31,6 +31,9 @@ app.use(morgan('dev'));
 const stripeRoutes = require('./modules/payments/stripe.routes');
 app.use('/api/v1/stripe/webhook', stripeRoutes.webhookRouter);
 
+// Multer uploads need the raw multipart stream — must be before express.json()
+app.use('/api/v1/uploads', require('./modules/uploads/upload.routes'));
+
 app.use(express.json());
 app.use(sanitize);
 
@@ -71,7 +74,6 @@ app.use('/api/v1/maintenance-records', require('./modules/fleet/maintenance.rout
 app.use('/api/v1/work-orders', require('./modules/fleet/workOrder.routes'));
 app.use('/api/v1/maintenance-schedules', require('./modules/fleet/maintenanceSchedule.routes'));
 app.use('/api/v1/maintenance-dashboard', require('./modules/fleet/maintenanceDashboard.routes'));
-app.use('/api/v1/uploads', require('./modules/uploads/upload.routes'));
 app.use('/api/v1/analytics', require('./modules/analytics/analytics.routes'));
 app.use('/api/v1/config', require('./modules/config/config.routes'));
 app.use('/api/v1/notifications', require('./modules/notifications/notification.routes'));

@@ -1,4 +1,4 @@
-﻿const Booking = require('../bookings/models/Booking');
+const Booking = require('../bookings/models/Booking');
 const Trip = require('../trips/models/Trip');
 const Payment = require('../payments/models/Payment');
 const User = require('../users/models/User');
@@ -241,8 +241,10 @@ const getLiveTrips = async (companyId) => {
     date: { $gte: today, $lt: tomorrow },
     status: { $in: ['scheduled', 'boarding', 'active'] }
   })
-    .populate({ path: 'routeId', populate: { path: 'fromStation toStation', select: 'name' } })
+    .populate({ path: 'fromStation', select: 'name' })
+    .populate({ path: 'toStation', select: 'name' })
     .populate({ path: 'busId', select: 'busNumber name capacity' })
+    .populate({ path: 'routeId', select: 'baseRate' })
     .sort({ departureTime: 1 })
     .limit(20);
 

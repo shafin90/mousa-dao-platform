@@ -4,7 +4,7 @@ const chatMessageSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   conversationId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  senderRole: { type: String, enum: ['customer', 'admin', 'manager', 'staff'], required: true },
+  senderRole: { type: String, enum: ['customer', 'admin', 'manager', 'staff', 'driver'], required: true },
   text: { type: String, required: true },
   readAt: { type: Date, default: null },
 }, { timestamps: true });

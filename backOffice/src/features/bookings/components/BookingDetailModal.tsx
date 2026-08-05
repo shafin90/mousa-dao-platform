@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/modals/Modal";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Calendar, Clock, MapPin, Bus, User, CreditCard, Ticket, Shield, Wallet } from "lucide-react";
+import { Calendar, Clock, MapPin, Bus, User, CreditCard, Ticket, Wallet } from "lucide-react";
 import type { BookingData } from "@/api/bookingApi";
 
 interface Props {
@@ -37,8 +37,14 @@ export const BookingDetailModal: React.FC<Props> = ({ booking, isOpen, onClose }
   const { t } = useTranslation();
   if (!booking) return null;
 
-  const { userId, tripId, seats, bookingCode, totalAmount, status, paymentStatus, createdAt } = booking;
+  const { userId, tripId, seats, passengers, bookingCode, totalAmount, status, paymentStatus, createdAt } = booking;
   const route = tripId?.routeId;
+
+  const primaryPassenger = passengers && passengers.length > 0 ? passengers[0] : null;
+  const primaryName = primaryPassenger?.name
+    || `${userId?.profile?.firstName || ""} ${userId?.profile?.lastName || ""}`.trim()
+    || "—";
+  const primaryPhone = primaryPassenger?.phone || userId?.phone || "—";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`${t("bookings.title")} ${bookingCode}`} className="max-w-2xl">
@@ -53,9 +59,8 @@ export const BookingDetailModal: React.FC<Props> = ({ booking, isOpen, onClose }
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("bookings.customer")}</h3>
-            <DetailRow icon={User} label={t("users.name")} value={`${userId?.profile?.firstName || ""} ${userId?.profile?.lastName || ""}`} />
-            <DetailRow icon={Shield} label={t("users.email")} value={userId?.email || "—"} />
-            <DetailRow icon={CreditCard} label={t("users.phoneLabel")} value={userId?.phone || "—"} />
+            <DetailRow icon={User} label={t("users.name")} value={primaryName} />
+            <DetailRow icon={CreditCard} label={t("users.phoneLabel")} value={primaryPhone} />
           </div>
 
           <div className="space-y-3">
@@ -65,6 +70,30 @@ export const BookingDetailModal: React.FC<Props> = ({ booking, isOpen, onClose }
             <DetailRow icon={Clock} label={t("trips.arrival")} value={tripId?.arrivalTime || "—"} />
           </div>
         </div>
+
+        {passengers && passengers.length > 0 && (
+          <>
+            <hr className="border-t" />
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                {t("passenger.passengers") || "Passengers"} ({passengers.length})
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {passengers.map((p, i) => (
+                  <div key={i} className="rounded-lg border p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-sm">{p.name || "—"}</p>
+                      <Badge variant="outline" className="text-xs font-mono">{p.seat}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <CreditCard size={12} /> {p.phone || "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <hr className="border-t" />
 

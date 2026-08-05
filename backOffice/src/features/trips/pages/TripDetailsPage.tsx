@@ -245,6 +245,8 @@ const TripDetailsPage: React.FC = () => {
     [bookings]
   );
 
+  const blockedSeats = useMemo(() => trip?.blockedSeats || [], [trip]);
+
   const fromStationName = (typeof trip?.fromStation === "object" ? trip.fromStation?.name : trip?.routeId?.fromCity?.name) || "";
   const toStationName = (typeof trip?.toStation === "object" ? trip.toStation?.name : trip?.routeId?.toCity?.name) || "";
   const fromStationLabel = typeof trip?.fromStation === "object" ? trip.fromStation?.name : undefined;
@@ -317,6 +319,7 @@ const TripDetailsPage: React.FC = () => {
   const seatCapacity = busCapacity ?? trip.seatsTotal ?? 0;
   const seatRows = buildSeatRows(seatCapacity);
   const bookedSet = new Set(bookedSeats);
+  const blockedSet = new Set(blockedSeats);
 
   return (
     <div className="space-y-6">
@@ -543,6 +546,9 @@ const TripDetailsPage: React.FC = () => {
               <span className="flex items-center gap-1.5">
                 <span className="h-4 w-4 rounded bg-primary" /> {t("trips.seatBooked")}
               </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-4 w-4 rounded bg-destructive" /> {t("trips.seatBlocked")}
+              </span>
             </div>
             <div className="inline-flex flex-col gap-2 overflow-x-auto rounded-lg border bg-muted/20 p-4">
               <p className="text-center text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
@@ -555,16 +561,19 @@ const TripDetailsPage: React.FC = () => {
                   </span>
                   {row.map((seat, ci) => {
                     const booked = bookedSet.has(seat);
+                    const blocked = blockedSet.has(seat);
                     return (
                       <span
                         key={seat}
-                        title={seat}
+                        title={booked ? seat : blocked ? `${seat} (${t("trips.blocked")})` : seat}
                         className={cn(
                           "inline-flex h-9 w-9 items-center justify-center rounded-md text-[11px] font-medium",
                           ci === 2 && "ml-5",
                           booked
                             ? "bg-primary text-primary-foreground shadow-sm"
-                            : "border bg-secondary text-foreground"
+                            : blocked
+                              ? "bg-destructive text-destructive-foreground shadow-sm"
+                              : "border bg-secondary text-foreground"
                         )}
                       >
                         {seat}

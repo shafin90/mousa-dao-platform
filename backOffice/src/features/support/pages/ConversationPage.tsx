@@ -8,6 +8,16 @@ import { Input } from "@/shared/components/ui/Input";
 import { ArrowLeft, Send, MessageCircle } from "lucide-react";
 import apiClient from "@/shared/services/apiClient";
 
+const EC2_DEFAULT_ORIGIN = "http://ec2-16-171-112-9.eu-north-1.compute.amazonaws.com";
+const getSocketUrl = (): string => {
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return window.location.origin;
+  }
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) return apiUrl.replace(/\/api\/v1\/?$/, "");
+  return EC2_DEFAULT_ORIGIN;
+};
+
 type ChatMessage = {
   _id: string;
   conversationId: string;
@@ -50,7 +60,7 @@ const ConversationPage: React.FC = () => {
     fetchMessages();
     const token = localStorage.getItem("token");
     if (token) {
-      const s = io(import.meta.env.VITE_API_URL?.replace("/api/v1", "") || "http://localhost:3000", {
+      const s = io(getSocketUrl(), {
         auth: { token },
         transports: ["websocket"],
       });

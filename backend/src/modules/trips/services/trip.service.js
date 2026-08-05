@@ -339,6 +339,10 @@ const updateTrip = async (id, companyId, data) => {
       if (currentBusId !== String(data.busId)) {
         const bus = await validateBus(data.busId, companyId);
         updateData.seatsTotal = Math.max(bus.capacity, current.seatsBooked || 0);
+        const blockedSeats = data.blockedSeats || current.blockedSeats || [];
+        if (blockedSeats.length > bus.capacity) {
+          throw new AppError("Blocked seats exceed new bus capacity", 400, ErrorCodes.VALIDATION_ERROR);
+        }
       }
     }
 

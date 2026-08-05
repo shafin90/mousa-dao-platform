@@ -5,4 +5,9 @@ const createBookingSchema = Joi.object({
   seats: Joi.array().items(Joi.string()).min(1).required(),
 });
 
-module.exports = { createBookingSchema };
+const changeSeatSchema = Joi.object({
+  oldSeat: Joi.string().required(),
+  newSeat: Joi.string().required(),
+});
+
+module.exports = { createBookingSchema, changeSeatSchema };
